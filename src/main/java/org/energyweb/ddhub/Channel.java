@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -44,37 +46,38 @@ public class Channel {
     String natsJetstreamUrl;
 
     @PATCH
-    public Response updateChannel(ChannelDTO channelDTO)
-            throws IOException, JetStreamApiException, InterruptedException {
+    public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO)
+            throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
-        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getFqcn());
+        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
         StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
                 .addSubjects(channelDTO.getTopic())
                 .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
-                .duplicateWindow(100000)
+                .duplicateWindow(0)
                 .build();
 
         StreamInfo streamInfo = jsm.updateStream(streamConfig);
+        nc.close();
         return Response.ok().entity(streamInfo).build();
     }
 
     @POST
-    public Response createChannel(ChannelDTO channelDTO)
+    public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
         Connection nc = Nats.connect(natsJetstreamUrl);
 
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
-                .name(channelDTO.getFqcn())
-                .subjects(channelDTO.getTopic())
-                .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+                .name(channelDTO.getStreamName())
+                .subjects(channelDTO.getSubjectName())
+                .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
-                .duplicateWindow(100000)
+                .duplicateWindow(0)
                 .build();
         StreamInfo streamInfo = jsm.addStream(streamConfig);
-
+        nc.close();
         return Response.ok().entity(streamInfo).build();
     }
 
@@ -87,8 +90,15 @@ public class Channel {
 
     @GET
     @Path("{fqcn}")
-    public Response channelByfqcn(@PathParam("fqcn") String fqcn) {
-        return Response.ok().entity("Success").build();
+    public Response channelByfqcn(@PathParam("fqcn") String fqcn)
+            throws IOException, InterruptedException, JetStreamApiException {
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        ChannelDTO channelDTO = new ChannelDTO();
+        channelDTO.setFqcn(fqcn);
+        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
+        nc.close();
+        return Response.ok().entity(_streamInfo).build();
     }
 
     @DELETE
@@ -98,6 +108,7 @@ public class Channel {
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
         jsm.deleteStream(fqcn);
+        nc.close();
         return Response.ok().entity("Success").build();
     }
 

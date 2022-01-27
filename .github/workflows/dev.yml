@@ -2,7 +2,7 @@ name: Build and deploy
 
 on:
   push:
-    branches: [ dev-workflow-no ]
+    branches: [ dev-workflow ]
 
 jobs:
   cancel-previous:
@@ -37,28 +37,20 @@ jobs:
         distribution: temurin
         java-version: 11
 
-    - name: Build packages
-      run: ./mvnw package
-        
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-      
-    - name: Build & push docker images
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        BUILD_ID: ${{needs.unique_id.outputs.unique_id}}
+    - name: Build packages and docker image
       run: |
-        docker build -f src/main/docker/Dockerfile.jvm -t energyweb/ddhub-messagebroker:canary .
-        docker tag energyweb/ddhub-messagebroker:canary $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:canary
-        docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:canary
-        docker tag $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:canary $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$BUILD_ID
-        docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$BUILD_ID 
+        ./mvnw package
+        docker build -f src/main/docker/Dockerfile.jvm -t energyweb/ddhub-messagebroker .
+        
+    - name: Push image (Azure)
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+      run: |
+        docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
+        docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
+        docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:canary
+        docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:canary
   

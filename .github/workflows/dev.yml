@@ -42,12 +42,14 @@ jobs:
         ./mvnw package
         docker build -f src/main/docker/Dockerfile.jvm -t energyweb/ddhub-messagebroker .
         
-    - name: Push image (Azure)
+    - name: Login to Azure registry
       uses: azure/docker-login@v1
       with:
         login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
+        
+    - name: Push image (Azure)
       run: |
         docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
         docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}

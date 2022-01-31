@@ -2,7 +2,7 @@ name: Build and deploy
 
 on:
   push:
-    branches: [ dev-workflow ]
+    branches: [ dev ]
 
 jobs:
   cancel-previous:

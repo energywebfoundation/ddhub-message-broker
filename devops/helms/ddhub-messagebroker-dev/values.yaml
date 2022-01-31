@@ -59,10 +59,10 @@ dsb-messagebroker:
       - host: ddhub-dev.energyweb.org
         paths:
         - path: "/"
-    # tls:
-    #  - secretName: dsb-tls-secret
-    #    hosts:
-    #      - ddhub-dev.energyweb.org
+    tls:
+     - secretName: dsb-tls-secret
+       hosts:
+         - ddhub-dev.energyweb.org
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious

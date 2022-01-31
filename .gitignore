@@ -1,3 +1,7 @@
 
 .DS_Store
-target
+/target/
+.project
+.classpath
+*.prefs
+*.json

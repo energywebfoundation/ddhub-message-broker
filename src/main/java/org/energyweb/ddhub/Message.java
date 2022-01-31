@@ -9,7 +9,10 @@ import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
+import javax.validation.Validator;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -23,6 +26,8 @@ import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
+import org.energyweb.ddhub.dto.ResponseMessage;
+import org.energyweb.ddhub.helper.ErrorResponse;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 
 import io.nats.client.Connection;
@@ -30,6 +35,7 @@ import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
+import io.nats.client.PublishOptions;
 import io.nats.client.PullSubscribeOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.PublishAck;
@@ -48,24 +54,38 @@ public class Message {
     @ConfigProperty(name = "NATS_JS_URL")
     String natsJetstreamUrl;
 
-    @POST
-    public Response publish(MessageDTO messageDTO)
-            throws IOException, InterruptedException, JetStreamApiException, TimeoutException {
-        // producerTemplate.sendBodyAndHeader("direct:topic", "", "topic", messageDTO);
-        Connection nc = Nats.connect(natsJetstreamUrl);
-        JetStream js = nc.jetStream();
-        // PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-        // .messageId("correlationId");
-        PublishAck pa = js.publish(messageDTO.getTopic(), messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
-                null);
+    @Inject
+    Validator validator;
 
-        nc.flush(Duration.ZERO);
-        nc.close();
-        return Response.ok().entity(pa).build();
+    @POST
+    public Response publish(@Valid @NotNull MessageDTO messageDTO)
+            throws  InterruptedException, JetStreamApiException, TimeoutException {
+        // producerTemplate.sendBodyAndHeader("direct:topic", "", "topic", messageDTO);
+        Connection nc;
+		try {
+			nc = Nats.connect(natsJetstreamUrl);
+			JetStream js = nc.jetStream();
+			PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+					.messageId(messageDTO.getCorrelationId());
+			PublishAck pa = js.publish(messageDTO.getSubjectName(),
+					messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
+					(messageDTO.getCorrelationId() != null) ? pubOptsBuilder.build() : null);
+			
+			nc.flush(Duration.ZERO);
+			nc.close();
+			return Response.ok().entity(pa).build();
+		} catch (IOException e) {
+			return Response.status(400).entity(new ErrorResponse("20", e.getMessage())).build();
+		} catch (InterruptedException e) {
+			return Response.status(400).entity(new ErrorResponse("20", e.getMessage())).build();
+		}
     }
 
     @GET
-    public Response pull(@QueryParam("topic") String topic, @QueryParam("clientId") String clientId)
+    public Response pull(@Valid @NotNull @QueryParam("fqcn") String fqcn,
+            @Valid @NotNull @QueryParam("topic") String topic,
+            @DefaultValue("default") @QueryParam("clientId") String clientId,
+            @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStream js = nc.jetStream();
@@ -76,17 +96,21 @@ public class Message {
                 .durable(clientId) // required
                 .configuration(cc)
                 .build();
-
-        JetStreamSubscription sub = js.subscribe(topic, pullOptions);
+        MessageDTO msg = new MessageDTO();
+        msg.setFqcn(fqcn);
+        msg.setTopic(topic);
+        JetStreamSubscription sub = js.subscribe(msg.getSubjectName(), pullOptions);
         nc.flush(Duration.ofSeconds(1));
 
-        List<io.nats.client.Message> messages = sub.fetch(10, Duration.ofSeconds(3));
+        List<io.nats.client.Message> messages = sub.fetch(amount, Duration.ofSeconds(3));
         report(messages);
         messages.forEach(io.nats.client.Message::ack);
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        List<ResponseMessage> messageDTOs = new ArrayList<ResponseMessage>();
         for (io.nats.client.Message m : messages) {
-            MessageDTO messageDTO = new MessageDTO();
+            ResponseMessage messageDTO = new ResponseMessage();
             messageDTO.setPayload(new String(m.getData()));
+            messageDTO.setFqcn(fqcn);
+            messageDTO.setTopic(topic);
             messageDTOs.add(messageDTO);
         }
         nc.close();

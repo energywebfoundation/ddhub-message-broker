@@ -8,7 +8,12 @@ import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.providers.multipart.PartType;
 
-public class MultipartBody {
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class MultipartBody extends DDHub {
     @NotNull
     @FormParam("file")
     @PartType(MediaType.APPLICATION_OCTET_STREAM)

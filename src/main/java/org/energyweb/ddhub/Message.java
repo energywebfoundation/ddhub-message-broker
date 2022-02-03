@@ -22,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.camel.ConsumerTemplate;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.MessageDTO;
@@ -121,8 +122,7 @@ public class Message {
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
-        producerTemplate.sendBody("direct:c", data);
-        return Response.ok().entity("Success").build();
+        return Response.ok().entity( producerTemplate.sendBody("direct:azureupload",ExchangePattern.InOut,  data)).build();
     }
 
     public static void report(List<io.nats.client.Message> list) {

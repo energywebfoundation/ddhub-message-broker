@@ -52,7 +52,7 @@ public class Channel {
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
         StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
-                .addSubjects(channelDTO.getTopic())
+                .addSubjects(channelDTO.getSubjectName())
                 .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
@@ -71,7 +71,7 @@ public class Channel {
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
                 .name(channelDTO.getStreamName())
-                .subjects(channelDTO.getSubjectName())
+                .addSubjects(channelDTO.getSubjectName())
                 .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
@@ -107,7 +107,9 @@ public class Channel {
             throws IOException, JetStreamApiException, InterruptedException {
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
-        jsm.deleteStream(fqcn);
+        ChannelDTO channelDTO = new ChannelDTO();
+        channelDTO.setFqcn(fqcn);
+        jsm.deleteStream(channelDTO.getStreamName());
         nc.close();
         return Response.ok().entity("Success").build();
     }

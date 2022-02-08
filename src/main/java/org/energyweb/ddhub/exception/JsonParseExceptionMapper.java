@@ -1,8 +1,10 @@
-package org.energyweb.ddhub.helper;
+package org.energyweb.ddhub.exception;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+
+import org.energyweb.ddhub.helper.ErrorResponse;
 
 import com.fasterxml.jackson.core.JsonParseException;
 

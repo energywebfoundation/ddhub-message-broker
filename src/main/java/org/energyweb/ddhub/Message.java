@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -29,6 +30,7 @@ import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
 import org.energyweb.ddhub.dto.ResponseMessage;
 import org.energyweb.ddhub.helper.ErrorResponse;
+import org.energyweb.ddhub.repository.TopicRepository;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 
 import io.nats.client.Connection;
@@ -57,11 +59,15 @@ public class Message {
 
     @Inject
     Validator validator;
+    
+    @Inject
+    TopicRepository topicRepository;
 
     @POST
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws  InterruptedException, JetStreamApiException, TimeoutException {
-        // producerTemplate.sendBodyAndHeader("direct:topic", "", "topic", messageDTO);
+    	topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
+    	
         Connection nc;
 		try {
 			nc = Nats.connect(natsJetstreamUrl);
@@ -84,10 +90,12 @@ public class Message {
 
     @GET
     public Response pull(@Valid @NotNull @QueryParam("fqcn") String fqcn,
-            @Valid @NotNull @QueryParam("topic") String topic,
+            @Valid @NotNull @QueryParam("topicId") String topicId,
             @DefaultValue("default") @QueryParam("clientId") String clientId,
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
+    	topicRepository.validateTopicIds(Arrays.asList(topicId));
+    	
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStream js = nc.jetStream();
         ConsumerConfiguration cc = ConsumerConfiguration.builder()
@@ -99,7 +107,7 @@ public class Message {
                 .build();
         MessageDTO msg = new MessageDTO();
         msg.setFqcn(fqcn);
-        msg.setTopic(topic);
+        msg.setTopicId(topicId);
         JetStreamSubscription sub = js.subscribe(msg.getSubjectName(), pullOptions);
         nc.flush(Duration.ofSeconds(1));
 
@@ -111,7 +119,7 @@ public class Message {
             ResponseMessage messageDTO = new ResponseMessage();
             messageDTO.setPayload(new String(m.getData()));
             messageDTO.setFqcn(fqcn);
-            messageDTO.setTopic(topic);
+            messageDTO.setTopicId(topicId);
             messageDTOs.add(messageDTO);
         }
         nc.close();
@@ -122,6 +130,7 @@ public class Message {
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
+    	topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         return Response.ok().entity( producerTemplate.sendBody("direct:azureupload",ExchangePattern.InOut,  data)).build();
     }
 

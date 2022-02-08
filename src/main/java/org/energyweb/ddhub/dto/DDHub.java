@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.core.MediaType;
 
@@ -30,11 +29,6 @@ public class DDHub {
 	@PartType(MediaType.TEXT_PLAIN)
 	private String fqcn;
 
-	@Size(max = 200, message = "The maximum length is 200 characters")
-	@FormParam("topic")
-	@PartType(MediaType.TEXT_PLAIN)
-	private String topic;
-
 	@JsonIgnore
 	public String getStreamName() {
 		String[] streamName = fqcn.split(Pattern.quote("."));
@@ -42,10 +36,4 @@ public class DDHub {
 		return String.join("_", streamName);
 	}
 
-	@JsonIgnore
-	public String getSubjectName() {
-		if (StringUtils.isBlank(topic))
-			return null;
-		return getStreamName().concat(".").concat(topic);
-	}
 }

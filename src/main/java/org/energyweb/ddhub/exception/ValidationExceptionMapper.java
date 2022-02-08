@@ -1,4 +1,4 @@
-package org.energyweb.ddhub.helper;
+package org.energyweb.ddhub.exception;
 
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +14,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.energyweb.ddhub.helper.ErrorResponse;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ResteasyViolationException;
 

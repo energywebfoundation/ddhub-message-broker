@@ -50,8 +50,9 @@ public class Routes extends RouteBuilder {
                                         MultipartBody multipartBody = (MultipartBody) e.getIn().getBody();
                                         MessageDTO messageDTO = new MessageDTO();
                                         messageDTO.setFqcn(multipartBody.getFqcn());
-                                        messageDTO.setTopic(multipartBody.getTopic());
+                                        messageDTO.setTopicId(multipartBody.getTopicId());
                                         e.setProperty("messageDTO", messageDTO);
+                                        e.setProperty("signature", multipartBody.getSignature());
                                         String key = multipartBody.fileName;
                                         byte[] bytes = multipartBody.file.readAllBytes();
                                         e.getIn().setHeader("CamelAzureStorageBlobBlobName", key);
@@ -66,6 +67,7 @@ public class Routes extends RouteBuilder {
                                                                         BlobConstants.BLOB_NAME, String.class))
                                                         .add("download", e.getMessage().getHeader(
                                                                         BlobConstants.DOWNLOAD_LINK, String.class))
+                                                        .add("signature", e.getProperty("signature").toString())
                                                         .build();
                                         MessageDTO messageDTO = (MessageDTO) e.getProperty("messageDTO");
                                         messageDTO.setPayload(jsonObject.toString());
@@ -76,7 +78,7 @@ public class Routes extends RouteBuilder {
                                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                                 // .setHeader("Accept", constant("application/json"))
-                                .to("netty-http:http://0.0.0.0:{{quarkus.http.port}}/message?throwExceptionOnFailure=false");
+                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=false");
 
         }
 }

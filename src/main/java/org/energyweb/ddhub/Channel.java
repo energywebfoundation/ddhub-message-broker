@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -22,6 +21,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
+import org.apache.commons.beanutils.BeanUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
@@ -48,42 +48,42 @@ public class Channel {
 
     @ConfigProperty(name = "NATS_JS_URL")
     String natsJetstreamUrl;
-    
+
     @Inject
     ChannelRepository channelRepository;
-    
+
     @Inject
     TopicRepository topicRepository;
 
     @PATCH
     public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-    	topicRepository.validateTopicIds(channelDTO.getTopicIds());
+        topicRepository.validateTopicIds(channelDTO.getTopicIds());
+        channelRepository.validateChannel(channelDTO.getFqcn());
 
-    	Connection nc = Nats.connect(natsJetstreamUrl);
+        Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
         StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
                 .addSubjects(channelDTO.findArraySubjectName())
-                .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+                .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
                 .build();
 
         StreamInfo streamInfo = jsm.updateStream(streamConfig);
-        
-        channelRepository.update(channelDTO);
+
+        channelRepository.updateChannel(channelDTO);
         nc.close();
         return Response.ok().entity(channelDTO).build();
     }
-    
-    
 
     @POST
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
-        
+//        channelRepository.validateChannel(channelDTO.getFqcn());
+
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
@@ -94,8 +94,8 @@ public class Channel {
                 .duplicateWindow(0)
                 .build();
         StreamInfo streamInfo = jsm.addStream(streamConfig);
-        
-        channelRepository.persist(channelDTO);
+
+        channelRepository.save(channelDTO);
         nc.close();
         return Response.ok().entity(channelDTO).build();
     }
@@ -103,7 +103,7 @@ public class Channel {
     @GET
     @Path("pubsub")
     public Response listOfChannel() {
-        return Response.ok().entity(channelRepository.listAll()).build();
+        return Response.ok().entity(channelRepository.listChannel()).build();
 
     }
 
@@ -116,9 +116,9 @@ public class Channel {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(fqcn);
         StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
-        
+
         channelDTO = channelRepository.findByFqcn(fqcn);
-        
+
         nc.close();
         return Response.ok().entity(channelDTO).build();
     }
@@ -132,9 +132,9 @@ public class Channel {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(fqcn);
         jsm.deleteStream(channelDTO.getStreamName());
-        
+
         channelRepository.deleteByFqcn(fqcn);
-        
+
         nc.close();
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }

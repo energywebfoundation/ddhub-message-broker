@@ -67,8 +67,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
     
     public void validateTopicIds(List<String> topicIds) {
 		topicIds.forEach(id -> {
-			Topic channelDTO = findById(new ObjectId(id));
-			if(channelDTO == null) {
+			Topic topic = findById(new ObjectId(id));
+			if(topic == null) {
 				throw new MongoException("id:" + id + " not exists");
 			}
 		});

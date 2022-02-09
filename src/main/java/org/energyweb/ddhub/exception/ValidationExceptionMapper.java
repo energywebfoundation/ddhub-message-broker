@@ -45,7 +45,7 @@ public class ValidationExceptionMapper implements ExceptionMapper<ValidationExce
 					messages += ", ";
 			}
 
-			return Response.status(400).entity(new ErrorResponse("20", messages)).build();
+			return Response.status(400).entity(new ErrorResponse("11", messages)).build();
 		}
 
 		return buildResponse(unwrapException(exception), MediaType.TEXT_PLAIN, Status.INTERNAL_SERVER_ERROR);

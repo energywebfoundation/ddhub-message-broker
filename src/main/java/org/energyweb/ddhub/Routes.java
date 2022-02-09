@@ -1,6 +1,5 @@
 package org.energyweb.ddhub;
 
-import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -8,16 +7,14 @@ import javax.json.JsonObjectBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.azure.storage.blob.BlobConstants;
-import org.bson.Document;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
 
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import com.google.gson.Gson;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.model.IndexOptions;
 
 /**
  * Camel route definitions.
@@ -30,6 +27,10 @@ public class Routes extends RouteBuilder {
 
         @Override
         public void configure() throws Exception {
+        	
+//        	onException(BlobStorageException.class)
+//        	  .handled(true)
+//        	  .transform().simple("Error reported: ${exception.message} - cannot process this message.");
 
                 String azureAccountName = "vcaemo";
                 String azureAccessKey = "lS5Zh7D4CMGcwFVOrJQzfUzRgV5B9Hetrn3iOXEf/G64+MHuC/tuXdpx5K83LqjbIgEgKyIrM/83tUdyANeVlA==";
@@ -77,7 +78,7 @@ public class Routes extends RouteBuilder {
                                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                                 // .setHeader("Accept", constant("application/json"))
-                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=false");
+                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=true");
 
                 from("direct:azuredownload")
                                 .to("azure-storage-blob://vcaemo/vcfile?blobName=azam.png&operation=getBlob&serviceClient=#client");

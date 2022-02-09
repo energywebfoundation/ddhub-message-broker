@@ -10,7 +10,6 @@ import javax.validation.constraints.Size;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.annotations.providers.multipart.PartType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

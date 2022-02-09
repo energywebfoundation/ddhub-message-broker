@@ -12,6 +12,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 public class JsonMappingExceptionMapper implements ExceptionMapper<JsonMappingException> {
 	@Override
 	public Response toResponse(final JsonMappingException exception) {
-		return Response.status(400).entity(new ErrorResponse("20", "Cannot parse JSON")).build();
+		return Response.status(400).entity(new ErrorResponse("14", "Cannot parse JSON")).build();
 	}
 }

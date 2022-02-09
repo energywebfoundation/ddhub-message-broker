@@ -34,7 +34,7 @@ public class PatternExceptionMapper implements ExceptionMapper<ResteasyViolation
 				messages += ", ";
 		}
 
-		return Response.status(400).entity(new ErrorResponse("20", messages)).build();
+		return Response.status(400).entity(new ErrorResponse("12", messages)).build();
 	}
 
 }

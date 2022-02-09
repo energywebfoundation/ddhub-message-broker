@@ -12,6 +12,6 @@ import com.mongodb.MongoException;
 public class MongoDBExceptionMapper implements ExceptionMapper<MongoException> {
 	@Override
 	public Response toResponse(final MongoException exception) {
-		return Response.status(400).entity(new ErrorResponse("20", exception.getMessage())).build();
+		return Response.status(400).entity(new ErrorResponse("50", exception.getMessage())).build();
 	}
 }

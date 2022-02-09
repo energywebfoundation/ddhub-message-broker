@@ -31,6 +31,7 @@ import org.energyweb.ddhub.dto.MultipartBody;
 import org.energyweb.ddhub.dto.ResponseMessage;
 import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.repository.TopicRepository;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 
 import io.nats.client.Connection;
@@ -47,7 +48,9 @@ import io.nats.client.api.PublishAck;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class Message {
-
+	@Inject
+    Logger log; 
+	
     @Inject
     ProducerTemplate producerTemplate;
 
@@ -59,33 +62,33 @@ public class Message {
 
     @Inject
     Validator validator;
-    
+
     @Inject
     TopicRepository topicRepository;
 
     @POST
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
-            throws  InterruptedException, JetStreamApiException, TimeoutException {
-    	topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
-    	
+            throws InterruptedException, JetStreamApiException, TimeoutException {
+        topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
+
         Connection nc;
-		try {
-			nc = Nats.connect(natsJetstreamUrl);
-			JetStream js = nc.jetStream();
-			PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-					.messageId(messageDTO.getCorrelationId());
-			PublishAck pa = js.publish(messageDTO.getSubjectName(),
-					messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
-					(messageDTO.getCorrelationId() != null) ? pubOptsBuilder.build() : null);
-			
-			nc.flush(Duration.ZERO);
-			nc.close();
-			return Response.ok().entity(pa).build();
-		} catch (IOException e) {
-			return Response.status(400).entity(new ErrorResponse("20", e.getMessage())).build();
-		} catch (InterruptedException e) {
-			return Response.status(400).entity(new ErrorResponse("20", e.getMessage())).build();
-		}
+        try {
+            nc = Nats.connect(natsJetstreamUrl);
+            JetStream js = nc.jetStream();
+            PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+                    .messageId(messageDTO.getCorrelationId());
+            PublishAck pa = js.publish(messageDTO.getSubjectName(),
+                    messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
+                    (messageDTO.getCorrelationId() != null) ? pubOptsBuilder.build() : null);
+
+            nc.flush(Duration.ZERO);
+            nc.close();
+            return Response.ok().entity(pa).build();
+        } catch (IOException e) {
+            return Response.status(400).entity(new ErrorResponse("10", e.getMessage())).build();
+        } catch (InterruptedException e) {
+            return Response.status(400).entity(new ErrorResponse("10", e.getMessage())).build();
+        }
     }
 
     @GET
@@ -94,8 +97,8 @@ public class Message {
             @DefaultValue("default") @QueryParam("clientId") String clientId,
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-    	topicRepository.validateTopicIds(Arrays.asList(topicId));
-    	
+        topicRepository.validateTopicIds(Arrays.asList(topicId));
+
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStream js = nc.jetStream();
         ConsumerConfiguration cc = ConsumerConfiguration.builder()
@@ -130,17 +133,22 @@ public class Message {
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
-    	topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-        return Response.ok().entity( producerTemplate.sendBody("direct:azureupload",ExchangePattern.InOut,  data)).build();
+    	log.info(data);
+        topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
+        return Response.ok().entity(producerTemplate.sendBody("direct:azureupload", ExchangePattern.InOut, data))
+                .build();
     }
-    
+
     @GET
     @Path("download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response downloadFile(@QueryParam("filename") String filename) {
-    	return Response.ok( producerTemplate.sendBodyAndHeader("direct:azuredownload",ExchangePattern.InOut,null,"CamelAzureStorageBlobBlobName",filename ), MediaType.APPLICATION_OCTET_STREAM)
-    			.header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
-    			.build();
+        return Response
+                .ok(producerTemplate.sendBodyAndHeader("direct:azuredownload", ExchangePattern.InOut, null,
+                        "CamelAzureStorageBlobBlobName", filename), MediaType.APPLICATION_OCTET_STREAM)
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .build();
+
     }
 
     public static void report(List<io.nats.client.Message> list) {

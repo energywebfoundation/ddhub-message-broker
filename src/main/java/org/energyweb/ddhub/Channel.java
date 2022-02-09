@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -75,6 +76,8 @@ public class Channel {
         nc.close();
         return Response.ok().entity(channelDTO).build();
     }
+    
+    
 
     @POST
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)

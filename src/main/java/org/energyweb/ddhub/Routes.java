@@ -24,9 +24,8 @@ import com.mongodb.client.model.IndexOptions;
  */
 public class Routes extends RouteBuilder {
 
-	 
         public Routes() {
-        	
+
         }
 
         @Override
@@ -79,6 +78,9 @@ public class Routes extends RouteBuilder {
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                                 // .setHeader("Accept", constant("application/json"))
                                 .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=false");
+
+                from("direct:azuredownload")
+                                .to("azure-storage-blob://vcaemo/vcfile?blobName=azam.png&operation=getBlob&serviceClient=#client");
 
         }
 }

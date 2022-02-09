@@ -133,6 +133,15 @@ public class Message {
     	topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         return Response.ok().entity( producerTemplate.sendBody("direct:azureupload",ExchangePattern.InOut,  data)).build();
     }
+    
+    @GET
+    @Path("download")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response downloadFile(@QueryParam("filename") String filename) {
+    	return Response.ok( producerTemplate.sendBodyAndHeader("direct:azuredownload",ExchangePattern.InOut,null,"CamelAzureStorageBlobBlobName",filename ), MediaType.APPLICATION_OCTET_STREAM)
+    			.header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+    			.build();
+    }
 
     public static void report(List<io.nats.client.Message> list) {
         System.out.print("Fetch ->");

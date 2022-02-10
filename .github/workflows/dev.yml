@@ -68,5 +68,5 @@ jobs:
       id: argocd_image_tag_overwrite
       with:
         command: app set ddhub-messagebroker-dev
-        options: -p dsb-messagebroker.image.tag=${{needs.unique_id.outputs.unique_id}}
+        options: -p ddhub-messagebroker.image.tag=${{needs.unique_id.outputs.unique_id}}
   

@@ -23,6 +23,9 @@ import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.ChannelDTO;
+import org.energyweb.ddhub.helper.DDHubResponse;
+import org.energyweb.ddhub.repository.ChannelRepository;
+import org.energyweb.ddhub.repository.TopicRepository;
 
 import io.nats.client.Connection;
 import io.nats.client.JetStreamApiException;
@@ -45,46 +48,61 @@ public class Channel {
     @ConfigProperty(name = "NATS_JS_URL")
     String natsJetstreamUrl;
 
+    @Inject
+    ChannelRepository channelRepository;
+
+    @Inject
+    TopicRepository topicRepository;
+
     @PATCH
     public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
+        topicRepository.validateTopicIds(channelDTO.getTopicIds());
+        channelRepository.validateChannel(channelDTO.getFqcn());
+
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
         StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
-                .addSubjects(channelDTO.getTopic())
-                .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+                .addSubjects(channelDTO.findArraySubjectName())
+                .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
                 .build();
 
         StreamInfo streamInfo = jsm.updateStream(streamConfig);
+
+        channelRepository.updateChannel(channelDTO);
         nc.close();
-        return Response.ok().entity(streamInfo).build();
+        return Response.ok().entity(channelDTO).build();
     }
 
     @POST
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
-        Connection nc = Nats.connect(natsJetstreamUrl);
+        topicRepository.validateTopicIds(channelDTO.getTopicIds());
+//        channelRepository.validateChannel(channelDTO.getFqcn());
 
+        Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
                 .name(channelDTO.getStreamName())
-                .subjects(channelDTO.getSubjectName())
+                .addSubjects(channelDTO.findArraySubjectName())
                 .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
                 .build();
         StreamInfo streamInfo = jsm.addStream(streamConfig);
+
+        channelRepository.save(channelDTO);
         nc.close();
-        return Response.ok().entity(streamInfo).build();
+        return Response.ok().entity(channelDTO).build();
     }
 
     @GET
     @Path("pubsub")
     public Response listOfChannel() {
-        return Response.ok().entity("Success").build();
+        return Response.ok().entity(channelRepository.listChannel()).build();
 
     }
 
@@ -97,8 +115,11 @@ public class Channel {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(fqcn);
         StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
+
+        channelDTO = channelRepository.findByFqcn(fqcn);
+
         nc.close();
-        return Response.ok().entity(_streamInfo).build();
+        return Response.ok().entity(channelDTO).build();
     }
 
     @DELETE
@@ -107,9 +128,14 @@ public class Channel {
             throws IOException, JetStreamApiException, InterruptedException {
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
-        jsm.deleteStream(fqcn);
+        ChannelDTO channelDTO = new ChannelDTO();
+        channelDTO.setFqcn(fqcn);
+        jsm.deleteStream(channelDTO.getStreamName());
+
+        channelRepository.deleteByFqcn(fqcn);
+
         nc.close();
-        return Response.ok().entity("Success").build();
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
 
 }

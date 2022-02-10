@@ -21,7 +21,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
-import org.apache.commons.beanutils.BeanUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;

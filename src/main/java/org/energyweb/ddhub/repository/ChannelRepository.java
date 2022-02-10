@@ -3,7 +3,6 @@ package org.energyweb.ddhub.repository;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.validation.Valid;
@@ -23,7 +22,11 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 	public ChannelDTO findByFqcn(String fqcn) {
 		try {
 			ChannelDTO channelDTO = new ChannelDTO();
-			BeanUtils.copyProperties(channelDTO, find("fqcn", fqcn).firstResult());
+			Channel channel = find("fqcn", fqcn).firstResult();
+			if(channel == null) {
+				throw new MongoException("fqcn:" + fqcn + " not exists"); 
+			}
+			BeanUtils.copyProperties(channelDTO, channel);
 			return channelDTO;
 		} catch (IllegalAccessException | InvocationTargetException e) {
 			throw new MongoException("fqcn:" + fqcn + " not exists");
@@ -41,6 +44,9 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 	public void updateChannel(@Valid @NotNull ChannelDTO channelDTO) {
 		try {
 			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResult();
+			if(channel == null) {
+				throw new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"); 
+			}
 			BeanUtils.copyProperties(channel, channelDTO);
 			update(channel);
 		} catch (IllegalAccessException | InvocationTargetException e) {

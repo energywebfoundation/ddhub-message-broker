@@ -30,6 +30,7 @@ import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
 import org.energyweb.ddhub.dto.ResponseMessage;
 import org.energyweb.ddhub.helper.ErrorResponse;
+import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
@@ -65,11 +66,15 @@ public class Message {
 
     @Inject
     TopicRepository topicRepository;
+    
+    @Inject
+    ChannelRepository channelRepository;
 
     @POST
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
+        channelRepository.validateChannel(messageDTO.getFqcn());
 
         Connection nc;
         try {
@@ -98,6 +103,7 @@ public class Message {
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(topicId));
+        channelRepository.validateChannel(fqcn);
 
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStream js = nc.jetStream();
@@ -135,6 +141,8 @@ public class Message {
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
     	log.info(data);
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
+        channelRepository.validateChannel(data.getFqcn());
+        
         return Response.ok().entity(producerTemplate.sendBody("direct:azureupload", ExchangePattern.InOut, data))
                 .build();
     }

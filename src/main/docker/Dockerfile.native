@@ -7,11 +7,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native -t quarkus/ddhub-quarkus .
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/ddhub-message-broker .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/ddhub-quarkus
+# docker run -i --rm -p 8080:8080 quarkus/ddhub-message-broker
 #
 ###
 FROM quay.io/quarkus/quarkus-micro-image:1.0

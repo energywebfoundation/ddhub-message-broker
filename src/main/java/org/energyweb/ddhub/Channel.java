@@ -22,6 +22,8 @@ import javax.ws.rs.core.Response;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
@@ -37,6 +39,7 @@ import io.nats.client.api.StreamInfo;
 @Path("/channel")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tags(value = @Tag(name = "Channel", description = "All the methods"))
 public class Channel {
 
     @Inject
@@ -81,7 +84,7 @@ public class Channel {
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
-        channelRepository.validateChannel(channelDTO.getFqcn());
+        // channelRepository.validateChannel(channelDTO.getFqcn());
 
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();

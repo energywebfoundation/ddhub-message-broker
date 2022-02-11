@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -82,7 +83,7 @@ public class Message {
             JetStream js = nc.jetStream();
             PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
                     .messageId(messageDTO.getCorrelationId());
-            PublishAck pa = js.publish(messageDTO.getSubjectName(),
+            PublishAck pa = js.publish(messageDTO.subjectName(),
                     messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
                     (messageDTO.getCorrelationId() != null) ? pubOptsBuilder.build() : null);
 
@@ -97,8 +98,8 @@ public class Message {
     }
 
     @GET
-    public Response pull(@Valid @NotNull @QueryParam("fqcn") String fqcn,
-            @Valid @NotNull @QueryParam("topicId") String topicId,
+    public Response pull(@NotNull @QueryParam("fqcn") String fqcn,
+    		@Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") @NotNull @QueryParam("topicId") String topicId,
             @DefaultValue("default") @QueryParam("clientId") String clientId,
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
@@ -117,11 +118,10 @@ public class Message {
         MessageDTO msg = new MessageDTO();
         msg.setFqcn(fqcn);
         msg.setTopicId(topicId);
-        JetStreamSubscription sub = js.subscribe(msg.getSubjectName(), pullOptions);
+        JetStreamSubscription sub = js.subscribe(msg.subjectName(), pullOptions);
         nc.flush(Duration.ofSeconds(1));
 
         List<io.nats.client.Message> messages = sub.fetch(amount, Duration.ofSeconds(3));
-        report(messages);
         messages.forEach(io.nats.client.Message::ack);
         List<ResponseMessage> messageDTOs = new ArrayList<ResponseMessage>();
         for (io.nats.client.Message m : messages) {
@@ -139,7 +139,6 @@ public class Message {
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
-    	log.info(data);
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         channelRepository.validateChannel(data.getFqcn());
         
@@ -150,31 +149,21 @@ public class Message {
     @GET
     @Path("download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response downloadFile(@QueryParam("filename") String filename) {
-        return Response
+    public Response downloadFile(@NotNull @QueryParam("fqcn") String fqcn,
+    		@Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") @NotNull @QueryParam("topicId") String topicId,  @NotNull @QueryParam("filename") String filename) {
+        
+    	topicRepository.validateTopicIds(Arrays.asList(topicId));
+        channelRepository.validateChannel(fqcn);
+        
+    	MessageDTO messageDTO = new MessageDTO();
+        messageDTO.setFqcn(fqcn);
+        messageDTO.setTopicId(topicId);
+        
+    	return Response
                 .ok(producerTemplate.sendBodyAndHeader("direct:azuredownload", ExchangePattern.InOut, null,
-                        "CamelAzureStorageBlobBlobName", filename), MediaType.APPLICATION_OCTET_STREAM)
+                        "CamelAzureStorageBlobBlobName", messageDTO.storageName() + filename), MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .build();
 
     }
-
-    public static void report(List<io.nats.client.Message> list) {
-        System.out.print("Fetch ->");
-        for (io.nats.client.Message m : list) {
-            System.out.print(" " + new String(m.getData()));
-        }
-        System.out.println(" <- ");
-    }
-
-    public static void sleep(long millis) {
-        try {
-            if (millis > 0) {
-                Thread.sleep(millis);
-            }
-        } catch (InterruptedException e) {
-            // ignore
-        }
-    }
-
 }

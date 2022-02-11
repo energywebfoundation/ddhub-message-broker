@@ -45,6 +45,6 @@ public class MultipartBody extends DDHub {
    	public String getSubjectName() {
    		if (StringUtils.isBlank(topicId))
    			return null;
-   		return getStreamName().concat(".").concat(topicId);
+   		return streamName().concat(".").concat(topicId);
    	}
 }

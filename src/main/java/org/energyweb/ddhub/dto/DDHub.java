@@ -29,7 +29,7 @@ public class DDHub {
 	private String fqcn;
 
 	@JsonIgnore
-	public String getStreamName() {
+	public String streamName() {
 		String[] streamName = fqcn.split(Pattern.quote("."));
 		Collections.reverse(Arrays.asList(streamName));
 		return String.join("_", streamName);

@@ -12,7 +12,6 @@ import org.energyweb.ddhub.dto.MultipartBody;
 
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import com.google.gson.Gson;
 
@@ -27,11 +26,6 @@ public class Routes extends RouteBuilder {
 
         @Override
         public void configure() throws Exception {
-        	
-//        	onException(BlobStorageException.class)
-//        	  .handled(true)
-//        	  .transform().simple("Error reported: ${exception.message} - cannot process this message.");
-
                 String azureAccountName = "vcaemo";
                 String azureAccessKey = "lS5Zh7D4CMGcwFVOrJQzfUzRgV5B9Hetrn3iOXEf/G64+MHuC/tuXdpx5K83LqjbIgEgKyIrM/83tUdyANeVlA==";
                 StorageSharedKeyCredential credential = new StorageSharedKeyCredential(azureAccountName,
@@ -51,11 +45,13 @@ public class Routes extends RouteBuilder {
                                         MessageDTO messageDTO = new MessageDTO();
                                         messageDTO.setFqcn(multipartBody.getFqcn());
                                         messageDTO.setTopicId(multipartBody.getTopicId());
+                                        e.setProperty("multipartBody", multipartBody);
                                         e.setProperty("messageDTO", messageDTO);
                                         e.setProperty("signature", multipartBody.getSignature());
+
                                         String key = multipartBody.fileName;
                                         byte[] bytes = multipartBody.file.readAllBytes();
-                                        e.getIn().setHeader("CamelAzureStorageBlobBlobName", key);
+                                        e.getIn().setHeader("CamelAzureStorageBlobBlobName", messageDTO.storageName() + key);
                                         e.getIn().setBody(bytes);
                                 })
                                 .to("azure-storage-blob://vcaemo/vcfile?operation=uploadBlockBlob&serviceClient=#client")
@@ -81,7 +77,7 @@ public class Routes extends RouteBuilder {
                                 .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=true");
 
                 from("direct:azuredownload")
-                                .to("azure-storage-blob://vcaemo/vcfile?blobName=azam.png&operation=getBlob&serviceClient=#client");
+                                .to("azure-storage-blob://vcaemo/vcfile?operation=getBlob&serviceClient=#client");
 
         }
 }

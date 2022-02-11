@@ -62,10 +62,10 @@ public class Channel {
 
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
-        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
+        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.streamName());
         StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
                 .addSubjects(channelDTO.findArraySubjectName())
-                .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
+                .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
                 .build();
@@ -81,14 +81,14 @@ public class Channel {
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
-//        channelRepository.validateChannel(channelDTO.getFqcn());
+        channelRepository.validateChannel(channelDTO.getFqcn());
 
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStreamManagement jsm = nc.jetStreamManagement();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
-                .name(channelDTO.getStreamName())
+                .name(channelDTO.streamName())
                 .addSubjects(channelDTO.findArraySubjectName())
-                .maxAge(Duration.ofMinutes(channelDTO.getMaxMsgAge()))
+                .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                 .maxMsgSize(channelDTO.getMaxMsgSize())
                 .duplicateWindow(0)
                 .build();
@@ -114,7 +114,7 @@ public class Channel {
         JetStreamManagement jsm = nc.jetStreamManagement();
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(fqcn);
-        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.getStreamName());
+        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.streamName());
 
         channelDTO = channelRepository.findByFqcn(fqcn);
 
@@ -130,7 +130,7 @@ public class Channel {
         JetStreamManagement jsm = nc.jetStreamManagement();
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(fqcn);
-        jsm.deleteStream(channelDTO.getStreamName());
+        jsm.deleteStream(channelDTO.streamName());
 
         channelRepository.deleteByFqcn(fqcn);
 

@@ -22,10 +22,7 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 	public ChannelDTO findByFqcn(String fqcn) {
 		try {
 			ChannelDTO channelDTO = new ChannelDTO();
-			Channel channel = find("fqcn", fqcn).firstResult();
-			if(channel == null) {
-				throw new MongoException("fqcn:" + fqcn + " not exists"); 
-			}
+			Channel channel = find("fqcn", fqcn).firstResultOptional().orElseThrow(()->new MongoException("fqcn:" + fqcn + " not exists"));
 			BeanUtils.copyProperties(channelDTO, channel);
 			return channelDTO;
 		} catch (IllegalAccessException | InvocationTargetException e) {
@@ -43,10 +40,7 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 
 	public void updateChannel(@Valid @NotNull ChannelDTO channelDTO) {
 		try {
-			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResult();
-			if(channel == null) {
-				throw new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"); 
-			}
+			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResultOptional().orElseThrow(()->new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"));
 			BeanUtils.copyProperties(channel, channelDTO);
 			update(channel);
 		} catch (IllegalAccessException | InvocationTargetException e) {

@@ -23,7 +23,6 @@ public class TopicDTO {
 		STRING
 	}
 
-	@JsonIgnore
 	private String id;
 	@NotNull
 	@NotEmpty
@@ -33,7 +32,6 @@ public class TopicDTO {
 	@NotNull
 	@NotEmpty
 	private String schema;
-
 	@NotNull
 	@Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions")
 	private String version;

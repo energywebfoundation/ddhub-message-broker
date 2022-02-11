@@ -1,6 +1,5 @@
 package org.energyweb.ddhub.model;
 
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.types.ObjectId;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;

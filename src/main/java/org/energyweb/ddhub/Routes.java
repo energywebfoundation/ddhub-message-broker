@@ -10,7 +10,6 @@ import javax.json.JsonObjectBuilder;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.azure.storage.blob.BlobConstants;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
@@ -58,8 +57,8 @@ public class Routes extends RouteBuilder {
                                         e.setProperty("multipartBody", multipartBody);
                                         e.setProperty("messageDTO", messageDTO);
 
-                                        String key = multipartBody.fileName;
-                                        byte[] bytes = multipartBody.file.readAllBytes();
+                                        String key = multipartBody.getFileName();
+                                        byte[] bytes = multipartBody.getFile().readAllBytes();
                                         e.getIn().setHeader("CamelAzureStorageBlobBlobName",
                                                         messageDTO.storageName() + key);
                                         e.getIn().setBody(bytes);
@@ -72,16 +71,8 @@ public class Routes extends RouteBuilder {
                                         JsonObject jsonObject = builder
                                                         .add("filename", multipartBody.getFileName())
                                                         .add("download", ddhubContextURL + "/message/download"
-                                                                        + "?filename="
+                                                                        + "?fileId="
                                                                         + URLEncoder.encode(multipartBody.getFileName(),
-                                                                                        StandardCharsets.UTF_8
-                                                                                                        .toString())
-                                                                        + "&fqcn="
-                                                                        + URLEncoder.encode(messageDTO.getFqcn(),
-                                                                                        StandardCharsets.UTF_8
-                                                                                                        .toString())
-                                                                        + "&topicId="
-                                                                        + URLEncoder.encode(messageDTO.getTopicId(),
                                                                                         StandardCharsets.UTF_8
                                                                                                         .toString()))
                                                         .add("signature", multipartBody.getSignature())

@@ -27,11 +27,16 @@ import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
-import org.energyweb.ddhub.dto.ResponseMessage;
+import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
+import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
@@ -50,9 +55,9 @@ import io.nats.client.api.PublishAck;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class Message {
-	@Inject
-    Logger log; 
-	
+    @Inject
+    Logger log;
+
     @Inject
     ProducerTemplate producerTemplate;
 
@@ -67,11 +72,15 @@ public class Message {
 
     @Inject
     TopicRepository topicRepository;
-    
+
     @Inject
     ChannelRepository channelRepository;
 
+    @Inject
+    FileUploadRepository fileUploadRepository;
+
     @POST
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
@@ -89,7 +98,7 @@ public class Message {
 
             nc.flush(Duration.ZERO);
             nc.close();
-            return Response.ok().entity(pa).build();
+            return Response.ok().entity(new DDHubResponse("00", "Success")).build();
         } catch (IOException e) {
             return Response.status(400).entity(new ErrorResponse("10", e.getMessage())).build();
         } catch (InterruptedException e) {
@@ -98,8 +107,9 @@ public class Message {
     }
 
     @GET
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     public Response pull(@NotNull @QueryParam("fqcn") String fqcn,
-    		@Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") @NotNull @QueryParam("topicId") String topicId,
+            @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") @NotNull @QueryParam("topicId") String topicId,
             @DefaultValue("default") @QueryParam("clientId") String clientId,
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
@@ -123,9 +133,9 @@ public class Message {
 
         List<io.nats.client.Message> messages = sub.fetch(amount, Duration.ofSeconds(3));
         messages.forEach(io.nats.client.Message::ack);
-        List<ResponseMessage> messageDTOs = new ArrayList<ResponseMessage>();
+        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
         for (io.nats.client.Message m : messages) {
-            ResponseMessage messageDTO = new ResponseMessage();
+            MessageDTO messageDTO = new MessageDTO();
             messageDTO.setPayload(new String(m.getData()));
             messageDTO.setFqcn(fqcn);
             messageDTO.setTopicId(topicId);
@@ -138,10 +148,12 @@ public class Message {
     @POST
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         channelRepository.validateChannel(data.getFqcn());
-        
+        String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
+        data.setFileName(fileId);
         return Response.ok().entity(producerTemplate.sendBody("direct:azureupload", ExchangePattern.InOut, data))
                 .build();
     }
@@ -149,19 +161,14 @@ public class Message {
     @GET
     @Path("download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response downloadFile(@NotNull @QueryParam("fqcn") String fqcn,
-    		@Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") @NotNull @QueryParam("topicId") String topicId,  @NotNull @QueryParam("filename") String filename) {
-        
-    	topicRepository.validateTopicIds(Arrays.asList(topicId));
-        channelRepository.validateChannel(fqcn);
-        
-    	MessageDTO messageDTO = new MessageDTO();
-        messageDTO.setFqcn(fqcn);
-        messageDTO.setTopicId(topicId);
-        
-    	return Response
+    public Response downloadFile(@NotNull @QueryParam("fileId") String fileId) {
+        MessageDTO messageDTO = fileUploadRepository.findByFileId(fileId);
+        String filename = fileUploadRepository.findFilenameByFileId(fileId);
+
+        return Response
                 .ok(producerTemplate.sendBodyAndHeader("direct:azuredownload", ExchangePattern.InOut, null,
-                        "CamelAzureStorageBlobBlobName", messageDTO.storageName() + filename), MediaType.APPLICATION_OCTET_STREAM)
+                        "CamelAzureStorageBlobBlobName", messageDTO.storageName() + fileId),
+                        MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .build();
 

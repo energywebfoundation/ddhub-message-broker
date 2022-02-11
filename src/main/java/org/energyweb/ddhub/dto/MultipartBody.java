@@ -8,10 +8,7 @@ import javax.validation.constraints.Size;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.annotations.providers.multipart.PartType;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,17 +19,17 @@ public class MultipartBody extends DDHub {
     @NotNull
     @FormParam("file")
     @PartType(MediaType.APPLICATION_OCTET_STREAM)
-    public InputStream file;
+    private InputStream file;
 
     @NotNull
     @FormParam("fileName")
     @PartType(MediaType.TEXT_PLAIN)
-    public String fileName;
+    private String fileName;
 
     @NotNull
     @FormParam("signature")
     @PartType(MediaType.TEXT_PLAIN)
-    public String signature;
+    private String signature;
     
     @Size(max = 200, message = "The maximum length is 200 characters")
     @NotNull
@@ -41,10 +38,4 @@ public class MultipartBody extends DDHub {
     @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string")
 	private String topicId;
     
-    @JsonIgnore
-   	public String getSubjectName() {
-   		if (StringUtils.isBlank(topicId))
-   			return null;
-   		return streamName().concat(".").concat(topicId);
-   	}
 }

@@ -22,6 +22,10 @@ import javax.ws.rs.core.Response;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
@@ -58,6 +62,7 @@ public class Channel {
     TopicRepository topicRepository;
 
     @PATCH
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
@@ -81,6 +86,7 @@ public class Channel {
     }
 
     @POST
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
@@ -104,6 +110,7 @@ public class Channel {
 
     @GET
     @Path("pubsub")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type=SchemaType.ARRAY, implementation = ChannelDTO.class)))
     public Response listOfChannel() {
         return Response.ok().entity(channelRepository.listChannel()).build();
 
@@ -111,6 +118,7 @@ public class Channel {
 
     @GET
     @Path("{fqcn}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     public Response channelByfqcn(@PathParam("fqcn") String fqcn)
             throws IOException, InterruptedException, JetStreamApiException {
         Connection nc = Nats.connect(natsJetstreamUrl);
@@ -127,6 +135,7 @@ public class Channel {
 
     @DELETE
     @Path("{fqcn}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     public Response deletefqcn(@PathParam("fqcn") String fqcn)
             throws IOException, JetStreamApiException, InterruptedException {
         Connection nc = Nats.connect(natsJetstreamUrl);

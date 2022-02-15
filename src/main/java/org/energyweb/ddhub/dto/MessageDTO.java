@@ -22,20 +22,24 @@ public class MessageDTO extends DDHub {
 
     @NotNull
     @NotEmpty
-    @Size(max = 2048, message = "The maximum length is 2048 characters")
+    @Size(max = 8192, message = "The maximum length is 8192 characters")
     private String payload;
     
     @NotNull
     @NotEmpty
-    @Size(max = 200, message = "The maximum length is 200 characters")
+    @Size(max = 1024, message = "The maximum length is 1024 characters")
     @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string")
     private String topicId;
 
     @JsonIgnore
-	public String getSubjectName() {
+	public String subjectName() {
 		if (StringUtils.isBlank(topicId))
 			return null;
-		return getStreamName().concat(".").concat(topicId);
+		return super.streamName().concat(".").concat(topicId);
+	}
+
+	public String storageName() {
+		return super.streamName() + "/" + subjectName() + "/";
 	}
     
 }

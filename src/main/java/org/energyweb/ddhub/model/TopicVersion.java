@@ -1,7 +1,6 @@
 package org.energyweb.ddhub.model;
 
 import org.bson.types.ObjectId;
-import org.energyweb.ddhub.model.Topic.SchemaType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -21,9 +20,9 @@ public class TopicVersion {
 	private ObjectId id;
 	private ObjectId topicId;
 	private String namespace;
-	private SchemaType schemaType;
+	private String schemaType;
 	private String schema;
-	private int version;
+	private String version;
 	
 	
 }

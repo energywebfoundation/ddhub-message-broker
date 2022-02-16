@@ -31,6 +31,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MultipartBody;
 import org.energyweb.ddhub.helper.DDHubResponse;
@@ -50,10 +51,12 @@ import io.nats.client.PublishOptions;
 import io.nats.client.PullSubscribeOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.PublishAck;
+import io.quarkus.security.Authenticated;
 
 @Path("/message")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@SecurityRequirement(name = "Bearer")
 public class Message {
     @Inject
     Logger log;
@@ -81,6 +84,7 @@ public class Message {
 
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Authenticated
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
@@ -91,10 +95,10 @@ public class Message {
             nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
             PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                    .messageId(messageDTO.getCorrelationId());
+                    .messageId(messageDTO.getTransactionId());
             PublishAck pa = js.publish(messageDTO.subjectName(),
                     messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
-                    (messageDTO.getCorrelationId() != null) ? pubOptsBuilder.build() : null);
+                    (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
 
             nc.flush(Duration.ZERO);
             nc.close();
@@ -108,6 +112,7 @@ public class Message {
 
     @GET
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
+    @Authenticated
     public Response pull(@NotNull @QueryParam("fqcn") String fqcn,
             @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") @NotNull @QueryParam("topicId") String topicId,
             @DefaultValue("default") @QueryParam("clientId") String clientId,
@@ -149,6 +154,7 @@ public class Message {
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Authenticated
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         channelRepository.validateChannel(data.getFqcn());
@@ -161,6 +167,7 @@ public class Message {
     @GET
     @Path("download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Authenticated
     public Response downloadFile(@NotNull @QueryParam("fileId") String fileId) {
         MessageDTO messageDTO = fileUploadRepository.findByFileId(fileId);
         String filename = fileUploadRepository.findFilenameByFileId(fileId);

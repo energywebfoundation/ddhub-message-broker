@@ -22,19 +22,23 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
-import org.energyweb.ddhub.model.Topic;
-import org.energyweb.ddhub.model.TopicVersion;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
 
+import io.quarkus.security.Authenticated;
+
 @Path("/topic")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@SecurityRequirement(name = "Bearer")
 public class SchemaTopic {
 
     @Inject
@@ -54,6 +58,7 @@ public class SchemaTopic {
 
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
+    @Authenticated
     public Response createSchema(@NotNull @Valid TopicDTO topic) {
         topicRepository.save(topic);
         return Response.ok().entity(topic).build();
@@ -62,6 +67,8 @@ public class SchemaTopic {
     @GET
     @Path("createindex")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Tags(value = @Tag(name = "Internal", description = "All the methods"))
+    @Authenticated
     public Response createSchemaIndex() {
         Document index = new Document("namespace", 1);
         mongoClient.getDatabase("ddhub").getCollection("schema").createIndex(index, new IndexOptions().unique(true));
@@ -80,6 +87,7 @@ public class SchemaTopic {
     @GET
     @Path("{id}/version")
     @APIResponse(description = "", content = @Content(schema = @Schema(type=SchemaType.ARRAY, implementation = TopicDTO.class)))
+    @Authenticated
     public Response listOfVersionById(@NotNull @PathParam("id") String id) {
         return Response.ok().entity(topicVersionRepository.findListById(id)).build();
     }
@@ -87,6 +95,7 @@ public class SchemaTopic {
     @GET
     @Path("{id}/version/{versionNumber}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
+    @Authenticated
     public Response topicVersionByNumber(@NotNull @PathParam("id") String id,
             @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
         return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
@@ -95,12 +104,14 @@ public class SchemaTopic {
     @GET
     @Path("list")
     @APIResponse(description = "", content = @Content(schema = @Schema(type=SchemaType.ARRAY, implementation = TopicDTO.class)))
+    @Authenticated
     public Response listOfSchema() {
         return Response.ok().entity(topicRepository.listAll()).build();
     }
 
     @PATCH
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Authenticated
     public Response updateSchema(@NotNull @Valid TopicDTO topic) {
         topicRepository.updateTopic(topic);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
@@ -109,6 +120,7 @@ public class SchemaTopic {
     @DELETE
     @Path("{id}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Authenticated
     public Response deleteSchema(@NotNull @PathParam("id") String id) {
         topicRepository.deleteTopic(id);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();

@@ -27,11 +27,13 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
 		try {
-			BeanUtils.copyProperties(topic, topicDTO);
+			Map map = BeanUtils.describe(topicDTO);
+			map.remove("id");
+			BeanUtils.copyProperties(topic, map);
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
 			topicVersion.setTopicId(topic.getId());
-		} catch (IllegalAccessException | InvocationTargetException e) {
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			throw new MongoException("Unable to save");
 		}
 

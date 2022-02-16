@@ -69,7 +69,7 @@ public class Routes extends RouteBuilder {
                                         MultipartBody multipartBody = (MultipartBody) e.getProperty("multipartBody");
                                         JsonObjectBuilder builder = Json.createObjectBuilder();
                                         JsonObject jsonObject = builder
-                                                        .add("filename", multipartBody.getFileName())
+                                                        .add("fileId", multipartBody.getFileName())
                                                         .add("download", ddhubContextURL + "/message/download"
                                                                         + "?fileId="
                                                                         + URLEncoder.encode(multipartBody.getFileName(),

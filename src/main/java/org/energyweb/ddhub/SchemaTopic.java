@@ -38,7 +38,7 @@ import io.quarkus.security.Authenticated;
 @Path("/topic")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@SecurityRequirement(name = "Bearer")
+@SecurityRequirement(name = "AuthServer")
 public class SchemaTopic {
 
     @Inject
@@ -86,7 +86,7 @@ public class SchemaTopic {
 
     @GET
     @Path("{id}/version")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type=SchemaType.ARRAY, implementation = TopicDTO.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = TopicDTO.class)))
     @Authenticated
     public Response listOfVersionById(@NotNull @PathParam("id") String id) {
         return Response.ok().entity(topicVersionRepository.findListById(id)).build();
@@ -103,7 +103,7 @@ public class SchemaTopic {
 
     @GET
     @Path("list")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type=SchemaType.ARRAY, implementation = TopicDTO.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = TopicDTO.class)))
     @Authenticated
     public Response listOfSchema() {
         return Response.ok().entity(topicRepository.listAll()).build();

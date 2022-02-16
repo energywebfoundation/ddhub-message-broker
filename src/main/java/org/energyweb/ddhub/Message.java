@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
@@ -27,6 +29,7 @@ import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -56,7 +59,7 @@ import io.quarkus.security.Authenticated;
 @Path("/message")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@SecurityRequirement(name = "Bearer")
+@SecurityRequirement(name = "AuthServer")
 public class Message {
     @Inject
     Logger log;
@@ -81,6 +84,15 @@ public class Message {
 
     @Inject
     FileUploadRepository fileUploadRepository;
+    
+    @Inject
+    @Claim(value = "did")
+    String ownerDID;
+
+    @Inject
+    @Claim(value = "verifiedRoles")
+    String roles;
+
 
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
@@ -88,7 +100,7 @@ public class Message {
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
-        channelRepository.validateChannel(messageDTO.getFqcn());
+        channelRepository.validateChannel(messageDTO.getFqcn(),messageDTO.getTopicId());
 
         Connection nc;
         try {
@@ -96,8 +108,15 @@ public class Message {
             JetStream js = nc.jetStream();
             PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
                     .messageId(messageDTO.getTransactionId());
+            
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("payload",  messageDTO.getPayload());
+            builder.add("topicVersion",  messageDTO.getPayload());
+            builder.add("owner",  ownerDID);
+            builder.add("signature",  messageDTO.getSignature());
+            
             PublishAck pa = js.publish(messageDTO.subjectName(),
-                    messageDTO.getPayload().getBytes(StandardCharsets.UTF_8),
+            		builder.build().toString().getBytes(StandardCharsets.UTF_8),
                     (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
 
             nc.flush(Duration.ZERO);
@@ -119,7 +138,7 @@ public class Message {
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(topicId));
-        channelRepository.validateChannel(fqcn);
+        channelRepository.validateChannel(fqcn,topicId);
 
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStream js = nc.jetStream();
@@ -157,7 +176,7 @@ public class Message {
     @Authenticated
     public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-        channelRepository.validateChannel(data.getFqcn());
+        channelRepository.validateChannel(data.getFqcn(),data.getTopicId());;
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
         return Response.ok().entity(producerTemplate.sendBody("direct:azureupload", ExchangePattern.InOut, data))

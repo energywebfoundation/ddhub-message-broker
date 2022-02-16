@@ -3,6 +3,7 @@ package org.energyweb.ddhub.repository;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.validation.Valid;
@@ -70,6 +71,11 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 			}
 		});
 		return channelDTOs;
+	}
+
+	public void validateChannel(String fqcn, String topicId) {
+		ChannelDTO channelDTO = findByFqcn(fqcn);
+		Optional.ofNullable(channelDTO).filter(dto->dto.getTopicIds().contains(topicId)).orElseThrow(()->new MongoException("topicId:" + topicId + " not exists for channel " + fqcn));
 	}
 
 }

@@ -4,8 +4,11 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.resteasy.annotations.providers.multipart.PartType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -35,6 +38,10 @@ public class MessageDTO extends DDHub {
     @NotEmpty
     @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions")
 	private String topicVersion;
+    
+    @NotNull
+    @NotEmpty
+    private String signature;
 
 
     @JsonIgnore

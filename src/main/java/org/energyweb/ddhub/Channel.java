@@ -48,17 +48,13 @@ import io.nats.client.api.StreamConfiguration;
 import io.nats.client.api.StreamInfo;
 import io.quarkus.security.Authenticated;
 
-
 @Path("/channel")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tags(value = @Tag(name = "Channel", description = "All the methods"))
 @SecuritySchemes(value = {
-        @SecurityScheme(securitySchemeName = "Bearer", 
-                        type = SecuritySchemeType.HTTP,
-                        scheme = "Bearer")}
-)
-@SecurityRequirement(name = "Bearer")
+        @SecurityScheme(securitySchemeName = "AuthServer", type = SecuritySchemeType.HTTP, scheme = "Bearer") })
+@SecurityRequirement(name = "AuthServer")
 public class Channel {
 
     @Inject
@@ -75,19 +71,19 @@ public class Channel {
 
     @Inject
     TopicRepository topicRepository;
-    
+
     @Inject
-    @Claim(value =  "did")
+    @Claim(value = "did")
     String ownerDID;
-    
+
     @Inject
-    @Claim(value =  "verifiedRoles")
+    @Claim(value = "verifiedRoles")
     String roles;
 
     @PATCH
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
-    public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO,@Context SecurityContext ctx)
+    public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO, @Context SecurityContext ctx)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
         channelRepository.validateChannel(channelDTO.getFqcn());
@@ -112,7 +108,7 @@ public class Channel {
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
-    public Response createChannel(@Valid @NotNull ChannelDTO channelDTO,@Context SecurityContext ctx)
+    public Response createChannel(@Valid @NotNull ChannelDTO channelDTO, @Context SecurityContext ctx)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
         topicRepository.validateTopicIds(channelDTO.getTopicIds());
         // channelRepository.validateChannel(channelDTO.getFqcn());
@@ -135,7 +131,7 @@ public class Channel {
 
     @GET
     @Path("pubsub")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type=SchemaType.ARRAY, implementation = ChannelDTO.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = ChannelDTO.class)))
     @Authenticated
     public Response listOfChannel() {
         return Response.ok().entity(channelRepository.listChannel()).build();

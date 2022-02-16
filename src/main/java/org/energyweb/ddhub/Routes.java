@@ -22,10 +22,10 @@ import com.google.gson.Gson;
 @ApplicationScoped
 public class Routes extends RouteBuilder {
 
-        @ConfigProperty(name = "AZURE_ACCOUNT_NAME")
+        @ConfigProperty(name = "BLOB_STORAGE_ACCOUNT_NAME")
         String azureAccountName;
 
-        @ConfigProperty(name = "AZURE_ACCESS_KEY")
+        @ConfigProperty(name = "BLOB_STORAGE_ACCESS_KEY")
         String azureAccessKey;
 
         @ConfigProperty(name = "DDHUB_CONTEXT_URL")
@@ -63,7 +63,7 @@ public class Routes extends RouteBuilder {
                                                         messageDTO.storageName() + key);
                                         e.getIn().setBody(bytes);
                                 })
-                                .to("azure-storage-blob://{{AZURE_ACCOUNT_NAME}}/{{AZURE_CONTAINER_NAME}}?operation=uploadBlockBlob&serviceClient=#client")
+                                .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=uploadBlockBlob&serviceClient=#client")
                                 .process(e -> {
                                         MessageDTO messageDTO = (MessageDTO) e.getProperty("messageDTO");
                                         MultipartBody multipartBody = (MultipartBody) e.getProperty("multipartBody");
@@ -86,7 +86,7 @@ public class Routes extends RouteBuilder {
                                 .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=true");
 
                 from("direct:azuredownload")
-                                .to("azure-storage-blob://{{AZURE_ACCOUNT_NAME}}/{{AZURE_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client");
+                                .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client");
 
         }
 }

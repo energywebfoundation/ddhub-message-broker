@@ -9,7 +9,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
-import org.energyweb.ddhub.dto.MultipartBody;
+import org.energyweb.ddhub.dto.FileUploadDTO;
 import org.energyweb.ddhub.model.FileUpload;
 
 import com.mongodb.MongoException;
@@ -19,7 +19,7 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 @ApplicationScoped
 public class FileUploadRepository implements PanacheMongoRepository<FileUpload> {
 
-	public String save(@Valid MultipartBody data, ChannelDTO channelDTO) {
+	public String save(@Valid FileUploadDTO data, ChannelDTO channelDTO) {
 		try {
 			FileUpload fileUpload = new FileUpload();
 			BeanUtils.copyProperties(fileUpload, data);

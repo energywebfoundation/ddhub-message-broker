@@ -2,6 +2,7 @@ package org.energyweb.ddhub.dto;
 
 import java.io.InputStream;
 
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class MultipartBody extends DDHub {
+public class FileUploadDTO extends DDHub {
     @NotNull
     @FormParam("file")
     @PartType(MediaType.APPLICATION_OCTET_STREAM)
@@ -37,5 +38,7 @@ public class MultipartBody extends DDHub {
 	@PartType(MediaType.TEXT_PLAIN)
     @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string")
 	private String topicId;
+    
+    private String owner;
     
 }

@@ -3,6 +3,7 @@ package org.energyweb.ddhub.repository;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.validation.Valid;
@@ -59,9 +60,9 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		
 	}
 
-	public List<ChannelDTO> listChannel() {
+	public List<ChannelDTO> listChannel(String ownerDID) {
 		List<ChannelDTO> channelDTOs = new ArrayList<>();
-		listAll().forEach(entity -> {
+		list("owner",ownerDID).forEach(entity -> {
 			try {
 				ChannelDTO channelDTO = new ChannelDTO();
 				BeanUtils.copyProperties(channelDTO, entity);
@@ -70,6 +71,12 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 			}
 		});
 		return channelDTOs;
+	}
+
+	public void validateChannel(String fqcn, String topicId, String ownerId) {
+		ChannelDTO channelDTO = findByFqcn(fqcn);
+		Optional.ofNullable(channelDTO).filter(dto->dto.getTopicIds().contains(topicId)).orElseThrow(()->new MongoException("topicId:" + topicId + " not exists for channel " + fqcn));
+		Optional.ofNullable(channelDTO).filter(dto->dto.getOwner().contentEquals(ownerId)).orElseThrow(()->new MongoException("Unauthorized access"));
 	}
 
 }

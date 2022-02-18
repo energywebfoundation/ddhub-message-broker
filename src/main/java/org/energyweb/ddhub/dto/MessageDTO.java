@@ -18,7 +18,7 @@ public class MessageDTO extends DDHub {
    
 
     @Size(max = 200, message = "The maximum length is 200 characters")
-    private String correlationId;
+    private String transactionId;
 
     @NotNull
     @NotEmpty
@@ -30,7 +30,16 @@ public class MessageDTO extends DDHub {
     @Size(max = 1024, message = "The maximum length is 1024 characters")
     @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string")
     private String topicId;
-
+    
+    @NotNull
+    @NotEmpty
+    @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions")
+	private String topicVersion;
+    
+    @NotNull
+    @NotEmpty
+    private String signature;
+    
     @JsonIgnore
 	public String subjectName() {
 		if (StringUtils.isBlank(topicId))

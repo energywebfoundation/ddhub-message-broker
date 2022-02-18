@@ -13,4 +13,5 @@ public class Topic {
 	private String schemaType;
 	private String schema;
 	private String version;
+	private String owner;
 }

@@ -4,11 +4,8 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
-import org.jboss.resteasy.annotations.providers.multipart.PartType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -42,8 +39,7 @@ public class MessageDTO extends DDHub {
     @NotNull
     @NotEmpty
     private String signature;
-
-
+    
     @JsonIgnore
 	public String subjectName() {
 		if (StringUtils.isBlank(topicId))

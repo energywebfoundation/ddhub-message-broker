@@ -1,8 +1,10 @@
 package org.energyweb.ddhub.repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -23,11 +25,11 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	@Inject
 	TopicVersionRepository topicVersionRepository;
 
-	public void save(TopicDTO topicDTO) {
+	public void save(TopicDTO topic2) {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
 		try {
-			Map map = BeanUtils.describe(topicDTO);
+			Map map = BeanUtils.describe(topic2);
 			map.remove("id");
 			BeanUtils.copyProperties(topic, map);
 			persist(topic);
@@ -39,7 +41,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 		try {
 			topicVersionRepository.persist(topicVersion);
-			topicDTO.setId(topic.getId().toString());
+			topic2.setId(topic.getId().toString());
 		} catch (Exception ex) {
 			delete(topic);
 		}
@@ -67,19 +69,9 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 	}
 
-	public Topic findByName(String name) {
-		return find("namespace", name).firstResultOptional()
-				.orElseThrow(() -> new MongoException("topic :" + name + " not exists"));
-	}
-
-	public List<Topic> findBySchemaType(SchemaType schemaType) {
-		return list("schemaType", schemaType);
-	}
-
 	public void validateTopicIds(List<String> topicIds) {
 		topicIds.forEach(id -> {
-			find("_id", new ObjectId(id)).firstResultOptional()
-					.orElseThrow(() -> new MongoException("id:" + id + " not exists"));
+			findByIdOptional(new ObjectId(id)).orElseThrow(() -> new MongoException("id:" + id + " not exists"));
 		});
 	}
 
@@ -91,5 +83,27 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			throw new MongoException("Unable to delete");
 		}
 	}
+
+	public List<TopicDTO> listAllBy(String ownerDID) {
+		List<TopicDTO> topicDTOs = new ArrayList<>();
+    	list("owner",ownerDID).forEach(entity -> {
+			try {
+				Map map = BeanUtils.describe(entity);
+				map.remove("schemaType");
+				TopicDTO topicDTO = new TopicDTO();
+				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTOs.add(topicDTO);
+			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			}
+		});
+    	return topicDTOs;
+	}
+
+	public void validateTopicIdByOwner(TopicDTO topic, String ownerDID) {
+		findByIdOptional(new ObjectId(topic.getId())).filter(data->data.getOwner().contentEquals(ownerDID)).orElseThrow(() -> new MongoException("id:" + topic.getId() + " not exists"));
+	}
+
+
 
 }

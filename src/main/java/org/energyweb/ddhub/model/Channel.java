@@ -1,6 +1,6 @@
 package org.energyweb.ddhub.model;
 
-import java.util.List;
+import java.util.Set;
 
 import org.bson.types.ObjectId;
 
@@ -15,9 +15,10 @@ public class Channel {
 	private ObjectId id;
     private Long maxMsgAge;
     private Long maxMsgSize;
-    private List<String> topicIds;
-    private List<String> admins;
-    private List<String> pubsub;
+    private Set<String> topicIds;
+    private Set<String> admins;
+    private Set<String> pubsub;
     private Boolean encryption;
 	private String fqcn;
+    private String owner;
 }

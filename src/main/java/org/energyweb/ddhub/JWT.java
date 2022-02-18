@@ -6,6 +6,7 @@ import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
+import javax.enterprise.context.RequestScoped;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
 import javax.validation.constraints.NotNull;
@@ -32,6 +33,7 @@ import lombok.Setter;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tags(value = @Tag(name = "Internal", description = "All the methods"))
+@RequestScoped
 public class JWT {
 
 	@GET

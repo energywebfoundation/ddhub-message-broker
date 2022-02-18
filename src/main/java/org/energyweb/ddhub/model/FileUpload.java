@@ -15,5 +15,5 @@ public class FileUpload {
     private String fileName;
 	private String fqcn;
 	private String topicId;
-
+	private String owner;
 }

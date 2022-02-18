@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
@@ -36,14 +37,17 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.energyweb.ddhub.dto.MessageDTO;
-import org.energyweb.ddhub.dto.MultipartBody;
+import org.energyweb.ddhub.dto.FileUploadDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
+import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -60,6 +64,7 @@ import io.quarkus.security.Authenticated;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = "AuthServer")
+@RequestScoped
 public class Message {
     @Inject
     Logger log;
@@ -78,6 +83,9 @@ public class Message {
 
     @Inject
     TopicRepository topicRepository;
+    
+    @Inject
+	TopicVersionRepository topicVersionRepository;
 
     @Inject
     ChannelRepository channelRepository;
@@ -87,7 +95,7 @@ public class Message {
     
     @Inject
     @Claim(value = "did")
-    String ownerDID;
+    String DID;
 
     @Inject
     @Claim(value = "verifiedRoles")
@@ -100,7 +108,8 @@ public class Message {
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
-        channelRepository.validateChannel(messageDTO.getFqcn(),messageDTO.getTopicId());
+        topicVersionRepository.validateByIdAndVersion(messageDTO.getTopicId(), messageDTO.getTopicVersion());
+        channelRepository.validateChannel(messageDTO.getFqcn(),messageDTO.getTopicId(),DID);
 
         Connection nc;
         try {
@@ -111,8 +120,8 @@ public class Message {
             
             JsonObjectBuilder builder = Json.createObjectBuilder();
             builder.add("payload",  messageDTO.getPayload());
-            builder.add("topicVersion",  messageDTO.getPayload());
-            builder.add("owner",  ownerDID);
+            builder.add("topicVersion",  messageDTO.getTopicVersion());
+            builder.add("owner",  DID);
             builder.add("signature",  messageDTO.getSignature());
             
             PublishAck pa = js.publish(messageDTO.subjectName(),
@@ -138,7 +147,7 @@ public class Message {
             @DefaultValue("1") @QueryParam("amount") Integer amount)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         topicRepository.validateTopicIds(Arrays.asList(topicId));
-        channelRepository.validateChannel(fqcn,topicId);
+        channelRepository.validateChannel(fqcn,topicId,DID);
 
         Connection nc = Nats.connect(natsJetstreamUrl);
         JetStream js = nc.jetStream();
@@ -174,9 +183,10 @@ public class Message {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
-    public Response uploadFile(@Valid @MultipartForm MultipartBody data) {
+    public Response uploadFile(@Valid @MultipartForm FileUploadDTO data) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-        channelRepository.validateChannel(data.getFqcn(),data.getTopicId());;
+        channelRepository.validateChannel(data.getFqcn(),data.getTopicId(),DID);;
+        data.setOwner(DID);
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
         return Response.ok().entity(producerTemplate.sendBody("direct:azureupload", ExchangePattern.InOut, data))

@@ -12,7 +12,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.MessageDTO;
-import org.energyweb.ddhub.dto.MultipartBody;
+import org.energyweb.ddhub.dto.FileUploadDTO;
 
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -50,7 +50,7 @@ public class Routes extends RouteBuilder {
                 from("direct:azureupload")
                                 .process(e -> {
 
-                                        MultipartBody multipartBody = (MultipartBody) e.getIn().getBody();
+                                        FileUploadDTO multipartBody = (FileUploadDTO) e.getIn().getBody();
                                         MessageDTO messageDTO = new MessageDTO();
                                         messageDTO.setFqcn(multipartBody.getFqcn());
                                         messageDTO.setTopicId(multipartBody.getTopicId());
@@ -66,7 +66,7 @@ public class Routes extends RouteBuilder {
                                 .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=uploadBlockBlob&serviceClient=#client")
                                 .process(e -> {
                                         MessageDTO messageDTO = (MessageDTO) e.getProperty("messageDTO");
-                                        MultipartBody multipartBody = (MultipartBody) e.getProperty("multipartBody");
+                                        FileUploadDTO multipartBody = (FileUploadDTO) e.getProperty("multipartBody");
                                         JsonObjectBuilder builder = Json.createObjectBuilder();
                                         JsonObject jsonObject = builder
                                                         .add("fileId", multipartBody.getFileName())

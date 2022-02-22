@@ -39,6 +39,13 @@ public class FileUploadDTO extends DDHub {
     @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string")
 	private String topicId;
     
+    @NotNull
+    @NotEmpty
+    @FormParam("topicVersion")
+	@PartType(MediaType.TEXT_PLAIN)
+    @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions")
+	private String topicVersion;
+    
     private String owner;
     
 }

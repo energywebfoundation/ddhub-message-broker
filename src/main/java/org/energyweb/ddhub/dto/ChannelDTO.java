@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.dto;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,8 +55,10 @@ public class ChannelDTO extends DDHub {
 
     @JsonIgnore
     public List<String> findArraySubjectName() {
-        if (Optional.ofNullable(topicIds).isEmpty())
-            return null;
+        if (Optional.ofNullable(topicIds).isEmpty()) {
+        	topicIds = new HashSet<>();
+        	return null;
+        }
 
         List<String> topics = new ArrayList<String>();
         topicIds.forEach(topic -> {

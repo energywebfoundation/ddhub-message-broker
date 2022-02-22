@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -35,7 +34,6 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBodySchema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
@@ -43,7 +41,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecuritySchemes;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
-import org.energyweb.ddhub.dto.ChannelDTOCreate;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
@@ -54,7 +51,6 @@ import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
 import io.nats.client.Nats;
 import io.nats.client.api.StreamConfiguration;
-import io.nats.client.api.StreamConfiguration.Builder;
 import io.nats.client.api.StreamInfo;
 import io.quarkus.security.Authenticated;
 
@@ -93,7 +89,7 @@ public class Channel {
     @Inject
     @Claim(value = "verifiedRoles")
     String roles;
-
+    
     @PATCH
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
@@ -120,7 +116,7 @@ public class Channel {
     }
 
     @POST
-    @RequestBodySchema(ChannelDTOCreate.class)
+//    @RequestBodySchema(ChannelDTOCreate.class)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
@@ -163,11 +159,7 @@ public class Channel {
          channelRepository.validateChannel(fqcn);
 
          ChannelDTO channelDTO = channelRepository.findByFqcn(fqcn);
-         if(channelDTO.getTopicIds() == null) {
-        	 channelDTO.setTopicIds(Set.copyOf(Arrays.asList(topicIds)));
-         }else {
-        	 channelDTO.getTopicIds().addAll(Arrays.asList(topicIds));
-         }
+         channelDTO.getTopicIds().addAll(Arrays.asList(topicIds));
          
          Connection nc = Nats.connect(natsJetstreamUrl);
          JetStreamManagement jsm = nc.jetStreamManagement();

@@ -19,6 +19,7 @@ import javax.validation.constraints.Pattern;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -31,6 +32,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -100,42 +102,37 @@ public class Message {
     @Inject
     @Claim(value = "verifiedRoles")
     String roles;
-
+    
 
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
-            throws InterruptedException, JetStreamApiException, TimeoutException {
+            throws InterruptedException, JetStreamApiException, TimeoutException, IOException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
         topicVersionRepository.validateByIdAndVersion(messageDTO.getTopicId(), messageDTO.getTopicVersion());
         channelRepository.validateChannel(messageDTO.getFqcn(),messageDTO.getTopicId(),DID);
 
-        Connection nc;
-        try {
-            nc = Nats.connect(natsJetstreamUrl);
-            JetStream js = nc.jetStream();
-            PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                    .messageId(messageDTO.getTransactionId());
-            
-            JsonObjectBuilder builder = Json.createObjectBuilder();
-            builder.add("payload",  messageDTO.getPayload());
-            builder.add("topicVersion",  messageDTO.getTopicVersion());
-            builder.add("owner",  DID);
-            builder.add("signature",  messageDTO.getSignature());
-            
-            PublishAck pa = js.publish(messageDTO.subjectName(),
-            		builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                    (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
-
-            nc.flush(Duration.ZERO);
-            nc.close();
-            return Response.ok().entity(new DDHubResponse("00", "Success")).build();
-        } catch (IOException e) {
-            return Response.status(400).entity(new ErrorResponse("10", e.getMessage())).build();
-        } catch (InterruptedException e) {
-            return Response.status(400).entity(new ErrorResponse("10", e.getMessage())).build();
-        }
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        
+        JetStream js = nc.jetStream();
+        PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+        		.messageId(messageDTO.getTransactionId());
+        
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        builder.add("payload",  messageDTO.getPayload());
+        builder.add("topicVersion",  messageDTO.getTopicVersion());
+        builder.add("owner",  DID);
+        builder.add("signature",  messageDTO.getSignature());
+        
+        PublishAck pa = js.publish(messageDTO.subjectName(),
+        		builder.build().toString().getBytes(StandardCharsets.UTF_8),
+        		(messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+        
+        nc.flush(Duration.ZERO);
+        nc.close();
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+      
     }
 
     @GET
@@ -183,13 +180,13 @@ public class Message {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
-    public Response uploadFile(@Valid @MultipartForm FileUploadDTO data) {
+    public Response uploadFile(@Valid @MultipartForm FileUploadDTO data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         channelRepository.validateChannel(data.getFqcn(),data.getTopicId(),DID);;
         data.setOwner(DID);
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
-        return Response.ok().entity(producerTemplate.sendBody("direct:azureupload", ExchangePattern.InOut, data))
+        return Response.ok().entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data,"token",token))
                 .build();
     }
 

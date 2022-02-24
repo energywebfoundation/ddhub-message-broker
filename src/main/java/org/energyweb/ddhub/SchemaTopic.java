@@ -111,7 +111,7 @@ public class SchemaTopic {
     }
 
     @GET
-    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = TopicDTOPage.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
     public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,@QueryParam("name") String name,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size, @QueryParam("tags") String... tags) throws ValidationException {
         if(page > 1 && size == 0) return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
@@ -120,7 +120,7 @@ public class SchemaTopic {
     
     @GET
     @Path("{id}/version")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = TopicDTOPage.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
     public Response listOfVersionById(@NotNull @PathParam("id") String id,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
     	topicRepository.validateTopicIds(Arrays.asList(id));

@@ -134,7 +134,7 @@ public class Channel {
                 .duplicateWindow(0)
                 .build();
         StreamInfo streamInfo = jsm.addStream(streamConfig);
-        channelDTO.setOwner(DID);
+        channelDTO.setOwnerdid(DID);
         channelRepository.save(channelDTO);
         nc.close();
         return Response.ok().entity(channelDTO).build();

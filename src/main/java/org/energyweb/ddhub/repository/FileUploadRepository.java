@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.validation.Valid;
@@ -24,6 +25,7 @@ public class FileUploadRepository implements PanacheMongoRepository<FileUpload> 
 			FileUpload fileUpload = new FileUpload();
 			BeanUtils.copyProperties(fileUpload, data);
 			BeanUtils.copyProperties(fileUpload, channelDTO);
+			fileUpload.setCreatedDate(LocalDateTime.now());
 			persist(fileUpload);
 			return fileUpload.getId().toString();
 		} catch (IllegalAccessException | InvocationTargetException e) {

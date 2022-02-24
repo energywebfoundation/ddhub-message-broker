@@ -48,7 +48,7 @@ public class ChannelDTO extends DDHub {
     private Boolean encryption;
     
     @JsonIgnore
-    private String owner;
+    private String ownerdid;
 
     @JsonIgnore
     private String updateBy;

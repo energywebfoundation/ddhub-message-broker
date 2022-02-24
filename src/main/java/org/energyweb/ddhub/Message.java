@@ -122,7 +122,7 @@ public class Message {
         JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add("payload",  messageDTO.getPayload());
         builder.add("topicVersion",  messageDTO.getTopicVersion());
-        builder.add("owner",  DID);
+        builder.add("ownerdid",  DID);
         builder.add("signature",  messageDTO.getSignature());
         
         PublishAck pa = js.publish(messageDTO.subjectName(),
@@ -183,7 +183,7 @@ public class Message {
     public Response uploadFile(@Valid @MultipartForm FileUploadDTO data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         channelRepository.validateChannel(data.getFqcn(),data.getTopicId(),DID);;
-        data.setOwner(DID);
+        data.setOwnerdid(DID);
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
         return Response.ok().entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data,"token",token))

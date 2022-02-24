@@ -1,5 +1,7 @@
 package org.energyweb.ddhub.model;
 
+import java.time.LocalDateTime;
+
 import org.bson.types.ObjectId;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -15,5 +17,7 @@ public class FileUpload {
     private String fileName;
 	private String fqcn;
 	private String topicId;
-	private String owner;
+	private String ownerdid;
+	private LocalDateTime createdDate;
+	private LocalDateTime updatedDate;
 }

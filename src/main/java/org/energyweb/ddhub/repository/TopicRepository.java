@@ -1,10 +1,11 @@
 package org.energyweb.ddhub.repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -13,35 +14,38 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTO.SchemaType;
+import org.energyweb.ddhub.dto.TopicDTOPage;
 import org.energyweb.ddhub.model.Topic;
 import org.energyweb.ddhub.model.TopicVersion;
 
 import com.mongodb.MongoException;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.panache.common.Page;
 
 @ApplicationScoped
 public class TopicRepository implements PanacheMongoRepository<Topic> {
 	@Inject
 	TopicVersionRepository topicVersionRepository;
 
-	public void save(TopicDTO topic2) {
+	public void save(TopicDTO topicDTO) {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
 		try {
-			Map map = BeanUtils.describe(topic2);
-			map.remove("id");
-			BeanUtils.copyProperties(topic, map);
+			BeanUtils.copyProperties(topic, topicDTO);
+			topic.setCreatedBy(topicDTO.getDid());;
+			topic.setCreatedDate(LocalDateTime.now());
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
 			topicVersion.setTopicId(topic.getId());
-		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+		} catch (IllegalAccessException | InvocationTargetException  e) {
 			throw new MongoException("Unable to save");
 		}
 
 		try {
 			topicVersionRepository.persist(topicVersion);
-			topic2.setId(topic.getId().toString());
+			topicDTO.setId(topic.getId().toString());
 		} catch (Exception ex) {
 			delete(topic);
 		}
@@ -51,11 +55,20 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
 		try {
-			topic.setId(new ObjectId(topicDTO.getId()));
-			topicVersion.setTopicId(new ObjectId(topicDTO.getId()));
+			Topic _topic = findById(new ObjectId(topicDTO.getId()));
+			topicVersion.setTopicId(_topic.getId());
 			Map map = BeanUtils.describe(topicDTO);
 			map.remove("id");
+			map.remove("name");
+			map.remove("owner");
+			map.remove("tags");
+			topic.setUpdatedBy(topicDTO.getDid());
+			topic.setUpdatedDate(LocalDateTime.now());
 			BeanUtils.copyProperties(topic, map);
+			topic.setId(_topic.getId());
+			topic.setName(_topic.getName());
+			topic.setOwner(_topic.getOwner());
+			topic.setTags(topicDTO.getTags());
 			BeanUtils.copyProperties(topicVersion, topic);
 			topicVersionRepository.persist(topicVersion);
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -63,6 +76,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 
 		try {
+			topic.setUpdatedDate(LocalDateTime.now());
 			update(topic);
 		} catch (Exception ex) {
 			topicVersionRepository.delete(topicVersion);
@@ -86,24 +100,59 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 	public List<TopicDTO> listAllBy(String ownerDID) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
-    	list("owner",ownerDID).forEach(entity -> {
+		list("ownerdid", ownerDID).forEach(entity -> {
 			try {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
+				map.remove("tags");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setTags(entity.getTags());
+				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			}
 		});
-    	return topicDTOs;
+		return topicDTOs;
 	}
 
 	public void validateTopicIdByOwner(TopicDTO topic, String ownerDID) {
-		findByIdOptional(new ObjectId(topic.getId())).filter(data->data.getOwner().contentEquals(ownerDID)).orElseThrow(() -> new MongoException("id:" + topic.getId() + " not exists"));
+		findByIdOptional(new ObjectId(topic.getId())).filter(data -> data.getOwner().contentEquals(ownerDID))
+				.orElseThrow(() -> new MongoException("id:" + topic.getId() + " not exists"));
 	}
-
-
+	
+	public TopicDTOPage queryByOwnerNameTags(String owner, String name, int page, int size, String... tags) {
+		List<TopicDTO> topicDTOs = new ArrayList<>();
+		StringBuffer buffer = new StringBuffer("owner = ?1");
+		Optional.ofNullable(name).ifPresent(value->buffer.append(" and name = ?2"));
+		Optional.ofNullable(tags).ifPresent(value->{
+			if(value.length  > 0) {
+				buffer.append(" and tags in ?3");
+			}
+		});
+		
+		long totalRecord = find(buffer.toString(), owner,name,tags).count();
+		
+		PanacheQuery<Topic> topics = find(buffer.toString(), owner,name,tags);
+		if(size > 0) {
+			topics.page(Page.of((((page-1)*size)-(page>1?1:0)), size));
+		}
+		topics.list().forEach(entity -> {
+			try {
+				Map map = BeanUtils.describe(entity);
+				map.remove("schemaType");
+				map.remove("tags");
+				TopicDTO topicDTO = new TopicDTO();
+				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setTags(entity.getTags());
+				topicDTO.setSchema(entity.getSchema());
+				topicDTOs.add(topicDTO);
+			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			}
+		});
+    	return new TopicDTOPage(totalRecord,size==0?totalRecord:size,page,topicDTOs);
+	}
 
 }

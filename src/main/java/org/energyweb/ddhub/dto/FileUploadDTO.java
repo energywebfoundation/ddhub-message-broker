@@ -26,6 +26,10 @@ public class FileUploadDTO extends DDHub {
     @FormParam("fileName")
     @PartType(MediaType.TEXT_PLAIN)
     private String fileName;
+    
+    @FormParam("transactionId")
+    @PartType(MediaType.TEXT_PLAIN)
+    private String transactionId;
 
     @NotNull
     @FormParam("signature")

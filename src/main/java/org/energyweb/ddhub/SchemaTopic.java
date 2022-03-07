@@ -117,13 +117,23 @@ public class SchemaTopic {
         if(page > 1 && size == 0) return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
     	return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner,name,page,size,tags)).build();
     }
+
+    @GET
+    @Path("count")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
+    @Authenticated
+    public Response countByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String... owner) throws ValidationException {
+    	return Response.ok().entity(topicRepository.countByOwner(owner)).build();
+    }
     
     @GET
     @Path("{id}/version")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
     public Response listOfVersionById(@NotNull @PathParam("id") String id,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
-    	if(page > 1 && size == 0) return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+    	if(page > 1 && size == 0) {
+    		return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+    	}
     	topicRepository.validateTopicIds(Arrays.asList(id));
         return Response.ok().entity(topicVersionRepository.findListById(id, page, size)).build();
     }

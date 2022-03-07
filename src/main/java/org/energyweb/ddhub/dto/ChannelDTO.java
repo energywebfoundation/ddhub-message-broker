@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.dto;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -66,5 +67,10 @@ public class ChannelDTO extends DDHub {
             topics.add(streamName().concat(".").concat(topic));
         });
         return topics;
+    }
+    
+    @JsonIgnore
+    public List<String> subjectNameAll() {
+        return Arrays.asList(streamName().concat(".>"));
     }
 }

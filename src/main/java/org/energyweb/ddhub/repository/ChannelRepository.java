@@ -65,7 +65,7 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 
 	public List<ChannelDTO> listChannel(String ownerDID) {
 		List<ChannelDTO> channelDTOs = new ArrayList<>();
-		list("owner",ownerDID).forEach(entity -> {
+		list("ownerdid",ownerDID).forEach(entity -> {
 			try {
 				ChannelDTO channelDTO = new ChannelDTO();
 				BeanUtils.copyProperties(channelDTO, entity);

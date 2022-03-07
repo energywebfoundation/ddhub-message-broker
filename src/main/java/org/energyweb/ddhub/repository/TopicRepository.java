@@ -9,6 +9,8 @@ import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -17,6 +19,7 @@ import org.energyweb.ddhub.dto.TopicDTO.SchemaType;
 import org.energyweb.ddhub.dto.TopicDTOPage;
 import org.energyweb.ddhub.model.Topic;
 import org.energyweb.ddhub.model.TopicVersion;
+import org.jboss.logging.Logger;
 
 import com.mongodb.MongoException;
 
@@ -29,17 +32,21 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	@Inject
 	TopicVersionRepository topicVersionRepository;
 
+	@Inject
+	Logger log;
+
 	public void save(TopicDTO topicDTO) {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
 		try {
 			BeanUtils.copyProperties(topic, topicDTO);
-			topic.setCreatedBy(topicDTO.getDid());;
+			topic.setCreatedBy(topicDTO.getDid());
+			;
 			topic.setCreatedDate(LocalDateTime.now());
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
 			topicVersion.setTopicId(topic.getId());
-		} catch (IllegalAccessException | InvocationTargetException  e) {
+		} catch (IllegalAccessException | InvocationTargetException e) {
 			throw new MongoException("Unable to save");
 		}
 
@@ -121,22 +128,22 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		findByIdOptional(new ObjectId(topic.getId())).filter(data -> data.getOwner().contentEquals(ownerDID))
 				.orElseThrow(() -> new MongoException("id:" + topic.getId() + " not exists"));
 	}
-	
+
 	public TopicDTOPage queryByOwnerNameTags(String owner, String name, int page, int size, String... tags) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		StringBuffer buffer = new StringBuffer("owner = ?1");
-		Optional.ofNullable(name).ifPresent(value->buffer.append(" and name = ?2"));
-		Optional.ofNullable(tags).ifPresent(value->{
-			if(value.length  > 0) {
+		Optional.ofNullable(name).ifPresent(value -> buffer.append(" and name = ?2"));
+		Optional.ofNullable(tags).ifPresent(value -> {
+			if (value.length > 0) {
 				buffer.append(" and tags in ?3");
 			}
 		});
-		
-		long totalRecord = find(buffer.toString(), owner,name,tags).count();
-		
-		PanacheQuery<Topic> topics = find(buffer.toString(), owner,name,tags);
-		if(size > 0) {
-			topics.page(Page.of((((page-1)*size)-(page>1?1:0)), size));
+
+		long totalRecord = find(buffer.toString(), owner, name, tags).count();
+
+		PanacheQuery<Topic> topics = find(buffer.toString(), owner, name, tags);
+		if (size > 0) {
+			topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
 		}
 		topics.list().forEach(entity -> {
 			try {
@@ -152,7 +159,16 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			}
 		});
-    	return new TopicDTOPage(totalRecord,size==0?totalRecord:size,page,topicDTOs);
+		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
+	}
+
+	public List<TopicDTO> countByOwner(String[] owner) {
+		List<TopicDTO> topicDTOs = new ArrayList<>();
+		PanacheQuery<Topic> topics = find("owner in ?1", owner);
+		topics.list().forEach(entity -> {
+			log.info(entity);
+		});
+		return topicDTOs;
 	}
 
 }

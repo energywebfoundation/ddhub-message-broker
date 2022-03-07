@@ -3,14 +3,13 @@ package org.energyweb.ddhub.repository;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -162,13 +161,19 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
 
-	public List<TopicDTO> countByOwner(String[] owner) {
+	public HashMap<String, Integer> countByOwner(String[] owner) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
-		PanacheQuery<Topic> topics = find("owner in ?1", owner);
+		PanacheQuery<Topic> topics = find("owner in ?1", List.of(owner));
+		
+		HashMap<String,Integer> topicOwner = new HashMap();
 		topics.list().forEach(entity -> {
-			log.info(entity);
+			if(topicOwner.containsKey(entity.getOwner())) {
+				topicOwner.put(entity.getOwner(), topicOwner.get(entity.getOwner()) + 1);
+			}else {
+				topicOwner.put(entity.getOwner(), 1);
+			}
 		});
-		return topicDTOs;
+		return topicOwner;
 	}
 
 }

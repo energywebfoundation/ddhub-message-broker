@@ -1,6 +1,7 @@
 package org.energyweb.ddhub;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -120,7 +121,7 @@ public class SchemaTopic {
 
     @GET
     @Path("count")
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
     @Authenticated
     public Response countByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String... owner) throws ValidationException {
     	return Response.ok().entity(topicRepository.countByOwner(owner)).build();

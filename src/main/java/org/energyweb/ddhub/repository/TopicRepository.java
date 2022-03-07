@@ -40,7 +40,6 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		try {
 			BeanUtils.copyProperties(topic, topicDTO);
 			topic.setCreatedBy(topicDTO.getDid());
-			;
 			topic.setCreatedDate(LocalDateTime.now());
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
@@ -55,6 +54,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		} catch (Exception ex) {
 			delete(topic);
 		}
+		topicDTO.setDid(null);
 	}
 
 	public void updateTopic(TopicDTO topicDTO) {

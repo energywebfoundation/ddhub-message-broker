@@ -112,7 +112,7 @@ public class Message {
     String roles;
 
     @POST
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
     @Authenticated
     public Response publish(@Valid @NotNull MessageDTO messageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException, IOException {
@@ -135,7 +135,7 @@ public class Message {
         builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
         builder.add("sender", DID);
         builder.add("signature", messageDTO.getSignature());
-        builder.add("timestampNanos", TimeUnit.NANOSECONDS.toNanos(new Date().getTime()));
+        builder.add("timestampNanos", String.valueOf( TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
 
         PublishAck pa = js.publish(messageDTO.subjectName(),
                 builder.build().toString().getBytes(StandardCharsets.UTF_8),
@@ -207,7 +207,7 @@ public class Message {
                 message.setSenderDid(sender);
                 message.setTopicVersion((String) natPayload.get("topicVersion"));
                 message.setSignature((String) natPayload.get("signature"));
-                message.setTimestampNanos((long) natPayload.get("timestampNanos"));
+                message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
                 messageDTOs.add(message);
                 m.ack();
             }
@@ -220,17 +220,16 @@ public class Message {
     @POST
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
     @Authenticated
     public Response uploadFile(@Valid @MultipartForm FileUploadDTO data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-        channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
+//        channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
         data.setOwnerdid(DID);
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
         return Response.ok()
-                .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",
-                        token))
+                .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",token))
                 .build();
     }
 

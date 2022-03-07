@@ -172,7 +172,7 @@ public class Channel {
             
             logger.info(_streamInfo);
     		channelRepository.validateChannel(DID);
-    	}catch(MongoException ex) {
+    	}catch(MongoException | JetStreamApiException ex) {
     		logger.debug("Channel not exist. creating channel:"+ DID);
             JetStreamManagement jsm = nc.jetStreamManagement();
             

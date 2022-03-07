@@ -24,7 +24,8 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 	public ChannelDTO findByFqcn(String fqcn) {
 		try {
 			ChannelDTO channelDTO = new ChannelDTO();
-			Channel channel = find("fqcn", fqcn).firstResultOptional().orElseThrow(()->new MongoException("fqcn:" + fqcn + " not exists"));
+			Channel channel = find("fqcn", fqcn).firstResultOptional()
+					.orElseThrow(() -> new MongoException("fqcn:" + fqcn + " not exists"));
 			BeanUtils.copyProperties(channelDTO, channel);
 			return channelDTO;
 		} catch (IllegalAccessException | InvocationTargetException e) {
@@ -42,7 +43,8 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 
 	public void updateChannel(@Valid @NotNull ChannelDTO channelDTO) {
 		try {
-			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResultOptional().orElseThrow(()->new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"));
+			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResultOptional()
+					.orElseThrow(() -> new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"));
 			BeanUtils.copyProperties(channel, channelDTO);
 			channel.setUpdatedDate(LocalDateTime.now());
 			update(channel);
@@ -60,12 +62,12 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		} catch (IllegalAccessException | InvocationTargetException e) {
 			throw new MongoException("Unable to save");
 		}
-		
+
 	}
 
 	public List<ChannelDTO> listChannel(String ownerDID) {
 		List<ChannelDTO> channelDTOs = new ArrayList<>();
-		list("ownerdid",ownerDID).forEach(entity -> {
+		list("ownerdid", ownerDID).forEach(entity -> {
 			try {
 				ChannelDTO channelDTO = new ChannelDTO();
 				BeanUtils.copyProperties(channelDTO, entity);
@@ -76,10 +78,12 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		return channelDTOs;
 	}
 
-	public void validateChannel(String fqcn, String topicId, String ownerId) {
-		ChannelDTO channelDTO = findByFqcn(fqcn);
-		Optional.ofNullable(channelDTO).filter(dto->dto.getTopicIds().contains(topicId)).orElseThrow(()->new MongoException("topicId:" + topicId + " not exists for channel " + fqcn));
-		Optional.ofNullable(channelDTO).filter(dto->dto.getOwnerdid().contentEquals(ownerId)).orElseThrow(()->new MongoException("Unauthorized access"));
-	}
+	// public void validateChannel(String fqcn, String topicId, String ownerId) {
+	// ChannelDTO channelDTO = findByFqcn(fqcn);
+	// Optional.ofNullable(channelDTO).filter(dto->dto.getTopicIds().contains(topicId)).orElseThrow(()->new
+	// MongoException("topicId:" + topicId + " not exists for channel " + fqcn));
+	// Optional.ofNullable(channelDTO).filter(dto->dto.getOwnerdid().contentEquals(ownerId)).orElseThrow(()->new
+	// MongoException("Unauthorized access"));
+	// }
 
 }

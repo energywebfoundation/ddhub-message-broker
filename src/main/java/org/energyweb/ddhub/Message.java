@@ -3,7 +3,6 @@ package org.energyweb.ddhub;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +43,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.energyweb.ddhub.dto.FileUploadDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
-import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.MessageRepository;
@@ -61,7 +59,6 @@ import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
 import io.nats.client.PublishOptions;
-import io.nats.client.PullSubscribeOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
 import io.nats.client.api.PublishAck;
@@ -156,7 +153,7 @@ public class Message {
     @Authenticated
     public Response search(@Valid SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        // topicRepository.validateTopicIds(messageDTO.getTopicId());
+    	topicRepository.validateTopicIds(messageDTO.getTopicId());
         // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
         messageDTO.setFqcn(DID);
 
@@ -166,11 +163,7 @@ public class Message {
         Builder builder = ConsumerConfiguration.builder();
         builder.maxAckPending(Duration.ofSeconds(5).toMillis());
         builder.durable(messageDTO.getClientId()); // required
-//        builder.filterSubject(messageDTO.subjectName(0));
-//        Optional.ofNullable(messageDTO.getFrom()).ifPresent(lt -> {
-//            builder.durable(messageDTO.getClientId().concat(String.valueOf(lt.toEpochSecond(ZoneOffset.UTC))));
-//            builder.startTime(lt.atZone(ZoneId.systemDefault()));
-//        });
+
         JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
         nc.flush(Duration.ofSeconds(1));
 

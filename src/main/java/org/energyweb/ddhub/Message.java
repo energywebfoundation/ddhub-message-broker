@@ -135,7 +135,7 @@ public class Message {
         builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
         builder.add("sender", DID);
         builder.add("signature", messageDTO.getSignature());
-        builder.add("timestampNanos", String.valueOf( TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
 
         PublishAck pa = js.publish(messageDTO.subjectName(),
                 builder.build().toString().getBytes(StandardCharsets.UTF_8),
@@ -166,14 +166,12 @@ public class Message {
         Builder builder = ConsumerConfiguration.builder();
         builder.maxAckPending(Duration.ofSeconds(5).toMillis());
         builder.durable(messageDTO.getClientId()); // required
-        Optional.ofNullable(messageDTO.getFrom()).ifPresent(lt->{
-        	builder.durable(messageDTO.getClientId().concat(String.valueOf(lt.toEpochSecond(ZoneOffset.UTC))));
-        	builder.startTime(lt.atZone(ZoneId.systemDefault()));
-        });
-        PullSubscribeOptions pullOptions = PullSubscribeOptions.builder()
-                .configuration(builder.build())
-                .build();
-        JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), pullOptions);
+//        builder.filterSubject(messageDTO.subjectName(0));
+//        Optional.ofNullable(messageDTO.getFrom()).ifPresent(lt -> {
+//            builder.durable(messageDTO.getClientId().concat(String.valueOf(lt.toEpochSecond(ZoneOffset.UTC))));
+//            builder.startTime(lt.atZone(ZoneId.systemDefault()));
+//        });
+        JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
         nc.flush(Duration.ofSeconds(1));
 
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
@@ -189,11 +187,18 @@ public class Message {
                     m.nak();
                     continue;
                 }
+                HashMap<String, Object> natPayload = new Gson().fromJson(new String(m.getData()), HashMap.class);
+
+                if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
+                        Optional.ofNullable(messageDTO.getFrom()).get().toEpochSecond(ZoneOffset.UTC) > Long
+                                .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+                    continue;
+                }
+
                 if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
                     continue;
                 }
 
-                HashMap<String, Object> natPayload = new Gson().fromJson(new String(m.getData()), HashMap.class);
                 String sender = (String) natPayload.get("sender");
                 if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
                     continue;
@@ -224,12 +229,13 @@ public class Message {
     @Authenticated
     public Response uploadFile(@Valid @MultipartForm FileUploadDTO data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-//        channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
+        // channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
         data.setOwnerdid(DID);
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
         return Response.ok()
-                .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",token))
+                .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",
+                        token))
                 .build();
     }
 

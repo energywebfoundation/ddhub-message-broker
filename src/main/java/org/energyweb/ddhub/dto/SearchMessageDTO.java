@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
@@ -46,8 +47,19 @@ public class SearchMessageDTO {
     
     @JsonIgnore
 	public String subjectAll() {
+    	if(topicId.size() == 1) {
+    		return streamName().concat(".").concat(topicId.get(0));
+    	}
 		return streamName().concat(".").concat("*");
 	}
+    
+    @JsonIgnore
+    public String subjectName(int index) {
+    	if(topicId.size() == 1) {
+    		return streamName().concat(".").concat(topicId.get(0));
+    	}
+    	return streamName().concat(".").concat(topicId.get(index));
+    }
 
 
 	@JsonIgnore

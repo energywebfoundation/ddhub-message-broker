@@ -18,6 +18,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.helper.DDHubResponse;
@@ -34,6 +35,7 @@ import lombok.Setter;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tags(value = @Tag(name = "Internal", description = "All the methods"))
+@SecurityRequirement(name = "AuthServer")
 @RequestScoped
 public class JWT {
 

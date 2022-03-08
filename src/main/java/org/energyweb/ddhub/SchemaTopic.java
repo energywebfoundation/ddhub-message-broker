@@ -1,20 +1,25 @@
 package org.energyweb.ddhub;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.validation.Valid;
+import javax.validation.ValidationException;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -33,7 +38,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTOCreate;
+import org.energyweb.ddhub.dto.TopicDTOPage;
 import org.energyweb.ddhub.helper.DDHubResponse;
+import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 
@@ -78,7 +85,7 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
     @Authenticated
     public Response createSchema(@NotNull @Valid TopicDTO topic) {
-    	topic.setOwner(DID);
+    	topic.setDid(DID);
         topicRepository.save(topic);
         return Response.ok().entity(topic).build();
     }
@@ -89,7 +96,7 @@ public class SchemaTopic {
     @Tags(value = @Tag(name = "Internal", description = "All the methods"))
     @Authenticated
     public Response createSchemaIndex() {
-        Document index = new Document("namespace", 1);
+        Document index = new Document("name", 1);
         index.append("owner", 1);
         mongoClient.getDatabase("ddhub").getCollection("schema").createIndex(index, new IndexOptions().unique(true));
 
@@ -105,12 +112,31 @@ public class SchemaTopic {
     }
 
     @GET
-    @Path("{id}/version")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = TopicDTO.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
-    public Response listOfVersionById(@NotNull @PathParam("id") String id) {
+    public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,@QueryParam("name") String name,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size, @QueryParam("tags") String... tags) throws ValidationException {
+        if(page > 1 && size == 0) return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+    	return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner,name,page,size,tags)).build();
+    }
+
+    @GET
+    @Path("count")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
+    @Authenticated
+    public Response countByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String... owner) throws ValidationException {
+    	return Response.ok().entity(topicRepository.countByOwner(owner)).build();
+    }
+    
+    @GET
+    @Path("{id}/version")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
+    @Authenticated
+    public Response listOfVersionById(@NotNull @PathParam("id") String id,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
+    	if(page > 1 && size == 0) {
+    		return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+    	}
     	topicRepository.validateTopicIds(Arrays.asList(id));
-        return Response.ok().entity(topicVersionRepository.findListById(id,DID)).build();
+        return Response.ok().entity(topicVersionRepository.findListById(id, page, size)).build();
     }
 
     @GET
@@ -120,21 +146,14 @@ public class SchemaTopic {
     public Response topicVersionByNumber(@NotNull @PathParam("id") String id,
             @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
     	topicRepository.validateTopicIds(Arrays.asList(id));
-    	return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber,DID)).build();
-    }
-
-    @GET
-    @Path("list")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = TopicDTO.class)))
-    @Authenticated
-    public Response listOfSchema() {
-        return Response.ok().entity(topicRepository.listAllBy(DID)).build();
+    	return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
     }
 
     @PATCH
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response updateSchema(@NotNull @Valid TopicDTO topic) {
+    	topic.setDid(DID);
     	topicRepository.validateTopicIds(Arrays.asList(topic.getId()));
         topicRepository.updateTopic(topic);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();

@@ -4,21 +4,21 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTO.SchemaType;
+import org.energyweb.ddhub.dto.TopicDTOPage;
 import org.energyweb.ddhub.model.TopicVersion;
 
 import com.mongodb.MongoException;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.panache.common.Page;
 
 @ApplicationScoped
 public class TopicVersionRepository implements PanacheMongoRepository<TopicVersion> {
@@ -28,10 +28,12 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 			
 			Map map = BeanUtils.describe(topicVersion);
 			map.remove("schemaType");
+			map.remove("tags");
     		TopicDTO topicDTO = new TopicDTO();
 			BeanUtils.copyProperties(topicDTO, map);
+			topicDTO.setTags(topicVersion.getTags());
 			topicDTO.setSchemaType(SchemaType.valueOf(topicVersion.getSchemaType()));
-			
+			topicDTO.setSchema(topicVersion.getSchema());
 			return topicDTO;
 		} catch (IllegalAccessException | InvocationTargetException | MongoException | NoSuchMethodException e) {
 			throw new MongoException("id:" + id + " version not exists");
@@ -42,35 +44,48 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
     	findByIdAndVersion(id, versionNumber);
 	}
 
-	public List<TopicDTO> findListById(String id, String ownerDID) {
+	public TopicDTOPage findListById(String id, int page, int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
-    	list("topicId = ?1 and owner = ?2", new ObjectId(id),ownerDID).forEach(entity -> {
+		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
+		
+		PanacheQuery<TopicVersion> topics = find("topicId = ?1", new ObjectId(id));
+		if(size > 0) {
+			topics.page(Page.of((((page-1)*size)-(page>1?1:0)), size));
+		}
+		topics.list().forEach(entity -> {
 			try {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
+				map.remove("tags");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setTags(entity.getTags());
+				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			}
 		});
-    	return topicDTOs;
+    	return new TopicDTOPage(totalRecord,size==0?totalRecord:size,page,topicDTOs);
 	}
 
-	public TopicDTO findByIdAndVersion( String id, String versionNumber, String ownerDID) {
+	public TopicDTO findByIdAndVersion( String id, String versionNumber, String owner) {
 		try {
-    		TopicVersion topicVersion = find("topicId = ?1 and version = ?2 and owner = ?3", new ObjectId(id), versionNumber, ownerDID).firstResultOptional().orElseThrow(()-> new MongoException("id:" + id + " not exists"));
+    		TopicVersion topicVersion = find("topicId = ?1 and version = ?2 and owner = ?3", new ObjectId(id), versionNumber, owner).firstResultOptional().orElseThrow(()-> new MongoException("id:" + id + " not exists"));
     		Map map = BeanUtils.describe(topicVersion);
 			map.remove("schemaType");
+			map.remove("tags");
     		TopicDTO topicDTO = new TopicDTO();
 			BeanUtils.copyProperties(topicDTO, map);
 			topicDTO.setSchemaType(SchemaType.valueOf(topicVersion.getSchemaType()));
+			topicDTO.setTags(topicVersion.getTags());
+			topicDTO.setSchema(topicVersion.getSchema());
 			return topicDTO;
 		} catch (IllegalAccessException | InvocationTargetException | MongoException | NoSuchMethodException e) {
 			throw new MongoException("id:" + id + " not exists");
 		}
 	}
+
 
 	
 }

@@ -39,12 +39,30 @@ public class MessageDTO extends DDHub {
     @NotNull
     @NotEmpty
     private String signature;
+
+    @JsonIgnore
+    private String id;
+    
+    @JsonIgnore
+    private String senderDid;
+
+    @JsonIgnore
+    private String geatewayDid;
+    
+    @JsonIgnore
+	private long timestampNanos;
+    
     
     @JsonIgnore
 	public String subjectName() {
 		if (StringUtils.isBlank(topicId))
 			return null;
 		return super.streamName().concat(".").concat(topicId);
+	}
+    
+    @JsonIgnore
+	public String subjectAll() {
+		return super.streamName().concat(".").concat("*");
 	}
 
 	public String storageName() {

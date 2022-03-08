@@ -1,5 +1,6 @@
 package org.energyweb.ddhub.model;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 import org.bson.types.ObjectId;
@@ -20,5 +21,7 @@ public class Channel {
     private Set<String> pubsub;
     private Boolean encryption;
 	private String fqcn;
-    private String owner;
+    private String ownerdid;
+    private LocalDateTime createdDate;
+	private LocalDateTime updatedDate;
 }

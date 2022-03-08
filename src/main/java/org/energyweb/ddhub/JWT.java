@@ -23,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.jose4j.json.internal.json_simple.JSONArray;
 
+import io.quarkus.security.Authenticated;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import lombok.AllArgsConstructor;
@@ -38,6 +39,7 @@ public class JWT {
 
 	@GET
 	@Path("generator")
+	@Authenticated
 	public Response tokenGenerator(@NotNull @QueryParam("DID") String did, @NotNull @QueryParam("role") String... roles)
 			throws Exception {
 		String privateKeyLocation = "/privatekey.pem";
@@ -45,7 +47,7 @@ public class JWT {
 
 		JwtClaimsBuilder claimsBuilder = Jwt.claims();
 		long currentTimeInSecs = currentTimeInSecs();
-		
+
 		JSONArray verifiedRoles = new JSONArray();
 
 		JsonObjectBuilder builder = Json.createObjectBuilder();
@@ -54,11 +56,10 @@ public class JWT {
 			builder.add("namespace", role);
 			verifiedRoles.add(builder.build());
 		}
-		
 
 		claimsBuilder.claim("did", did);
 		claimsBuilder.claim("verifiedRoles", verifiedRoles);
-		
+
 		claimsBuilder.issuedAt(currentTimeInSecs);
 		claimsBuilder.expiresAt(currentTimeInSecs + 3600);
 
@@ -100,11 +101,11 @@ public class JWT {
 		long currentTimeMS = System.currentTimeMillis();
 		return (int) (currentTimeMS / 1000);
 	}
-	
+
 	@Getter
 	@Setter
 	@AllArgsConstructor
-	public class AuthRole{
+	public class AuthRole {
 		private String name;
 		private String namespace;
 	}

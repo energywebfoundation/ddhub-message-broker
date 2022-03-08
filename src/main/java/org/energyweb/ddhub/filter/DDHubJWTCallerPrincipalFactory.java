@@ -25,6 +25,9 @@ public class DDHubJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
     public JWTCallerPrincipal parse(String token, JWTAuthContextInfo authContextInfo) throws ParseException {
         try {
             // Token has already been verified, parse the token claims only
+            if (token.split("\\.").length != 3) {
+                throw new ParseException("");
+            }
             String json = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
             return new DefaultJWTCallerPrincipal(JwtClaims.parse(json));
         } catch (InvalidJwtException ex) {

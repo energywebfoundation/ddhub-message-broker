@@ -8,16 +8,16 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@MongoEntity(collection = "fileupload")
+@MongoEntity(collection = "message")
 @Data
 @NoArgsConstructor
-public class FileUpload {
+public class Message {
 	private ObjectId id;
-    private Long maxMsgAge;
-    private String fileName;
+	private String transactionId;
+    private String topicId;
+	private String topicVersion;
 	private String fqcn;
-	private String topicId;
-	private String ownerdid;
-	private LocalDateTime createdDate;
+	private String senderdid;
+    private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
 }

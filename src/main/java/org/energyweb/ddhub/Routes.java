@@ -1,9 +1,14 @@
 package org.energyweb.ddhub;
 
+import java.net.URI;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -11,8 +16,11 @@ import javax.json.JsonObjectBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.FileUploadDTO;
+import org.energyweb.ddhub.dto.MessageDTO;
+import org.jboss.logging.Logger;
+import org.jose4j.json.internal.json_simple.JSONObject;
+import org.jose4j.json.internal.json_simple.parser.JSONParser;
 
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -31,6 +39,9 @@ public class Routes extends RouteBuilder {
         @ConfigProperty(name = "DDHUB_CONTEXT_URL")
         String ddhubContextURL;
 
+        @Inject
+        Logger logger;
+
         public Routes() {
 
         }
@@ -39,6 +50,7 @@ public class Routes extends RouteBuilder {
         public void configure() throws Exception {
                 StorageSharedKeyCredential credential = new StorageSharedKeyCredential(azureAccountName,
                                 azureAccessKey);
+
                 String uri = String.format("https://%s.blob.core.windows.net", azureAccountName);
                 BlobServiceClient client = new BlobServiceClientBuilder()
                                 .endpoint(uri)
@@ -54,6 +66,9 @@ public class Routes extends RouteBuilder {
                                         MessageDTO messageDTO = new MessageDTO();
                                         messageDTO.setFqcn(multipartBody.getFqcn());
                                         messageDTO.setTopicId(multipartBody.getTopicId());
+                                        messageDTO.setSignature(multipartBody.getSignature());
+                                        messageDTO.setTopicVersion(multipartBody.getTopicVersion());
+                                        messageDTO.setTransactionId(multipartBody.getTransactionId());
                                         e.setProperty("multipartBody", multipartBody);
                                         e.setProperty("messageDTO", messageDTO);
 
@@ -75,18 +90,34 @@ public class Routes extends RouteBuilder {
                                                                         + URLEncoder.encode(multipartBody.getFileName(),
                                                                                         StandardCharsets.UTF_8
                                                                                                         .toString()))
-                                                        .add("signature", multipartBody.getSignature())
                                                         .build();
                                         messageDTO.setPayload(jsonObject.toString());
+                                        e.getIn().setHeader("Authorization", e.getProperty("token"));
                                         e.getIn().setBody(new Gson().toJson(messageDTO));
                                 })
                                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
-                                // .setHeader("Accept", constant("application/json"))
-                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=true");
+                                .doTry()
+                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=true")
+                                .doCatch(Exception.class)
+                                .process(e -> {
+                                        Exception exception = e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                                        JSONParser parser = new JSONParser();
+                                        JSONObject json = (JSONObject) parser
+                                                        .parse(new String((byte[]) e.getIn().getBody()));
+                                        throw new RuntimeException(json.get("returnMessage").toString());
+                                })
+                                .endDoTry();
 
                 from("direct:azuredownload")
-                                .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client");
+                                .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client")
+                                .process(e -> {
+                                        logger.info(e);
+                                        // Map<String, String> map = new HashMap();
+                                        // map.put("Sss", "sss");
+                                        // logger.info(credential.generateAuthorizationHeader(
+                                        // new URL("https://vcaemo.blob.core.windows.net"), "GET", map));
+                                });
 
         }
 }

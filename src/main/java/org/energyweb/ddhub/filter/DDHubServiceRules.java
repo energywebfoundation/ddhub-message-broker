@@ -48,7 +48,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 			JSONArray jsonArray = (JSONArray) jsonObject.get("verifiedRoles");
 			Optional<DDHubServiceRulesConfig.DDHubService> hubService = rulesConfig.services().stream()
 					.filter(s -> s.method().contentEquals(requestContext.getMethod())
-							&& s.path().contentEquals(requestContext.getUriInfo().getPath()))
+							&& requestContext.getUriInfo().getPath().matches(s.path().replaceAll("\\{[^{}]*}", "(\\\\w*.*.*)")))
 					.findFirst();
 			hubService.ifPresent(service -> {
 				Set<String> ruleMatch = new HashSet<String>();
@@ -56,7 +56,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					JSONObject obj = (JSONObject) item;
 					String namespace = (String) obj.get("namespace");
 					if (!ruleMatch.contains(namespace) && service.rules().stream()
-							.filter(str -> namespace.matches(str.replace("*", "(\\w*|\\w*[-]\\w*|\\w*[-]\\w*[-]\\w*)")))
+							.filter(str -> namespace.matches(str.replace("*", "(\\w*.*.*)")))
 							.findFirst().isPresent()) {
 						ruleMatch.add(namespace);
 					}
@@ -67,6 +67,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 				}
 
 			});
+//			hubService.orElseThrow(()->new ParseException(0,"Unauthorize access"));
 
 		} catch (ParseException e) {
 			requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)

@@ -51,7 +51,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 							DDHubServiceRulesConfig.DDHubService a2) -> a1.path().compareTo(a2.path()))
 					.filter(s -> s.method().contentEquals(requestContext.getMethod())
 							&& requestContext.getUriInfo().getPath()
-									.matches(s.path().replaceAll("\\{[^{}]*}", "(\\\\w*.*.*)")))
+									.matches(s.path().replaceAll("\\{[^{}]*}", "(\\\\w*.*)")))
 					.findFirst();
 			hubService.ifPresent(service -> {
 				Set<String> ruleMatch = new HashSet<String>();
@@ -59,7 +59,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					JSONObject obj = (JSONObject) item;
 					String namespace = (String) obj.get("namespace");
 					if (!ruleMatch.contains(namespace) && service.rules().stream()
-							.filter(str -> namespace.matches(str.replace("*", "(\\w*.*.*)")))
+							.filter(str -> namespace.matches(str.replace("*", "(\\w*.*)")))
 							.findFirst().isPresent()) {
 						ruleMatch.add(namespace);
 					}

@@ -35,6 +35,9 @@ public class FileUploadRepository implements PanacheMongoRepository<FileUpload> 
 
 	public MessageDTO findByFileId(String fileId) {
 		FileUpload fileUpload = find("_id", new ObjectId(fileId)).firstResultOptional().orElseThrow(() -> new MongoException("id:" + fileId + " not exists"));
+		if(fileUpload.validateExpiryContent()) {
+			throw new MongoException("File are expired");
+		}
 		MessageDTO messageDTO = new MessageDTO();
 		messageDTO.setFqcn(fileUpload.getFqcn());
 		messageDTO.setTopicId(fileUpload.getTopicId());

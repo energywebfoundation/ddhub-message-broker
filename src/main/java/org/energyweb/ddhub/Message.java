@@ -71,7 +71,7 @@ import io.quarkus.security.Authenticated;
 @RequestScoped
 public class Message {
     @Inject
-    Logger log;
+    Logger logger;
 
     @Inject
     ProducerTemplate producerTemplate;
@@ -153,7 +153,7 @@ public class Message {
     @Authenticated
     public Response search(@Valid SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-    	topicRepository.validateTopicIds(messageDTO.getTopicId());
+        topicRepository.validateTopicIds(messageDTO.getTopicId());
         // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
         messageDTO.setFqcn(DID);
 

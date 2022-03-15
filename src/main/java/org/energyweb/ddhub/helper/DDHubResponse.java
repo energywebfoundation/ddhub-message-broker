@@ -5,6 +5,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @Data
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 public class DDHubResponse {
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd HH:mm:ss")
 	private Date timestamp = new Date();
-	private final String returnCode;
-	private final String returnMessage;
+	@NonNull
+	private String returnCode;
+	@NonNull
+	private String returnMessage;
 }

@@ -9,6 +9,7 @@ import java.util.Set;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
+import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -43,6 +44,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 		String json = new String(Base64.getUrlDecoder().decode(authorizationHeader.split("\\.")[1]),
 				StandardCharsets.UTF_8);
 		JSONParser parser = new JSONParser();
+		ErrorResponse error = new ErrorResponse("10", "Unauthorize access");
 		try {
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
 			JSONArray jsonArray = (JSONArray) jsonObject.get("verifiedRoles");
@@ -53,7 +55,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 							&& requestContext.getUriInfo().getPath()
 									.matches(s.path().replaceAll("\\{[^{}]*}", "(\\\\w*.*)")))
 					.findFirst();
-			hubService.ifPresent(service -> {
+			hubService.ifPresentOrElse(service -> {
 				Set<String> ruleMatch = new HashSet<String>();
 				jsonArray.forEach(item -> {
 					JSONObject obj = (JSONObject) item;
@@ -65,17 +67,21 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					}
 				});
 				if (service.rules().size() > ruleMatch.size()) {
+					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 					requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
-							.entity(new ErrorResponse("10", "Unauthorize access")).build());
+							.entity(error).build());
 				}
 
+			},()->{
+				this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+//				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
 			});
-			// hubService.orElseThrow(()->new ParseException(0,"Unauthorize access"));
-
 		} catch (ParseException e) {
+			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
 			requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
-					.entity(new ErrorResponse("10", "Unauthorize access")).build());
+					.entity(error).build());
 		}
 	}
+
 
 }

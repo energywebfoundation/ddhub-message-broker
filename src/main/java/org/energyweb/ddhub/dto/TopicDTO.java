@@ -3,6 +3,7 @@ package org.energyweb.ddhub.dto;
 import java.util.HashMap;
 import java.util.Set;
 
+import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -12,7 +13,6 @@ import org.jose4j.json.internal.json_simple.parser.JSONParser;
 import org.jose4j.json.internal.json_simple.parser.ParseException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.gson.Gson;
 
 import lombok.AccessLevel;
 import lombok.Data;
@@ -60,7 +60,7 @@ public class TopicDTO {
 		else{
 			map.put("STRING", schema);
 		}
-		schema = new Gson().toJson(map);
+		schema = JsonbBuilder.create().toJson(map);
 		return jsonParser();
 	}
 

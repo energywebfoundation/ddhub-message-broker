@@ -17,6 +17,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
@@ -50,8 +51,6 @@ import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
-
-import com.google.gson.Gson;
 
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -180,7 +179,8 @@ public class Message {
                     m.nak();
                     continue;
                 }
-                HashMap<String, Object> natPayload = new Gson().fromJson(new String(m.getData()), HashMap.class);
+                
+                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()), HashMap.class);
 
                 if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
                         Optional.ofNullable(messageDTO.getFrom()).get().toEpochSecond(ZoneOffset.UTC) > Long

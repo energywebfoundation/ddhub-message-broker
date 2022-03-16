@@ -1,17 +1,14 @@
 package org.energyweb.ddhub;
 
-import java.net.URI;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.bind.JsonbBuilder;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -25,7 +22,6 @@ import org.jose4j.json.internal.json_simple.parser.JSONParser;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.common.StorageSharedKeyCredential;
-import com.google.gson.Gson;
 
 @ApplicationScoped
 public class Routes extends RouteBuilder {
@@ -93,7 +89,7 @@ public class Routes extends RouteBuilder {
                                                         .build();
                                         messageDTO.setPayload(jsonObject.toString());
                                         e.getIn().setHeader("Authorization", e.getProperty("token"));
-                                        e.getIn().setBody(new Gson().toJson(messageDTO));
+                                        e.getIn().setBody(JsonbBuilder.create().toJson(messageDTO));
                                 })
                                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
@@ -112,7 +108,7 @@ public class Routes extends RouteBuilder {
                 from("direct:azuredownload")
                                 .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client")
                                 .process(e -> {
-                                        logger.info(e);
+                                        // logger.info(e);
                                         // Map<String, String> map = new HashMap();
                                         // map.put("Sss", "sss");
                                         // logger.info(credential.generateAuthorizationHeader(

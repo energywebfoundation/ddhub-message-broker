@@ -1,5 +1,6 @@
 package org.energyweb.ddhub.model;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import org.bson.types.ObjectId;
@@ -20,4 +21,9 @@ public class FileUpload {
 	private String ownerdid;
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
+	
+	
+	public boolean validateExpiryContent() {
+		return createdDate.plusSeconds(Duration.ofMillis(maxMsgAge).toSeconds()).isBefore(LocalDateTime.now());
+	}
 }

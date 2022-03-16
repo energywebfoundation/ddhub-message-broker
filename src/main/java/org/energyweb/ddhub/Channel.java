@@ -11,6 +11,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -41,7 +42,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecuritySchemes;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
-import org.energyweb.ddhub.dto.DDHub;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
@@ -66,9 +66,9 @@ import io.quarkus.security.Authenticated;
 @SecurityRequirement(name = "AuthServer")
 @RequestScoped
 public class Channel {
-	
-	@Inject
-	Logger logger;
+
+    @Inject
+    Logger logger;
 
     @Inject
     ProducerTemplate producerTemplate;
@@ -95,13 +95,14 @@ public class Channel {
     @Inject
     @Claim(value = "verifiedRoles")
     String roles;
-    
+
     @PATCH
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
     public Response updateChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        topicRepository.validateTopicIds(List.copyOf(Optional.ofNullable(channelDTO.getTopicIds()).orElse(new HashSet<String>())));
+        topicRepository.validateTopicIds(
+                List.copyOf(Optional.ofNullable(channelDTO.getTopicIds()).orElse(new HashSet<String>())));
         channelRepository.validateChannel(channelDTO.getFqcn());
 
         Connection nc = Nats.connect(natsJetstreamUrl);
@@ -115,7 +116,7 @@ public class Channel {
                 .build();
 
         StreamInfo streamInfo = jsm.updateStream(streamConfig);
-        
+
         channelDTO.setUpdateBy(DID);
         channelRepository.updateChannel(channelDTO);
         nc.close();
@@ -123,12 +124,13 @@ public class Channel {
     }
 
     @POST
-//    @RequestBodySchema(ChannelDTOCreate.class)
+    // @RequestBodySchema(ChannelDTOCreate.class)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
     public Response createChannel(@Valid @NotNull ChannelDTO channelDTO)
             throws IOException, InterruptedException, ExecutionException, TimeoutException, JetStreamApiException {
-        topicRepository.validateTopicIds(List.copyOf(Optional.ofNullable(channelDTO.getTopicIds()).orElse(new HashSet<String>())));
+        topicRepository.validateTopicIds(
+                List.copyOf(Optional.ofNullable(channelDTO.getTopicIds()).orElse(new HashSet<String>())));
         // channelRepository.validateChannel(channelDTO.getFqcn());
 
         Connection nc = Nats.connect(natsJetstreamUrl);
@@ -161,23 +163,23 @@ public class Channel {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response initExtChannel() throws IOException, JetStreamApiException, InterruptedException {
-    	ChannelDTO channelDTO = new ChannelDTO();
-    	channelDTO.setFqcn(DID);
-    	channelDTO.setMaxMsgAge(86400000l);
-    	channelDTO.setMaxMsgSize(8388608l);
-    	Connection nc = Nats.connect(natsJetstreamUrl);
-    	try {
+        ChannelDTO channelDTO = new ChannelDTO();
+        channelDTO.setFqcn(DID);
+        channelDTO.setMaxMsgAge(86400000l);
+        channelDTO.setMaxMsgSize(8388608l);
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        try {
             JetStreamManagement jsm = nc.jetStreamManagement();
             StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.streamName());
-            
-            logger.info(_streamInfo);
-    		channelRepository.validateChannel(DID);
-    	}catch(MongoException | JetStreamApiException ex) {
-    		logger.debug("Channel not exist. creating channel:"+ DID);
+
+            this.logger.info("[" + DID + "]" + JsonbBuilder.create().toJson(_streamInfo));
+            channelRepository.validateChannel(DID);
+        } catch (MongoException | JetStreamApiException ex) {
+            logger.debug("Channel not exist. creating channel:" + DID);
             JetStreamManagement jsm = nc.jetStreamManagement();
-            
-			StreamConfiguration streamConfig = StreamConfiguration.builder()
-                    .name(channelDTO .streamName())
+
+            StreamConfiguration streamConfig = StreamConfiguration.builder()
+                    .name(channelDTO.streamName())
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
@@ -187,37 +189,38 @@ public class Channel {
             channelDTO.setOwnerdid(DID);
             channelRepository.save(channelDTO);
             nc.close();
-    	}
-    	
-    	return Response.ok().entity(new DDHubResponse("00", "Success")).build();
-    	
+        }
+
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
     }
-    
+
     @PUT
     @Path("{fqcn}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ChannelDTO.class)))
     @Authenticated
-    public Response channelAddTopicByfqcn(@PathParam("fqcn") String fqcn, @NotNull @QueryParam("topicIds") String... topicIds)
+    public Response channelAddTopicByfqcn(@PathParam("fqcn") String fqcn,
+            @NotNull @QueryParam("topicIds") String... topicIds)
             throws IOException, InterruptedException, JetStreamApiException {
-    	 topicRepository.validateTopicIds(Arrays.asList(topicIds));
-         channelRepository.validateChannel(fqcn);
+        topicRepository.validateTopicIds(Arrays.asList(topicIds));
+        channelRepository.validateChannel(fqcn);
 
-         ChannelDTO channelDTO = channelRepository.findByFqcn(fqcn);
-         channelDTO.getTopicIds().addAll(Arrays.asList(topicIds));
-         
-         Connection nc = Nats.connect(natsJetstreamUrl);
-         JetStreamManagement jsm = nc.jetStreamManagement();
-         StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.streamName());
-         StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
-                 .addSubjects(channelDTO.findArraySubjectName())
-                 .build();
+        ChannelDTO channelDTO = channelRepository.findByFqcn(fqcn);
+        channelDTO.getTopicIds().addAll(Arrays.asList(topicIds));
 
-         StreamInfo streamInfo = jsm.updateStream(streamConfig);
-         logger.info(streamInfo);
-         channelDTO.setUpdateBy(DID);
-         channelRepository.updateChannel(channelDTO);
-         nc.close();
-         return Response.ok().entity(channelDTO).build();
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.streamName());
+        StreamConfiguration streamConfig = StreamConfiguration.builder(_streamInfo.getConfiguration())
+                .addSubjects(channelDTO.findArraySubjectName())
+                .build();
+
+        StreamInfo streamInfo = jsm.updateStream(streamConfig);
+        this.logger.info("[" + DID + "]" + JsonbBuilder.create().toJson(_streamInfo));
+        channelDTO.setUpdateBy(DID);
+        channelRepository.updateChannel(channelDTO);
+        nc.close();
+        return Response.ok().entity(channelDTO).build();
     }
 
     @GET

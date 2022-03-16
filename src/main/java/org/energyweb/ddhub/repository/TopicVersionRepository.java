@@ -49,8 +49,12 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
 		
 		PanacheQuery<TopicVersion> topics = find("topicId = ?1", new ObjectId(id));
-		if(size > 0) {
-			topics.page(Page.of((((page-1)*size)-(page>1?1:0)), size));
+		if (size > 0) {
+			if(size == 1) {
+				topics.page(Page.of(page - 1, size));
+			}else {
+				topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
+			}
 		}
 		topics.list().forEach(entity -> {
 			try {

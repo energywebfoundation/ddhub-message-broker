@@ -3,7 +3,6 @@ package org.energyweb.ddhub;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +17,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
@@ -44,7 +44,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.energyweb.ddhub.dto.FileUploadDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
-import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.MessageRepository;
@@ -53,15 +52,12 @@ import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 
-import com.google.gson.Gson;
-
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
 import io.nats.client.PublishOptions;
-import io.nats.client.PullSubscribeOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
 import io.nats.client.api.PublishAck;
@@ -74,7 +70,7 @@ import io.quarkus.security.Authenticated;
 @RequestScoped
 public class Message {
     @Inject
-    Logger log;
+    Logger logger;
 
     @Inject
     ProducerTemplate producerTemplate;
@@ -135,7 +131,7 @@ public class Message {
         builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
         builder.add("sender", DID);
         builder.add("signature", messageDTO.getSignature());
-        builder.add("timestampNanos", String.valueOf( TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
 
         PublishAck pa = js.publish(messageDTO.subjectName(),
                 builder.build().toString().getBytes(StandardCharsets.UTF_8),
@@ -156,7 +152,7 @@ public class Message {
     @Authenticated
     public Response search(@Valid SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        // topicRepository.validateTopicIds(messageDTO.getTopicId());
+        topicRepository.validateTopicIds(messageDTO.getTopicId());
         // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
         messageDTO.setFqcn(DID);
 
@@ -166,14 +162,8 @@ public class Message {
         Builder builder = ConsumerConfiguration.builder();
         builder.maxAckPending(Duration.ofSeconds(5).toMillis());
         builder.durable(messageDTO.getClientId()); // required
-        Optional.ofNullable(messageDTO.getFrom()).ifPresent(lt->{
-        	builder.durable(messageDTO.getClientId().concat(String.valueOf(lt.toEpochSecond(ZoneOffset.UTC))));
-        	builder.startTime(lt.atZone(ZoneId.systemDefault()));
-        });
-        PullSubscribeOptions pullOptions = PullSubscribeOptions.builder()
-                .configuration(builder.build())
-                .build();
-        JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), pullOptions);
+
+        JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
         nc.flush(Duration.ofSeconds(1));
 
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
@@ -189,11 +179,19 @@ public class Message {
                     m.nak();
                     continue;
                 }
+                
+                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()), HashMap.class);
+
+                if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
+                        Optional.ofNullable(messageDTO.getFrom()).get().toEpochSecond(ZoneOffset.UTC) > Long
+                                .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+                    continue;
+                }
+
                 if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
                     continue;
                 }
 
-                HashMap<String, Object> natPayload = new Gson().fromJson(new String(m.getData()), HashMap.class);
                 String sender = (String) natPayload.get("sender");
                 if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
                     continue;
@@ -224,12 +222,13 @@ public class Message {
     @Authenticated
     public Response uploadFile(@Valid @MultipartForm FileUploadDTO data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-//        channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
+        // channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
         data.setOwnerdid(DID);
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
         data.setFileName(fileId);
         return Response.ok()
-                .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",token))
+                .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",
+                        token))
                 .build();
     }
 

@@ -10,6 +10,9 @@ import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -32,7 +35,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	TopicVersionRepository topicVersionRepository;
 
 	@Inject
-	Logger log;
+	Logger logger;
 
 	public void save(TopicDTO topicDTO) {
 		Topic topic = new Topic();
@@ -142,7 +145,11 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 		PanacheQuery<Topic> topics = find(buffer.toString(), owner, name, tags);
 		if (size > 0) {
-			topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
+			if (size == 1) {
+				topics.page(Page.of(page - 1, size));
+			} else {
+				topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
+			}
 		}
 		topics.list().forEach(entity -> {
 			try {
@@ -164,16 +171,47 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	public HashMap<String, Integer> countByOwner(String[] owner) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		PanacheQuery<Topic> topics = find("owner in ?1", List.of(owner));
-		
-		HashMap<String,Integer> topicOwner = new HashMap();
+
+		HashMap<String, Integer> topicOwner = new HashMap();
 		topics.list().forEach(entity -> {
-			if(topicOwner.containsKey(entity.getOwner())) {
+			if (topicOwner.containsKey(entity.getOwner())) {
 				topicOwner.put(entity.getOwner(), topicOwner.get(entity.getOwner()) + 1);
-			}else {
+			} else {
 				topicOwner.put(entity.getOwner(), 1);
 			}
 		});
 		return topicOwner;
+	}
+
+	public TopicDTOPage queryByOwnerOrName(String keyword, int page, int size) {
+		List<TopicDTO> topicDTOs = new ArrayList<>();
+		StringBuffer buffer = new StringBuffer("owner like ?1 or name like ?2");
+
+		long totalRecord = find(buffer.toString(), keyword, keyword).count();
+
+		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, keyword);
+		if (size > 0) {
+			if (size == 1) {
+				topics.page(Page.of(page - 1, size));
+			} else {
+				topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
+			}
+		}
+		topics.list().forEach(entity -> {
+			try {
+				Map map = BeanUtils.describe(entity);
+				map.remove("schemaType");
+				map.remove("tags");
+				TopicDTO topicDTO = new TopicDTO();
+				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setTags(entity.getTags());
+				topicDTO.setSchema(entity.getSchema());
+				topicDTOs.add(topicDTO);
+			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			}
+		});
+		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
 
 }

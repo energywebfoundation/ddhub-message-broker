@@ -15,8 +15,6 @@ ddhub-messagebroker:
       jwt_issuer: "ddhub-dev.energyweb.org"
       context_url: "ddhub-dev.energyweb.org"
 
-  authEnabled: true
-
   image:
     # repository: 098061033856.dkr.ecr.us-east-1.amazonaws.com/ew-dos-dsb-ecr
     repository: aemoprivatecontainerregistry.azurecr.io/ddhub-messagebroker

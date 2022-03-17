@@ -1,144 +1,145 @@
-# Default values for did-auth-proxy-helm.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-did-auth-proxy-helm:
-  enabled: true
-  replicaCount: 1
-
-  image:
-    repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
-    pullPolicy: Always
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: "canary"
-
-  imagePullSecrets: 
-    - name: regcred
-  nameOverride: "did-auth-proxy-dev"
-  fullnameOverride: "did-auth-proxy-dev"
-
-  serviceAccount:
-    # Specifies whether a service account should be created
-    create: true
-    # Annotations to add to the service account
-    annotations: {}
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name: ""
-
-  podAnnotations: {}
-
-  podSecurityContext: {}
-    # fsGroup: 2000
-
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
-
-  service:
-    type: ClusterIP
-    port: 80
-
-  ingress:
+ddhub-messagebroker:
+  # Default values for did-auth-proxy-helm.
+  # This is a YAML-formatted file.
+  # Declare variables to be passed into your templates.
+  did-auth-proxy-helm:
     enabled: true
-    annotations: 
-      kubernetes.io/ingress.class: nginx
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/server-snippet: |
-        location = /health {
-            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
-        }
-        location ~ ^/(swagger-ui|q/openapi) {
-            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
-        }
-        location ~ / {
-            auth_request /token_introspection;
-            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
-        }
-        location = /token_introspection {
-              internal;
-              proxy_method      GET;
-              proxy_set_header  Authorization "$http_authorization";
-              proxy_set_header  Content-Length "";
-              proxy_pass        http://did-auth-proxy-dev.ddhub-dev.svc.cluster.local/auth/token-introspection;
-        }
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: ddhub-dev.energyweb.org
-        paths:
-        - path: /auth
-          pathType: Prefix
-        - path: /auth/login
-          pathType: Prefix
-        - path: /auth/refresh-token
-          pathType: Prefix
-        - path: /auth/token-introspection
-          pathType: Prefix
-    tls: 
-      - secretName: dsb-tls-secret
-        hosts:
-          - ddhub-dev.energyweb.org
+    replicaCount: 1
 
-  config:
-    enabled: false
-    secretRefName: {}
-    configRefName: {}
+    image:
+      repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
+      pullPolicy: Always
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: "canary"
 
-  #for now dummy configs
-  appValues:
-    PORT: 80
-    ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
-    JWT_ACCESS_TTL: 3600
-    JWT_REFRESH_TTL: 86400
+    imagePullSecrets: 
+      - name: regcred
+    nameOverride: "did-auth-proxy-dev"
+    fullnameOverride: "did-auth-proxy-dev"
 
-  opsValues:
-    RPC_URL: https://volta-rpc.energyweb.org/
-    CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
-    REDIS_HOST: did-auth-proxy-dev-redis-master.ddhub-dev.svc
-    REDIS_PORT: 6379
+    serviceAccount:
+      # Specifies whether a service account should be created
+      create: true
+      # Annotations to add to the service account
+      annotations: {}
+      # The name of the service account to use.
+      # If not set and create is true, a name is generated using the fullname template
+      name: ""
 
-  resources: {}
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-    # limits:
-    #   cpu: 100m
-    #   memory: 128Mi
-    # requests:
-    #   cpu: 100m
-    #   memory: 128Mi
+    podAnnotations: {}
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+    podSecurityContext: {}
+      # fsGroup: 2000
 
-  nodeSelector: {}
+    securityContext: {}
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
 
-  tolerations: []
+    service:
+      type: ClusterIP
+      port: 80
 
-  affinity: {}
+    ingress:
+      enabled: true
+      annotations: 
+        kubernetes.io/ingress.class: nginx
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/server-snippet: |
+          location = /health {
+              proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
+          }
+          location ~ ^/(swagger-ui|q/openapi) {
+              proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
+          }
+          location ~ / {
+              auth_request /token_introspection;
+              proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
+          }
+          location = /token_introspection {
+                internal;
+                proxy_method      GET;
+                proxy_set_header  Authorization "$http_authorization";
+                proxy_set_header  Content-Length "";
+                proxy_pass        http://did-auth-proxy-dev.ddhub-dev.svc.cluster.local/auth/token-introspection;
+          }
+        # kubernetes.io/ingress.class: nginx
+        # kubernetes.io/tls-acme: "true"
+      hosts:
+        - host: ddhub-dev.energyweb.org
+          paths:
+          - path: /auth
+            pathType: Prefix
+          - path: /auth/login
+            pathType: Prefix
+          - path: /auth/refresh-token
+            pathType: Prefix
+          - path: /auth/token-introspection
+            pathType: Prefix
+      tls: 
+        - secretName: dsb-tls-secret
+          hosts:
+            - ddhub-dev.energyweb.org
 
-  sealedSecret:
-    enabled: true
-    annotations: {}
-    encryptedData: 
-      CACHE_SERVER_LOGIN_PRVKEY: AgAPn9kw6/EH2ZKOYdkw31qySyfGXC8yKTmMUpYgcr4Pg7ermdF83x8Zou0y9ZJSEJyWo4qQeXFsAY782SSEM5U06VdlcZWUGYEIBNbRX54vAt77Tj/v6H50XKlVcNUBEFyoxnpLZaVSrcw3YEhsR7s6wqfT5oCR/e9Xoa3XiUzxMJ1jtrap2ZMF/IdiT7jrTrB/38OFY3MpFm34ejURd5IBmXl3bxRyIC2K+d6jtPShwaARz+ovwGLqgSjwA7y1TUMsSRvlXQLJkGKqTVsrhPBJ1O4hYpSdB5ClZzMuilo5+HI+3msJdILl9h/kxdmBFHWoVx1uVvCcMkJ8w0vNrlBV/CaXZgCvXtdNrpfqYY7ZKYVeeJ7flXtZTkuYaYbkAtWkJQ+Sz8P+evsjUMzW2lfCiiRNlzAdP4ssha9A7+hVXQzXWxnD1gSBEJ99hUZNmsVx+hkhmVIziDm9r0NYbsBjlYUIaPLQRi/uFBKINHqTOlJry48jnqA7xoIJ1yUy0Tf3IPSL0TKgm8H96o6xV8GXy+QiY8GcF1MKvtluuCp9mU+jLglIydKkqyZTH8DRDFreFhYQ8JgOqXQxGVKqWQYm7l5vBzSEBkazXnWd5Cd57OlOH9HezPPhvjLxTjjUx+OabgKa0V57W8NKnYS+eWoZ3X4hxIR0CI+mYQMNZlKO8Ie5oPvHeMbWqLGqYUhys4iFPCqRLiYSGy3FJhjK350o44/kooX1w59mk5WTGaWXiGeZ2lnxLld+dqr/sgsVDzyReUucddPK8vt10kgUrCaR
-      JWT_SECRET: AgBw/jWEvGm5NrFTpHn5xYL2unpbIsAJzS6WfQ2zZhHBF1R87YcU7T0cLNGMuAYQ2CTtk0TMG1uQFOCtg2pTmXnIvTnY2XyezII9M8KzXKUSaygcGEr2kAIe/bncPFzF+V/VJicg9snwH125HU8p6yyc2D/m5wUZR1FGUFS9iOCsFYiUCoIprEVeHEo76ay0C2cYwn4AvvVJy6Eq6UfC4V1M7DsPFVTDScy+jceltFWqo5Zq7PmWy52KC+aR6pGEYdFKNbCn25gOdQ0patuSdP270HN+ggqluw9uvTJ3gGRcZVMzc8KGzmcwcshr1cn+TNXq9UpB9KVqOf5zP3imjuvYCXCMuMmOX4X7MEJeh3oR2MNzSnQkZrT3q8lDGqNRmnKx7Rp/rofH7qBtU9VPwzMN5xBwxc0WE8f1k56RPmEGXCP7FNchgIQQnQmnpX+iZC9VE2ZW+AR1DyXVGwhxmUhrtMJCOkhRumDZlyVwyjPsbvbDoaVo/7Lk1ZBER58NaYgu5OOANacEPR3ZK3GU153aTt8bGh+qsPeKSq7aTIEnzKVWq5gjOKLTF+qrqAzAQ8kL8tDmmMlDW17r8ktmWkS71cwKaQy+Htd+cmHsTI11QZop7fTO9KkA8Vk6cnuqgEgfSYluddnq8wIIJUtXs9un2CeCGOqP2tmzsQ5q7MfyXWpsf2LhddJt2syk0IKO4FrwBOqbcqAdnA72rqZLpWtuX8cr
-      REDIS_PASSWORD: AgBOLstjaaj6Px+FnKxvgaA6QJ5IjFcPxIqkaqE8M+sCAErtSExxJc9LwU/1yODJbLpR0V61gMRIiXy5Rfm0Ll+4zLoMJNVtgv2ReH9mV8gYpmW73gzSB4Oonnw29dVRrlzx4QNSFERC2dZHU3VtIlQeoxJtjsXBGjQ0zd8O9KZx/eNXccz1rL1RdP+hK+noBR8cU7SqRN0xKE5O6gycbIZNLpIHiG96x63KZs/DN/k5meW5nlPXcxWJM7hKNrHXm/110RytqH81fQsI5us3Swmo45+jlGvLqIzVAXahc1LVH6B1d6uBpVQgRtpDPEBdztAQU6tFZaObLhDctHhQ6e5DoXFdJgvDM0XNaWrGQwcoS7flrjLaeRoj+JhWP4zkHKAGx6vWbMKnZj+ZjfLZBrOI0XiZa06bgq+RgV4qjcdyfFHlWGxjV1ybgDrFzI1Zoo3z8qGEuj8+MdmGGq6KBi/f9XiRZVlNyFTltGKzNKAEQBm1P1P/21WoBSiy4lbfeTok1M0GVW7rOAMG7oQiSHO+n1mV6cveC4tsojhyphwNm7+03hNKkc7u3+RK7uBMgnpTR8v9Q1H6FFROVw8YQhmHXfRBT67mUEWYzwHGAxnKU9N9jwr08vWDDUUIu/ZnRUZjYk29qd612Wu1NUP9SgpJsJNMKceQx1s2jRvY5HuCsNyEKeM1QExO/6xLIG5VkUQP0S3ZCA==
+    config:
+      enabled: false
+      secretRefName: {}
+      configRefName: {}
 
-  ########
-  # Redis
+    #for now dummy configs
+    appValues:
+      PORT: 80
+      ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
+      JWT_ACCESS_TTL: 3600
+      JWT_REFRESH_TTL: 86400
 
-  # redis:
-  #   architecture: standalone
-  #   auth:
-  #     existingSecret: did-auth-proxy-dev-sealedsecret
-  #     existingSecretPasswordKey: REDIS_PASSWORD
+    opsValues:
+      RPC_URL: https://volta-rpc.energyweb.org/
+      CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
+      REDIS_HOST: did-auth-proxy-dev-redis-master.ddhub-dev.svc
+      REDIS_PORT: 6379
+
+    resources: {}
+      # We usually recommend not to specify default resources and to leave this as a conscious
+      # choice for the user. This also increases chances charts run on environments with little
+      # resources, such as Minikube. If you do want to specify resources, uncomment the following
+      # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+      # limits:
+      #   cpu: 100m
+      #   memory: 128Mi
+      # requests:
+      #   cpu: 100m
+      #   memory: 128Mi
+
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 100
+      targetCPUUtilizationPercentage: 80
+      # targetMemoryUtilizationPercentage: 80
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    sealedSecret:
+      enabled: true
+      annotations: {}
+      encryptedData: 
+        CACHE_SERVER_LOGIN_PRVKEY: AgAPn9kw6/EH2ZKOYdkw31qySyfGXC8yKTmMUpYgcr4Pg7ermdF83x8Zou0y9ZJSEJyWo4qQeXFsAY782SSEM5U06VdlcZWUGYEIBNbRX54vAt77Tj/v6H50XKlVcNUBEFyoxnpLZaVSrcw3YEhsR7s6wqfT5oCR/e9Xoa3XiUzxMJ1jtrap2ZMF/IdiT7jrTrB/38OFY3MpFm34ejURd5IBmXl3bxRyIC2K+d6jtPShwaARz+ovwGLqgSjwA7y1TUMsSRvlXQLJkGKqTVsrhPBJ1O4hYpSdB5ClZzMuilo5+HI+3msJdILl9h/kxdmBFHWoVx1uVvCcMkJ8w0vNrlBV/CaXZgCvXtdNrpfqYY7ZKYVeeJ7flXtZTkuYaYbkAtWkJQ+Sz8P+evsjUMzW2lfCiiRNlzAdP4ssha9A7+hVXQzXWxnD1gSBEJ99hUZNmsVx+hkhmVIziDm9r0NYbsBjlYUIaPLQRi/uFBKINHqTOlJry48jnqA7xoIJ1yUy0Tf3IPSL0TKgm8H96o6xV8GXy+QiY8GcF1MKvtluuCp9mU+jLglIydKkqyZTH8DRDFreFhYQ8JgOqXQxGVKqWQYm7l5vBzSEBkazXnWd5Cd57OlOH9HezPPhvjLxTjjUx+OabgKa0V57W8NKnYS+eWoZ3X4hxIR0CI+mYQMNZlKO8Ie5oPvHeMbWqLGqYUhys4iFPCqRLiYSGy3FJhjK350o44/kooX1w59mk5WTGaWXiGeZ2lnxLld+dqr/sgsVDzyReUucddPK8vt10kgUrCaR
+        JWT_SECRET: AgBw/jWEvGm5NrFTpHn5xYL2unpbIsAJzS6WfQ2zZhHBF1R87YcU7T0cLNGMuAYQ2CTtk0TMG1uQFOCtg2pTmXnIvTnY2XyezII9M8KzXKUSaygcGEr2kAIe/bncPFzF+V/VJicg9snwH125HU8p6yyc2D/m5wUZR1FGUFS9iOCsFYiUCoIprEVeHEo76ay0C2cYwn4AvvVJy6Eq6UfC4V1M7DsPFVTDScy+jceltFWqo5Zq7PmWy52KC+aR6pGEYdFKNbCn25gOdQ0patuSdP270HN+ggqluw9uvTJ3gGRcZVMzc8KGzmcwcshr1cn+TNXq9UpB9KVqOf5zP3imjuvYCXCMuMmOX4X7MEJeh3oR2MNzSnQkZrT3q8lDGqNRmnKx7Rp/rofH7qBtU9VPwzMN5xBwxc0WE8f1k56RPmEGXCP7FNchgIQQnQmnpX+iZC9VE2ZW+AR1DyXVGwhxmUhrtMJCOkhRumDZlyVwyjPsbvbDoaVo/7Lk1ZBER58NaYgu5OOANacEPR3ZK3GU153aTt8bGh+qsPeKSq7aTIEnzKVWq5gjOKLTF+qrqAzAQ8kL8tDmmMlDW17r8ktmWkS71cwKaQy+Htd+cmHsTI11QZop7fTO9KkA8Vk6cnuqgEgfSYluddnq8wIIJUtXs9un2CeCGOqP2tmzsQ5q7MfyXWpsf2LhddJt2syk0IKO4FrwBOqbcqAdnA72rqZLpWtuX8cr
+        REDIS_PASSWORD: AgBW842g1otVuqfyk6/NwW+x1Ct4qvH9fwWXcMHq089WAij2LXMAaPUHP5tJxLK2XQmPS9ASDJFMZkfL8JXMC24NZ2VdU93EE6cUj3lwszYOH13ID3ki5oSPld5zF+7dFxwNrJ+DXMGYOfDJtc2sRsq0n5xEKR2ETxwJ4K2vG+1zJlKRej4I5318+t5A1JwfH4X8EuUQDIht5Dr1seFe0FdeAgIwFJxY3OvWlLVTvWgPVyVqe00Qt3WLwgMkYl2ZVSNsn+EW5skWeyPUVpm/4k7UFJ3lDWMJAEM7torp7Z8urpQ9MmiJMcawdPDf42ya4qHepYNsq4/DM9N8/wBQ/edxmMD9rkb2oDAXSsl7toZH9eVrkWMOC1wIoLj7h5xkF3lTvS7LH1hxGwc1tp4q6F9SZxxUg9p/4k0UUnR/HMbJ4g0HUaC2+5kDMaUGl8AZoXRhaCyNkzR5yKBV+BKNPRCMATK0f6ZiYGNGi4MxDJFtPzFB6UqtFcFqaHkVjoffMG2nmy61k8V2D81BaKmz4ty/bYL1RV1qXc6DtzObjOrJTSn2AJMZCRZWVWBK9ZJH9O8aRoK0Zpxvi74XyKGcO2QobZ1TUOH3WfFLmTgjH/lCNhHKyFxQ6q9X9SfXEBE9EkY/XcHRKWjKCrKGi+xJds7F5ALpgoiQjLTm7dCSEI2KukxvSZy+BKpN4uGYDOrb01APxtCaRKe/JS4l9zizfpWWZg==
+
+    ########
+    # Redis
+
+    redis:
+      architecture: standalone
+      auth:
+        existingSecret: did-auth-proxy-dev-sealedsecret
+        existingSecretPasswordKey: REDIS_PASSWORD

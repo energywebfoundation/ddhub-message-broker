@@ -139,7 +139,8 @@ ddhub-messagebroker:
     # Redis
 
     redis:
-      architecture: standalone
+      replica:
+        replicaCount: 1
       auth:
         existingSecret: did-auth-proxy-dev-sealedsecret
         existingSecretPasswordKey: REDIS_PASSWORD

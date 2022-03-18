@@ -143,5 +143,4 @@ ddhub-messagebroker:
         replicaCount: 1
       auth:
         password: wonderfulpassword
-        existingSecret: did-auth-proxy-dev-sealedsecret
-        existingSecretPasswordKey: REDIS_PASSWORD
+        

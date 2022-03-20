@@ -10,7 +10,7 @@ did-auth-proxy-helm:
     repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
     pullPolicy: Always
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "ef3e5d73-9ba6-4e9f-90c5-6d97dca15c09"
+    tag: "canary"
 
   imagePullSecrets: 
     - name: regcred

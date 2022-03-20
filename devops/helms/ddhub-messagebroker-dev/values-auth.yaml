@@ -101,7 +101,6 @@ did-auth-proxy-helm:
     CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
     REDIS_HOST: ddhub-messagebroker-dev-redis-master.ddhub-dev.svc
     REDIS_PORT: 6379
-    REDIS_PASSWORD: redis
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious

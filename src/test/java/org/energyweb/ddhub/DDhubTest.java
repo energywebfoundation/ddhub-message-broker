@@ -327,8 +327,8 @@ public class DDhubTest {
 		String privateKeyLocation = "/privatekey.pem";
 		PrivateKey privateKey = readPrivateKey(privateKeyLocation);
 
-		String[] roles = new String[] { "topicCreator.roles.messagebroker.apps.energyweb.iam.ewc",
-				"topicCreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
+		String[] roles = new String[] { "topiccreator.roles.messagebroker.apps.energyweb.iam.ewc",
+				"topiccreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
 				.claim("roles", new JSONArray(List.of(roles)))

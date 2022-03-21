@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.validation.constraints.NotEmpty;
 
 import org.energyweb.ddhub.Role.TYPE;
 import org.energyweb.ddhub.model.RoleOwner;

@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.json.Json;
@@ -330,7 +331,7 @@ public class DDhubTest {
 				"topicCreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
-				.claim("roles", roles)
+				.claim("roles", new JSONArray(List.of(roles)))
 				.sign(privateKey);
 	}
 

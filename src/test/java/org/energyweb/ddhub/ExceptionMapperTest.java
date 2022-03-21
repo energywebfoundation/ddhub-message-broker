@@ -12,10 +12,12 @@ import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
@@ -57,7 +59,7 @@ public class ExceptionMapperTest {
 				"topicCreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
-				.claim("roles", roles)
+				.claim("roles", new JSONArray(List.of(roles)))
 				.sign(privateKey);
 	}
 

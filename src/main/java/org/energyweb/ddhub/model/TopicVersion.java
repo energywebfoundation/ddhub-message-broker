@@ -14,7 +14,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 @MongoEntity(collection = "schema_version")
-@Data
+@Getter
+@Setter
 public class TopicVersion {
 
 	@JsonIgnore

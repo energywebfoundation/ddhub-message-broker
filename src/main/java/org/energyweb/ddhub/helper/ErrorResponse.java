@@ -1,10 +1,10 @@
 package org.energyweb.ddhub.helper;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 public class ErrorResponse extends DDHubResponse {
 
 	public ErrorResponse(String returnCode, String returnMessage) {

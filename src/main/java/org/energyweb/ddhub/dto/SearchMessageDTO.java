@@ -4,22 +4,21 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-import javax.ws.rs.DefaultValue;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class SearchMessageDTO {
 
@@ -50,11 +49,8 @@ public class SearchMessageDTO {
 	}
 
 	@JsonIgnore
-	public String subjectName(int index) {
-		if (topicId.size() == 1) {
-			return streamName().concat(".").concat(topicId.get(0));
-		}
-		return streamName().concat(".").concat(topicId.get(index));
+	public String subjectName(String topicId) {
+		return streamName().concat(".").concat(topicId);
 	}
 
 	@JsonIgnore

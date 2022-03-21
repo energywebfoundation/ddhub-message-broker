@@ -1,6 +1,8 @@
 package org.energyweb.ddhub.model;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.bson.types.ObjectId;
 
@@ -9,17 +11,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@MongoEntity(collection = "message")
+@MongoEntity(collection = "role_owner")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Message {
+public class RoleOwner {
 	private ObjectId id;
-	private String transactionId;
-    private String topicId;
-	private String topicVersion;
-	private String fqcn;
-	private String senderdid;
+    private Set<String> claimType = new HashSet<String>();
+    private String did;
     private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
 }

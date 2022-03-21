@@ -134,7 +134,12 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	public TopicDTOPage queryByOwnerNameTags(String owner, String name, int page, int size, String... tags) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		StringBuffer buffer = new StringBuffer("owner = ?1");
-		Optional.ofNullable(name).ifPresent(value -> buffer.append(" and name = ?2"));
+		Optional.ofNullable(name).ifPresent(value -> {
+			if (!value.isEmpty()) {
+				buffer.append(" and name = ?2");
+			}
+		});
+		
 		Optional.ofNullable(tags).ifPresent(value -> {
 			if (value.length > 0) {
 				buffer.append(" and tags in ?3");

@@ -6,11 +6,13 @@ import java.util.Set;
 import org.bson.types.ObjectId;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @MongoEntity(collection = "channel")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Channel {
 	private ObjectId id;

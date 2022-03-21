@@ -15,10 +15,11 @@ import org.jose4j.json.internal.json_simple.parser.ParseException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AccessLevel;
-import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter 
+@Setter
 public class TopicDTO {
 
 	public enum SchemaType {

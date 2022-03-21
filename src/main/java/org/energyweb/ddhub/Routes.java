@@ -98,6 +98,7 @@ public class Routes extends RouteBuilder {
                                 .doCatch(Exception.class)
                                 .process(e -> {
                                         Exception exception = e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                                        logger.info(exception);
                                         JSONParser parser = new JSONParser();
                                         JSONObject json = (JSONObject) parser
                                                         .parse(new String((byte[]) e.getIn().getBody()));
@@ -106,14 +107,7 @@ public class Routes extends RouteBuilder {
                                 .endDoTry();
 
                 from("direct:azuredownload")
-                                .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client")
-                                .process(e -> {
-                                        // logger.info(e);
-                                        // Map<String, String> map = new HashMap();
-                                        // map.put("Sss", "sss");
-                                        // logger.info(credential.generateAuthorizationHeader(
-                                        // new URL("https://vcaemo.blob.core.windows.net"), "GET", map));
-                                });
+                                .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=getBlob&serviceClient=#client");
 
         }
 }

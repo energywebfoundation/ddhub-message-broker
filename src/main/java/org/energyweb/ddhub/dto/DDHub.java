@@ -14,10 +14,12 @@ import org.jboss.resteasy.annotations.providers.multipart.PartType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class DDHub {
 

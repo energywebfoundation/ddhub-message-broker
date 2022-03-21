@@ -47,7 +47,23 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 		ErrorResponse error = new ErrorResponse("10", "Unauthorize access");
 		try {
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
-			JSONArray jsonArray = (JSONArray) jsonObject.get("verifiedRoles");
+			JSONArray jsonArray = (JSONArray) jsonObject.get("roles");
+			if (Optional.ofNullable(jsonObject.get("did")).isEmpty()) {
+				this.logger.error("missing did -> "
+						+ authorizationHeader);
+				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+						.entity(error).build());
+				return;
+			}
+			
+			if (Optional.ofNullable(jsonArray).isEmpty()) {
+				this.logger.error("[" + jsonObject.get("did") + "]" + " missing roles -> "
+						+ authorizationHeader);
+				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+						.entity(error).build());
+				return;
+			}
+
 			Optional<DDHubServiceRulesConfig.DDHubService> hubService = rulesConfig.services().stream()
 					.sorted((DDHubServiceRulesConfig.DDHubService a1,
 							DDHubServiceRulesConfig.DDHubService a2) -> a1.path().compareTo(a2.path()))
@@ -58,8 +74,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 			hubService.ifPresentOrElse(service -> {
 				Set<String> ruleMatch = new HashSet<String>();
 				jsonArray.forEach(item -> {
-					JSONObject obj = (JSONObject) item;
-					String namespace = (String) obj.get("namespace");
+					String namespace = (String) item;
 					if (!ruleMatch.contains(namespace) && service.rules().stream()
 							.filter(str -> namespace.matches(str.replace("*", "(\\w*.*)")))
 							.findFirst().isPresent()) {
@@ -70,11 +85,12 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 					requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
 							.entity(error).build());
+					return;
 				}
 
-			},()->{
+			}, () -> {
 				this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
-//				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
+				// requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
 			});
 		} catch (ParseException e) {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
@@ -82,6 +98,5 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					.entity(error).build());
 		}
 	}
-
 
 }

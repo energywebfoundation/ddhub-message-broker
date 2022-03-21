@@ -3,6 +3,9 @@ package org.energyweb.ddhub;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +25,7 @@ import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -39,11 +43,15 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBodySchema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.energyweb.ddhub.dto.DDHub;
 import org.energyweb.ddhub.dto.FileUploadDTO;
+import org.energyweb.ddhub.dto.InternalMessageDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
+import org.energyweb.ddhub.dto.TopicDTOCreate;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.MessageRepository;
@@ -104,8 +112,11 @@ public class Message {
     String DID;
 
     @Inject
-    @Claim(value = "verifiedRoles")
+    @Claim(value = "roles")
     String roles;
+
+    @ConfigProperty(name = "INTERNAL_TOPIC")
+    String internalTopicId;
 
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
@@ -147,6 +158,102 @@ public class Message {
     }
 
     @POST
+    @Path("internal")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
+    @Authenticated
+    public Response publishInternal(@Valid @NotNull InternalMessageDTO internalMessageDTO)
+            throws InterruptedException, JetStreamApiException, TimeoutException, IOException {
+
+        MessageDTO messageDTO = new MessageDTO();
+        messageDTO.setFqcn(internalMessageDTO.getFqcn());
+        messageDTO.setPayload(internalMessageDTO.getPayload());
+        messageDTO.setTransactionId(internalMessageDTO.getTransactionId());
+        messageDTO.setTopicId(internalTopicId);
+
+        Connection nc = Nats.connect(natsJetstreamUrl);
+
+        JetStream js = nc.jetStream();
+        PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+                .messageId(messageDTO.getTransactionId());
+
+        String id = messageRepository.save(messageDTO, DID);
+
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        builder.add("id", id);
+        builder.add("payload", messageDTO.getPayload());
+        builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
+        builder.add("sender", DID);
+        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+
+        PublishAck pa = js.publish(messageDTO.subjectName(),
+                builder.build().toString().getBytes(StandardCharsets.UTF_8),
+                (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+
+        nc.flush(Duration.ZERO);
+        nc.close();
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put("id", id);
+        return Response.ok().entity(map).build();
+
+    }
+
+    @GET
+    @Path("internal")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
+    @Authenticated
+    public Response searchInternal(@DefaultValue("default") @QueryParam("clientId") String clientId)
+            throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
+        SearchMessageDTO messageDTO = new SearchMessageDTO();
+        messageDTO.setFqcn(DID);
+        messageDTO.setClientId(clientId);
+
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        JetStream js = nc.jetStream();
+
+        Builder builder = ConsumerConfiguration.builder();
+        builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+        builder.durable(messageDTO.getClientId()); // required
+
+        JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
+                builder.buildPullSubscribeOptions());
+        nc.flush(Duration.ofSeconds(1));
+
+        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        while (messageDTOs.size() < messageDTO.getAmount()) {
+            List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+            // messages.forEach(m -> m.inProgress());
+            if (messages.isEmpty()) {
+                break;
+            }
+            for (io.nats.client.Message m : messages) {
+                m.inProgress();
+                if (m.isStatusMessage()) {
+                    m.nak();
+                    continue;
+                }
+
+                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                        HashMap.class);
+
+                String sender = (String) natPayload.get("sender");
+
+                MessageDTO message = new MessageDTO();
+                message.setPayload((String) natPayload.get("payload"));
+                message.setFqcn(messageDTO.getFqcn());
+                message.setId((String) natPayload.get("id"));
+                message.setSenderDid(sender);
+                message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+                messageDTOs.add(message);
+                m.ack();
+            }
+        }
+        sub.unsubscribe();
+        nc.close();
+        return Response.ok().entity(messageDTOs).build();
+    }
+
+    @POST
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
@@ -179,12 +286,18 @@ public class Message {
                     m.nak();
                     continue;
                 }
-                
-                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()), HashMap.class);
+
+                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                        HashMap.class);
+
+                logger.info(messageDTO.getSenderId());
+                String sender = (String) natPayload.get("sender");
+                logger.info(sender);
 
                 if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
-                        Optional.ofNullable(messageDTO.getFrom()).get().toEpochSecond(ZoneOffset.UTC) > Long
-                                .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+                        TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
+                                .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+                                        .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
                     continue;
                 }
 
@@ -192,7 +305,6 @@ public class Message {
                     continue;
                 }
 
-                String sender = (String) natPayload.get("sender");
                 if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
                     continue;
                 }

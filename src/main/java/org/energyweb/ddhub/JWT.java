@@ -50,17 +50,8 @@ public class JWT {
 		JwtClaimsBuilder claimsBuilder = Jwt.claims();
 		long currentTimeInSecs = currentTimeInSecs();
 
-		JSONArray verifiedRoles = new JSONArray();
-
-		JsonObjectBuilder builder = Json.createObjectBuilder();
-		for (String role : roles) {
-			builder.add("name", role);
-			builder.add("namespace", role);
-			verifiedRoles.add(builder.build());
-		}
-
 		claimsBuilder.claim("did", did);
-		claimsBuilder.claim("verifiedRoles", verifiedRoles);
+		claimsBuilder.claim("roles", roles);
 
 		claimsBuilder.issuedAt(currentTimeInSecs);
 		claimsBuilder.expiresAt(currentTimeInSecs + 3600);
@@ -102,14 +93,6 @@ public class JWT {
 	public int currentTimeInSecs() {
 		long currentTimeMS = System.currentTimeMillis();
 		return (int) (currentTimeMS / 1000);
-	}
-
-	@Getter
-	@Setter
-	@AllArgsConstructor
-	public class AuthRole {
-		private String name;
-		private String namespace;
 	}
 
 }

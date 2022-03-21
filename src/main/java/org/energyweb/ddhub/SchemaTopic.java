@@ -69,22 +69,21 @@ public class SchemaTopic {
 
     @Inject
     MongoClient mongoClient;
-    
+
     @Inject
     @Claim(value = "did")
     String DID;
 
     @Inject
-    @Claim(value = "verifiedRoles")
+    @Claim(value = "roles")
     String roles;
 
     @POST
     @RequestBodySchema(TopicDTOCreate.class)
-    @Parameter(description = "test",example = "dev.test.a")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
     @Authenticated
     public Response createSchema(@NotNull @Valid TopicDTO topic) {
-    	topic.setDid(DID);
+        topic.setDid(DID);
         topicRepository.save(topic);
         return Response.ok().entity(topic).build();
     }
@@ -107,42 +106,53 @@ public class SchemaTopic {
         Document fqcn = new Document("fqcn", 1);
         mongoClient.getDatabase("ddhub").getCollection("channel").createIndex(fqcn, new IndexOptions().unique(true));
 
+        Document did = new Document("did", 1);
+        mongoClient.getDatabase("ddhub").getCollection("role_owner").createIndex(did, new IndexOptions().unique(true));
+
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
 
     @GET
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
-    public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,@QueryParam("name") String name,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size, @QueryParam("tags") String... tags) throws ValidationException {
-        if(page > 1 && size == 0) return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
-    	return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner,name,page,size,tags)).build();
+    public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,
+            @QueryParam("name") String name, @DefaultValue("1") @QueryParam("page") int page,
+            @DefaultValue("0") @QueryParam("limit") int size, @QueryParam("tags") String... tags)
+            throws ValidationException {
+        if (page > 1 && size == 0)
+            return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+        return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, tags)).build();
     }
-    
+
     @GET
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
-    public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) throws ValidationException {
-    	return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword,page,size)).build();
+    public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword,
+            @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size)
+            throws ValidationException {
+        return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, page, size)).build();
     }
 
     @GET
     @Path("count")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
     @Authenticated
-    public Response countByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String... owner) throws ValidationException {
-    	return Response.ok().entity(topicRepository.countByOwner(owner)).build();
+    public Response countByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String... owner)
+            throws ValidationException {
+        return Response.ok().entity(topicRepository.countByOwner(owner)).build();
     }
-    
+
     @GET
     @Path("{id}/version")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
-    public Response listOfVersionById(@NotNull @PathParam("id") String id,@DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
-    	if(page > 1 && size == 0) {
-    		return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
-    	}
-    	topicRepository.validateTopicIds(Arrays.asList(id));
+    public Response listOfVersionById(@NotNull @PathParam("id") String id,
+            @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
+        if (page > 1 && size == 0) {
+            return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+        }
+        topicRepository.validateTopicIds(Arrays.asList(id));
         return Response.ok().entity(topicVersionRepository.findListById(id, page, size)).build();
     }
 
@@ -152,16 +162,16 @@ public class SchemaTopic {
     @Authenticated
     public Response topicVersionByNumber(@NotNull @PathParam("id") String id,
             @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
-    	topicRepository.validateTopicIds(Arrays.asList(id));
-    	return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
+        topicRepository.validateTopicIds(Arrays.asList(id));
+        return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
     }
 
     @PATCH
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response updateSchema(@NotNull @Valid TopicDTO topic) {
-    	topic.setDid(DID);
-    	topicRepository.validateTopicIds(Arrays.asList(topic.getId()));
+        topic.setDid(DID);
+        topicRepository.validateTopicIds(Arrays.asList(topic.getId()));
         topicRepository.updateTopic(topic);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
@@ -171,7 +181,7 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response deleteSchema(@NotNull @PathParam("id") String id) {
-    	topicRepository.validateTopicIds(Arrays.asList(id));
+        topicRepository.validateTopicIds(Arrays.asList(id));
         topicRepository.deleteTopic(id);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }

@@ -6,11 +6,13 @@ import java.time.LocalDateTime;
 import org.bson.types.ObjectId;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @MongoEntity(collection = "fileupload")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class FileUpload {
 	private ObjectId id;

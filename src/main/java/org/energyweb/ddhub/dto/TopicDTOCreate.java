@@ -11,9 +11,11 @@ import org.energyweb.ddhub.dto.TopicDTO.SchemaType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class TopicDTOCreate {
 
 	@NotNull

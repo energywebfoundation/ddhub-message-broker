@@ -20,6 +20,5 @@ public class DDHubResponse {
 	@NonNull
 	private String returnCode;
 	@NonNull
-	@Setter(value = AccessLevel.NONE)
 	private String returnMessage;
 }

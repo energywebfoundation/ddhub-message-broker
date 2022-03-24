@@ -106,25 +106,31 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body("{\n  \"name\": \"string\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		id2 = response.then()
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 		id = id2;
+		
+		HashMap sendmsg = new HashMap<>();
+		sendmsg.put("fqcns", Arrays.asList(did));
+		sendmsg.put("transactionId", "testid");
+		sendmsg.put("clientGatewayMessageId", "testid");
+		sendmsg.put("payload", "payload");
+		sendmsg.put("topicId", id);
+		sendmsg.put("topicVersion", "1.0.0");
+		sendmsg.put("signature", "signature");
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"fqcn\": \"" + did
-						+ "\",\n  \"transactionId\": \"string\",\n  \"payload\": \"string\",\n  \"topicId\": \"" + id
-						+ "\",\n  \"topicVersion\": \"1.0.0\",\n  \"signature\": \"string\"\n}")
+				.body(JsonbBuilder.create().toJson(sendmsg))
 				.when()
-				.post("/message").andReturn();
+				.post("/messages").andReturn();
 
 		String msgId = response.then()
 				.statusCode(200).extract().body().jsonPath().getString("messageId");
-		;
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
@@ -160,7 +166,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body("{\n  \"name\": \"UploadDownload\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		id = response.then()
 				.statusCode(200)
@@ -170,13 +176,14 @@ public class DDhubTest {
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA)
-				.multiPart("fqcn", didUpload)
+				.multiPart("fqcns", didUpload)
 				.multiPart("file", new File(DDhubTest.class.getResource("/sample.txt").getFile()))
 				.multiPart("fileName", filename)
 				// .multiPart("transactionId", fruit)
 				.multiPart("signature", "signature")
 				.multiPart("topicId", id)
 				.multiPart("topicVersion", "1.0.0")
+				.multiPart("clientGatewayMessageId", "test")
 				.when()
 				.post("/messages/upload").andReturn();
 
@@ -216,20 +223,28 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body("{\n  \"name\": \"stringid3\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		String id3 = response.then()
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 
+		
+		HashMap sendmsg = new HashMap<>();
+		sendmsg.put("fqcns", Arrays.asList(didUpload));
+		sendmsg.put("transactionId", "testid");
+		sendmsg.put("clientGatewayMessageId", "testid");
+		sendmsg.put("payload", "payload");
+		sendmsg.put("topicId", id3);
+		sendmsg.put("topicVersion", "1.0.0");
+		sendmsg.put("signature", "signature");
+		
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"fqcn\": \"" + didUpload
-						+ "\",\n  \"transactionId\": \"string\",\n  \"payload\": \"string\",\n  \"topicId\": \"" + id3
-						+ "\",\n  \"topicVersion\": \"1.0.0\",\n  \"signature\": \"string\"\n}")
+				.body(JsonbBuilder.create().toJson(sendmsg))
 				.when()
-				.post("/message").andReturn();
+				.post("/messages").andReturn();
 
 		response.then()
 				.statusCode(200);
@@ -340,7 +355,7 @@ public class DDhubTest {
 		String payload = "test data";
 		HashMap msg = new HashMap();
 		msg.put("fqcn", didTest);
-		msg.put("transactionId", didTest);
+		msg.put("clientGatewayMessageId", didTest);
 		msg.put("payload", payload);
 
 		Response response = given().auth()

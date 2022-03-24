@@ -68,7 +68,7 @@ public class ExceptionMapperTest {
 						+ "\",\n  \"transactionId\": \"string\",\n  \"payload\": \"string\",\n  \"topicId\": \"62170370fff91062c17df720"
 						+ "\",\n  \"topicVersion\": \"1.0.0\",\n  \"signature\": \"string\"\n},")
 				.when()
-				.post("/message").andReturn();
+				.post("/messages").andReturn();
 
 		HashMap msg = new HashMap();
 		msg.put("fqcn", didUpload + 1);
@@ -87,7 +87,7 @@ public class ExceptionMapperTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body("{\n  \"name\": \"stringid4\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		String id3 = response.then()
 				.statusCode(200)

@@ -81,7 +81,7 @@ public class TopicTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -101,7 +101,7 @@ public class TopicTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -124,7 +124,7 @@ public class TopicTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.patch("/topic").andReturn();
+				.patch("/topics").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -145,7 +145,7 @@ public class TopicTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.patch("/topic").andReturn();
+				.patch("/topics").andReturn();
 
 		response.then()
 				.statusCode(400);
@@ -224,7 +224,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic?limit={limit}&name={name}&owner={owner}&page={page}", 0, "", "test.apps.energyweb.iam.ewc",
+				.get("/topics?limit={limit}&name={name}&owner={owner}&page={page}", 0, "", "test.apps.energyweb.iam.ewc",
 						1)
 				.andReturn();
 

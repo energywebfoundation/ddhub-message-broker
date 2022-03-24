@@ -29,7 +29,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.security.Authenticated;
 
-@Path("/role")
+@Path("/roles")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tags(value = @Tag(name = "Role", description = "All the methods"))

@@ -56,7 +56,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/createindex").andReturn();
+				.get("/topics/createindex").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -160,7 +160,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/search?keyword=topic").andReturn();
+				.get("/topics/search?keyword=topic").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -175,7 +175,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/{id}/version", id).andReturn();
+				.get("/topics/{id}/version", id).andReturn();
 		response.then()
 				.statusCode(200)
 				.body("count", is(2));
@@ -184,7 +184,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/{id}/version/{versionNumber}", id, "1.0.1").andReturn();
+				.get("/topics/{id}/version/{versionNumber}", id, "1.0.1").andReturn();
 		response.then()
 				.statusCode(200)
 				.body("version", is("1.0.1"));
@@ -193,7 +193,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/{id}/version/{versionNumber}", id, "1.0.2").andReturn();
+				.get("/topics/{id}/version/{versionNumber}", id, "1.0.2").andReturn();
 		response.then()
 				.statusCode(400)
 				.body("returnMessage", containsString("version not exists"));
@@ -208,7 +208,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/count?owner=test.apps.energyweb.iam.ewc").andReturn();
+				.get("/topics/count?owner=test.apps.energyweb.iam.ewc").andReturn();
 
 		logger.info(response.then().extract().asString());
 		response.then()
@@ -241,7 +241,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.delete("/topic/{id}", id).andReturn();
+				.delete("/topics/{id}", id).andReturn();
 
 		logger.info(response.then().extract().asString());
 		response.then()

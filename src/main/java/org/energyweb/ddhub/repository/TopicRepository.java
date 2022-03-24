@@ -107,30 +107,6 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 	}
 
-	public List<TopicDTO> listAllBy(String ownerDID) {
-		List<TopicDTO> topicDTOs = new ArrayList<>();
-		list("ownerdid", ownerDID).forEach(entity -> {
-			try {
-				Map map = BeanUtils.describe(entity);
-				map.remove("schemaType");
-				map.remove("tags");
-				TopicDTO topicDTO = new TopicDTO();
-				BeanUtils.copyProperties(topicDTO, map);
-				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
-				topicDTO.setTags(entity.getTags());
-				topicDTO.setSchema(entity.getSchema());
-				topicDTOs.add(topicDTO);
-			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-			}
-		});
-		return topicDTOs;
-	}
-
-	public void validateTopicIdByOwner(TopicDTO topic, String ownerDID) {
-		findByIdOptional(new ObjectId(topic.getId())).filter(data -> data.getOwner().contentEquals(ownerDID))
-				.orElseThrow(() -> new MongoException("id:" + topic.getId() + " not exists"));
-	}
-
 	public TopicDTOPage queryByOwnerNameTags(String owner, String name, int page, int size, String... tags) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		StringBuffer buffer = new StringBuffer("owner = ?1");

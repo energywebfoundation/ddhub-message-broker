@@ -59,7 +59,7 @@ public class ChannelTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/createindex").andReturn();
+				.get("/topics/createindex").andReturn();
 
 		response.then()
 				.statusCode(200)

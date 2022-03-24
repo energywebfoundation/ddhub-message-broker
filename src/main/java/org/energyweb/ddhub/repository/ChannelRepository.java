@@ -2,16 +2,13 @@ package org.energyweb.ddhub.repository;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.energyweb.ddhub.dto.ChannelDTO;
+import org.energyweb.ddhub.helper.ReturnErrorMessage;
+import org.energyweb.ddhub.helper.ReturnMessage;
 import org.energyweb.ddhub.model.Channel;
 
 import com.mongodb.MongoException;
@@ -37,11 +34,19 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		delete("fqcn", fqcn);
 	}
 
-	public void validateChannel(String fqcn) {
-		findByFqcn(fqcn);
+	public ReturnMessage validateChannel(String fqcn) {
+		ReturnMessage errorMessage = null;
+		try {
+			findByFqcn(fqcn);
+		}catch(MongoException ex) {
+			errorMessage = new ReturnMessage();
+			errorMessage.setStatusCode(500);
+			errorMessage.setErr(new ReturnErrorMessage("MB::INVALID_FQCN",ex.getMessage()));
+		}
+		return errorMessage;
 	}
 
-	public void updateChannel(@Valid @NotNull ChannelDTO channelDTO) {
+	public void updateChannel(ChannelDTO channelDTO) {
 		try {
 			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResultOptional()
 					.orElseThrow(() -> new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"));
@@ -64,26 +69,5 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		}
 
 	}
-
-	public List<ChannelDTO> listChannel(String ownerDID) {
-		List<ChannelDTO> channelDTOs = new ArrayList<>();
-		list("ownerdid", ownerDID).forEach(entity -> {
-			try {
-				ChannelDTO channelDTO = new ChannelDTO();
-				BeanUtils.copyProperties(channelDTO, entity);
-				channelDTOs.add(channelDTO);
-			} catch (IllegalAccessException | InvocationTargetException e) {
-			}
-		});
-		return channelDTOs;
-	}
-
-	// public void validateChannel(String fqcn, String topicId, String ownerId) {
-	// ChannelDTO channelDTO = findByFqcn(fqcn);
-	// Optional.ofNullable(channelDTO).filter(dto->dto.getTopicIds().contains(topicId)).orElseThrow(()->new
-	// MongoException("topicId:" + topicId + " not exists for channel " + fqcn));
-	// Optional.ofNullable(channelDTO).filter(dto->dto.getOwnerdid().contentEquals(ownerId)).orElseThrow(()->new
-	// MongoException("Unauthorized access"));
-	// }
 
 }

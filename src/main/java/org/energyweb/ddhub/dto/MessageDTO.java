@@ -1,5 +1,6 @@
 package org.energyweb.ddhub.dto;
 
+import javax.json.bind.annotation.JsonbProperty;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -21,6 +22,11 @@ public class MessageDTO extends DDHub {
 
     @Size(max = 200, message = "The maximum length is 200 characters")
     private String transactionId;
+    
+    @NotNull
+    @NotEmpty
+    @Size(max = 200, message = "The maximum length is 200 characters")
+    private String clientGatewayMessageId;
 
     @NotNull
     @NotEmpty
@@ -43,8 +49,9 @@ public class MessageDTO extends DDHub {
     private String signature;
 
     @JsonIgnore
+    @JsonbProperty(value = "messageId")
     private String id;
-    
+
     @JsonIgnore
     private String senderDid;
 

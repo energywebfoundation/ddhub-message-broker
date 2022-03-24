@@ -48,7 +48,7 @@ import com.mongodb.client.model.IndexOptions;
 
 import io.quarkus.security.Authenticated;
 
-@Path("/topic")
+@Path("/topics")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = "AuthServer")

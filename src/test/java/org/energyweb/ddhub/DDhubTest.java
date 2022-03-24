@@ -3,6 +3,7 @@ package org.energyweb.ddhub;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.File;
 import java.io.InputStream;
@@ -19,8 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObjectBuilder;
 import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -64,7 +63,7 @@ public class DDhubTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/createindex").andReturn();
+				.get("/topics/createindex").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -124,7 +123,7 @@ public class DDhubTest {
 				.post("/message").andReturn();
 
 		String msgId = response.then()
-				.statusCode(200).extract().body().jsonPath().getString("id");
+				.statusCode(200).extract().body().jsonPath().getString("messageId");
 		;
 
 		response = given().auth()
@@ -132,7 +131,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + did + "\"\n  ]\n}")
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -179,7 +178,7 @@ public class DDhubTest {
 				.multiPart("topicId", id)
 				.multiPart("topicVersion", "1.0.0")
 				.when()
-				.post("/message/upload").andReturn();
+				.post("/messages/upload").andReturn();
 
 		response.then()
 				.statusCode(200);
@@ -190,7 +189,7 @@ public class DDhubTest {
 				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + didUpload
 						+ "\"\n  ]\n}")
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		HashMap payload = response.then().statusCode(200).extract().body().jsonPath().getList(".", HashMap.class)
 				.get(0);
@@ -199,7 +198,7 @@ public class DDhubTest {
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.when()
-				.get("/message/download?fileId=" + jsonObject.get("fileId")).andReturn();
+				.get("/messages/download?fileId=" + jsonObject.get("fileId")).andReturn();
 
 		response.then()
 				.statusCode(200);
@@ -245,7 +244,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -262,7 +261,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -282,7 +281,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -302,12 +301,76 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
 				.body("size()", equalTo(0));
 
+	}
+
+	@Test
+	public void testRole() throws Exception {
+
+		Response response = given().auth()
+				.oauth2(generateValidUserToken(did))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.get("/roles/check?did=" + did + "&roles=topiccreator.roles.messagebroker.apps.energyweb.iam.ewc")
+				.andReturn();
+
+		response.then()
+				.statusCode(200)
+				.body("hasRole", equalTo(true));
+
+		response = given().auth()
+				.oauth2(generateValidUserToken(did))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.get("/roles/list?roles=topiccreator.roles.messagebroker.apps.energyweb.iam.ewc").andReturn();
+
+		response.then()
+				.statusCode(200)
+				.body("dids.size()", equalTo(2));
+	}
+
+	@Test
+	public void testInternalMessage() throws Exception {
+
+		String payload = "test data";
+		HashMap msg = new HashMap();
+		msg.put("fqcn", didTest);
+		msg.put("transactionId", didTest);
+		msg.put("payload", payload);
+
+		Response response = given().auth()
+				.oauth2(generateValidUserToken(didTest))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.body("")
+				.when()
+				.post("/channel/initExtChannel").andReturn();
+
+		response = given().auth()
+				.oauth2(generateValidUserToken(didTest))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.body(JsonbBuilder.create().toJson(msg))
+				.when()
+				.post("/messages/internal").andReturn();
+
+		response.then()
+				.statusCode(200)
+				.body("messageId", notNullValue());
+
+		response = given().auth()
+				.oauth2(generateValidUserToken(didTest))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.get("/messages/internal").andReturn();
+
+		logger.info(response.then().statusCode(200).extract().asString());
+		response.then()
+				.statusCode(200)
+				.body("[0].payload", equalTo(payload));
 	}
 
 	@Test

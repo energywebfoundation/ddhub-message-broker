@@ -50,8 +50,10 @@ import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MessageDTOs;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
 import org.energyweb.ddhub.helper.MessageResponse;
+import org.energyweb.ddhub.helper.Recipients;
 import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
+import org.energyweb.ddhub.helper.ReturnStatusMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.MessageRepository;
@@ -124,12 +126,12 @@ public class Message {
     public Response publish(@Valid @NotNull MessageDTOs messageDTOs) {
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
         List<String> fqcns = new ArrayList<String>();
-        MessageResponse messageResponse = new MessageResponse();
-        messageResponse.setDid(DID);
-        messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
+        List<ReturnMessage> success = new ArrayList<ReturnMessage>();
+        List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
         messageDTOs.getFqcns().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
-                messageResponse.getFailed().add(item);
+            	failed.add(item);
+            	this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(item));
             }, () -> {
                 fqcns.add(fqcn);
             });
@@ -163,14 +165,17 @@ public class Message {
                             builder.build().toString().getBytes(StandardCharsets.UTF_8),
                             (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
                     ReturnMessage successMessage = new ReturnMessage();
+                    successMessage.setDid(fqcn);
                     successMessage.setStatusCode(200);
                     successMessage.setMessageId(id);
-                    messageResponse.getSuccess().add(successMessage);
+                    success.add(successMessage);
                 } catch (IOException | JetStreamApiException ex) {
                     ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(500);
+                    errorMessage.setDid(fqcn);
                     errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
-                    messageResponse.getFailed().add(errorMessage);
+                    failed.add(errorMessage);
+                    this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
                 }
             });
 
@@ -181,9 +186,13 @@ public class Message {
             ReturnMessage errorMessage = new ReturnMessage();
             errorMessage.setStatusCode(500);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
-            messageResponse.getFailed().add(errorMessage);
+            failed.add(errorMessage);
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
         }
-
+        MessageResponse messageResponse = new MessageResponse();
+        messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
+        messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(),success.size(),failed.size()));
+        messageResponse.add(success,failed);
         return Response.ok().entity(messageResponse).build();
 
     }

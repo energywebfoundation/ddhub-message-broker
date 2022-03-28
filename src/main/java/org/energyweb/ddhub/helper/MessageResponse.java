@@ -12,7 +12,14 @@ import lombok.Setter;
 @RequiredArgsConstructor
 public class MessageResponse {
 	private String clientGatewayMessageId;
-	private String did;
-	private List<ReturnMessage> success = new ArrayList<ReturnMessage>();
-	private List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
+	private Recipients recipients;
+	private List<ReturnStatusMessage> status = new ArrayList<ReturnStatusMessage>();
+	public void add(List<ReturnMessage> success, List<ReturnMessage> failed) {
+		if(success.size() > 0) {
+			this.getStatus().add(new ReturnStatusMessage("SENT").addDetails(success));
+		}
+		if(failed.size() > 0) {
+			this.getStatus().add(new ReturnStatusMessage("FAILED").addDetails(failed));
+		}
+	}
 }

@@ -101,10 +101,16 @@ public class DDhubTest {
 	@Test
 	@Order(3)
 	public void testSendMessage() throws Exception {
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic01");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
 		Response response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"string\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
 				.post("/topics").andReturn();
 
@@ -114,7 +120,7 @@ public class DDhubTest {
 		id = id2;
 		
 		HashMap sendmsg = new HashMap<>();
-		sendmsg.put("fqcns", Arrays.asList(did));
+		sendmsg.put("fqcns", Arrays.asList(did,"diderror"));
 		sendmsg.put("transactionId", "testid");
 		sendmsg.put("clientGatewayMessageId", "testid");
 		sendmsg.put("payload", "payload");
@@ -161,10 +167,17 @@ public class DDhubTest {
 				.statusCode(200)
 				.body("returnCode", is("00"));
 
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic02");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
+		
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"UploadDownload\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
 				.post("/topics").andReturn();
 
@@ -172,7 +185,7 @@ public class DDhubTest {
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 
-		String filename = "testUploadDownload.txt";
+		String filename = "testUploadDownload.csv";
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA)
@@ -217,11 +230,17 @@ public class DDhubTest {
 	@Test
 	@Order(5)
 	public void testGetMessage() throws Exception {
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic03");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
 
 		Response response = given().auth()
 				.oauth2(generateValidUserToken(didTest))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"stringid3\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
 				.post("/topics").andReturn();
 

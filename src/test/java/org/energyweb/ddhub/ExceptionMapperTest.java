@@ -82,10 +82,16 @@ public class ExceptionMapperTest {
 				.when()
 				.post("/messages/internal").andReturn();
 
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic04");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"stringid4\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
 				.post("/topics").andReturn();
 

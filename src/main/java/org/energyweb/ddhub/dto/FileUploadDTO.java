@@ -27,6 +27,7 @@ public class FileUploadDTO extends DDHub {
     @NotNull
     @FormParam("fileName")
     @PartType(MediaType.TEXT_PLAIN)
+    @Pattern(regexp = "\\w*.*.csv|\\w*.*.tsv|\\w*.*.CSV|\\w*.*.TSV", message = "Accepted file type .csv and .tsv ")
     private String fileName;
     
     @FormParam("transactionId")

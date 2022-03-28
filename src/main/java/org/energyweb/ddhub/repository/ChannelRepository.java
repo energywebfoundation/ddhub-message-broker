@@ -40,6 +40,7 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 			findByFqcn(fqcn);
 		}catch(MongoException ex) {
 			errorMessage = new ReturnMessage();
+			errorMessage.setDid(fqcn);
 			errorMessage.setStatusCode(500);
 			errorMessage.setErr(new ReturnErrorMessage("MB::INVALID_FQCN",ex.getMessage()));
 		}

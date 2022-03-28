@@ -70,10 +70,9 @@ public class TopicTest {
 		HashMap topic = new HashMap();
 		topic.put("name", "topic1");
 		topic.put("schemaType", "JSD7");
-		topic.put("schema",
-				"{\n  \"topicId\": \"6225cdd78a3564730dc8fb09,\n  \"senderId\": [\n    \"6225cdd78a3564730dc8fb09\"\n  ]\n}");
+		topic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
 		topic.put("version", "1.0.0");
-		topic.put("owner", "test.apps.energyweb.iam.ewc");
+		topic.put("owner", "ddhub-1.apps.energyweb.iam.ewc");
 		topic.put("tags", Arrays.asList("test1").toArray());
 
 		Response response = given().auth()
@@ -90,10 +89,9 @@ public class TopicTest {
 		topic = new HashMap();
 		topic.put("name", "topic2");
 		topic.put("schemaType", "JSD7");
-		topic.put("schema",
-				"{\n  \"topicId\": \"6225cdd78a3564730dc8fb09,\n  \"senderId\": [\n    \"6225cdd78a3564730dc8fb09\"\n  ]\n}");
+		topic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
 		topic.put("version", "1.0.0");
-		topic.put("owner", "test.apps.energyweb.iam.ewc");
+		topic.put("owner", "ddhub-1.apps.energyweb.iam.ewc");
 		topic.put("tags", Arrays.asList("test2").toArray());
 
 		response = given().auth()
@@ -113,10 +111,9 @@ public class TopicTest {
 		topic.put("id", id);
 		topic.put("name", "topic2");
 		topic.put("schemaType", "JSD7");
-		topic.put("schema",
-				"{\n  \"topicId\": \"6225cdd78a3564730dc8fb09,\n  \"senderId\": [\n    \"6225cdd78a3564730dc8fb09\"\n  ]\n}");
+		topic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
 		topic.put("version", "1.0.1");
-		topic.put("owner", "test.apps.energyweb.iam.ewc");
+		topic.put("owner", "ddhub-1.apps.energyweb.iam.ewc");
 		topic.put("tags", Arrays.asList("test2").toArray());
 
 		response = given().auth()
@@ -134,10 +131,9 @@ public class TopicTest {
 		topic.put("id", id);
 		topic.put("name", "topic3");
 		topic.put("schemaType", "JSD7");
-		topic.put("schema",
-				"{\n  \"topicId\": \"6225cdd78a3564730dc8fb09,\n  \"senderId\": [\n    \"6225cdd78a3564730dc8fb09\"\n  ]\n}");
+		topic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
 		topic.put("version", "1.0.1");
-		topic.put("owner", "test.apps.energyweb.iam.ewc");
+		topic.put("owner", "ddhub-1.apps.energyweb.iam.ewc");
 		topic.put("tags", Arrays.asList("test2").toArray());
 
 		response = given().auth()
@@ -208,12 +204,12 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topics/count?owner=test.apps.energyweb.iam.ewc").andReturn();
+				.get("/topics/count?owner=ddhub-1.apps.energyweb.iam.ewc").andReturn();
 
 		logger.info(response.then().extract().asString());
 		response.then()
 				.statusCode(200)
-				.body("'test.apps.energyweb.iam.ewc'", is(2));
+				.body("'ddhub-1.apps.energyweb.iam.ewc'", is(2));
 	}
 
 	@Test
@@ -224,7 +220,7 @@ public class TopicTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topics?limit={limit}&name={name}&owner={owner}&page={page}", 0, "", "test.apps.energyweb.iam.ewc",
+				.get("/topics?limit={limit}&name={name}&owner={owner}&page={page}", 0, "", "ddhub-1.apps.energyweb.iam.ewc",
 						1)
 				.andReturn();
 
@@ -253,7 +249,7 @@ public class TopicTest {
 		PrivateKey privateKey = readPrivateKey(privateKeyLocation);
 
 		String[] roles = new String[] { "topiccreator.roles.messagebroker.apps.energyweb.iam.ewc",
-				"topiccreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
+				"topiccreator.roles.ddhub-1.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
 				.claim("roles", new JSONArray(List.of(roles)))

@@ -90,7 +90,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 
 			}, () -> {
 				this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
-				// requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
+				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
 			});
 		} catch (ParseException e) {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));

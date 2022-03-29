@@ -25,10 +25,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonMetaSchema;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaException;
 import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion.VersionFlag;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.SpecVersionDetector;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -125,7 +127,7 @@ public class TopicDTO {
 			try {
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode schemaNode = mapper.readTree(schema);
-				JsonSchemaFactory factory = JsonSchemaFactory.getInstance(VersionFlag.V7);
+				JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(mapper).build();
 				JsonSchema schema = factory.getSchema(schemaNode);
 				schema.initializeValidators(); 
 				isValid = true;

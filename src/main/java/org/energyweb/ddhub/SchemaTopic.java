@@ -19,6 +19,7 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -44,6 +45,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTOCreate;
 import org.energyweb.ddhub.dto.TopicDTOPage;
+import org.energyweb.ddhub.dto.TopicDTOUpdate;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.repository.TopicRepository;
@@ -190,14 +192,32 @@ public class SchemaTopic {
         return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
     }
 
-    @PATCH
+    @PUT
+    @RequestBodySchema(TopicDTOUpdate.class)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
-    public Response updateSchema(@NotNull @Valid TopicDTO topic) {
+    public Response updateSchema(@NotNull @Valid TopicDTOUpdate _topic) {
+    	topicRepository.validateTopicIds(Arrays.asList(_topic.getId()));
+    	TopicDTO topic = topicRepository.findTopicBy(_topic.getId(),_topic.getVersion());
+    	topic.setSchema(_topic.getSchema());
+    	topic.setTags(_topic.getTags());
+    	topic.setVersion(_topic.getVersion());
+    	topic.validateOwner(roles);
+    	if(!topic.validOwner()) {
+    		ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");
+			this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+    		return Response.status(400).entity( error).build();
+    	}
+    	
+    	if(!topic.validateSchemaType()) {
+    		ErrorResponse error = new ErrorResponse("12", "schema validation failed");
+			this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+    		return Response.status(400).entity( error).build();
+    	}
+    	
         topic.setDid(DID);
-        topicRepository.validateTopicIds(Arrays.asList(topic.getId()));
         topicRepository.updateTopic(topic);
-        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+        return Response.ok().entity(topic).build();
     }
 
     @DELETE

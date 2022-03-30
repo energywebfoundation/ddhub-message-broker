@@ -1,23 +1,16 @@
 package org.energyweb.ddhub;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.containsString;
 
-import java.io.File;
 import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObjectBuilder;
-import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
@@ -25,9 +18,6 @@ import org.energyweb.ddhub.container.MongoDbResource;
 import org.energyweb.ddhub.container.NatsResource;
 import org.jboss.logging.Logger;
 import org.jose4j.json.internal.json_simple.JSONArray;
-import org.jose4j.json.internal.json_simple.JSONObject;
-import org.jose4j.json.internal.json_simple.parser.JSONParser;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

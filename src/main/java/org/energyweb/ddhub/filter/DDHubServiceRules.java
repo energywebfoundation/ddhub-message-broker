@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -73,6 +75,20 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					.findFirst();
 			hubService.ifPresentOrElse(service -> {
 				Set<String> ruleMatch = new HashSet<String>();
+				
+				List<String> result = service.rules().stream().filter(str -> !str.contains("*")).collect(Collectors.toList());
+				result.forEach(rule->{
+					if (jsonArray.stream().filter(str->str.toString().contains(rule)).findFirst().isEmpty()) {
+						this.logger.error("[" + jsonObject.get("did") + "]" + "exact match rule " + rule + " not match " + jsonArray.toString());
+						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+						requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+								.entity(error).build());
+						return;
+					}else {
+						ruleMatch.add(rule);
+					}
+				});
+				
 				jsonArray.forEach(item -> {
 					String namespace = (String) item;
 					if (!ruleMatch.contains(namespace) && service.rules().stream()
@@ -81,6 +97,8 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 						ruleMatch.add(namespace);
 					}
 				});
+				
+				
 				if (service.rules().size() > ruleMatch.size()) {
 					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 					requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)

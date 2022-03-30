@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -61,6 +62,14 @@ public class MessageDTO extends DDHub {
     @JsonIgnore
 	private long timestampNanos;
     
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    private boolean fromUpload = false;
+    
+    
+    public boolean getIsFile() {
+    	return fromUpload;
+    }
     
     @JsonIgnore
 	public String subjectName() {

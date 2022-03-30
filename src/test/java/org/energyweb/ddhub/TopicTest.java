@@ -121,11 +121,10 @@ public class TopicTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.patch("/topics").andReturn();
+				.put("/topics").andReturn();
 
 		response.then()
-				.statusCode(200)
-				.body("returnCode", is("00"));
+				.statusCode(200);
 
 		topic = new HashMap();
 		topic.put("id", id);
@@ -141,7 +140,7 @@ public class TopicTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.patch("/topics").andReturn();
+				.put("/topics").andReturn();
 
 		response.then()
 				.statusCode(400);

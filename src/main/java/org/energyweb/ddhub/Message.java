@@ -20,9 +20,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.Validator;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -53,7 +51,6 @@ import org.energyweb.ddhub.helper.MessageResponse;
 import org.energyweb.ddhub.helper.Recipients;
 import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
-import org.energyweb.ddhub.helper.ReturnStatusMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.MessageRepository;
@@ -61,6 +58,8 @@ import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
+
+import com.sun.mail.handlers.message_rfc822;
 
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -159,7 +158,10 @@ public class Message {
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
                 builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
-
+                
+                builder.add("isFile", messageDTO.getIsFile());
+                
+                
                 try {
                     PublishAck pa = js.publish(messageDTO.subjectName(),
                             builder.build().toString().getBytes(StandardCharsets.UTF_8),
@@ -358,6 +360,7 @@ public class Message {
                 message.setSignature((String) natPayload.get("signature"));
                 message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
                 message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
+                message.setFromUpload((boolean)natPayload.get("isFile"));
                 messageDTOs.add(message);
                 m.ack();
             }
@@ -396,6 +399,9 @@ public class Message {
                         "CamelAzureStorageBlobBlobName", messageDTO.storageName() + fileId),
                         MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("clientGatewayMessageId", messageDTO.getClientGatewayMessageId())
+                .header("ownerDid", messageDTO.getSenderDid())
+                .header("signature", messageDTO.getSignature())
                 .build();
 
     }

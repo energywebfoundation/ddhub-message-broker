@@ -69,6 +69,7 @@ public class Routes extends RouteBuilder {
                                         messageDTO.setSignature(multipartBody.getSignature());
                                         messageDTO.setTopicVersion(multipartBody.getTopicVersion());
                                         messageDTO.setTransactionId(multipartBody.getTransactionId());
+                                        messageDTO.setFromUpload(true);
                                         e.setProperty("multipartBody", multipartBody);
                                         e.setProperty("messageDTO", messageDTO);
 
@@ -85,11 +86,6 @@ public class Routes extends RouteBuilder {
                                         JsonObjectBuilder builder = Json.createObjectBuilder();
                                         JsonObject jsonObject = builder
                                                         .add("fileId", multipartBody.getFileName())
-                                                        .add("download", ddhubContextURL + "/messages/download"
-                                                                        + "?fileId="
-                                                                        + URLEncoder.encode(multipartBody.getFileName(),
-                                                                                        StandardCharsets.UTF_8
-                                                                                                        .toString()))
                                                         .build();
                                         messageDTO.setPayload(jsonObject.toString());
                                         e.getIn().setHeader("Authorization", e.getProperty("token"));

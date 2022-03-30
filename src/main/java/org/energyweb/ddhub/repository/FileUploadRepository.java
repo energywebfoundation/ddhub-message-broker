@@ -41,6 +41,9 @@ public class FileUploadRepository implements PanacheMongoRepository<FileUpload> 
 		MessageDTO messageDTO = new MessageDTO();
 		messageDTO.setFqcn(fileUpload.getFqcn());
 		messageDTO.setTopicId(fileUpload.getTopicId());
+		messageDTO.setSenderDid(fileUpload.getOwnerdid());
+		messageDTO.setSignature(fileUpload.getSignature());
+		messageDTO.setClientGatewayMessageId(fileUpload.getClientGatewayMessageId());
 		return messageDTO;
 	}
 	

@@ -1,7 +1,5 @@
 package org.energyweb.ddhub;
 
-import java.io.File;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -17,7 +15,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -26,10 +23,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.xml.XMLConstants;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.SchemaFactory;
 
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
@@ -51,7 +44,6 @@ import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
-import org.xml.sax.SAXException;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
@@ -65,9 +57,9 @@ import io.quarkus.security.Authenticated;
 @RequestScoped
 public class SchemaTopic {
 
-	@Inject
+    @Inject
     Logger logger;
-	
+
     @Inject
     ProducerTemplate producerTemplate;
 
@@ -96,19 +88,19 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
     @Authenticated
     public Response createSchema(@NotNull @Valid TopicDTO topic) {
-    	topic.validateOwner(roles);
-    	if(!topic.validOwner()) {
-    		ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");
-			this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
-    		return Response.status(400).entity( error).build();
-    	}
-    	
-    	if(!topic.validateSchemaType()) {
-    		ErrorResponse error = new ErrorResponse("12", "schema validation failed");
-			this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
-    		return Response.status(400).entity( error).build();
-    	}
-    	
+        topic.validateOwner(roles);
+        if (!topic.validOwner()) {
+            ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+            return Response.status(400).entity(error).build();
+        }
+
+        if (!topic.validateSchemaType()) {
+            ErrorResponse error = new ErrorResponse("13", "schema validation failed");
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+            return Response.status(400).entity(error).build();
+        }
+
         topic.setDid(DID);
         topicRepository.save(topic);
         return Response.ok().entity(topic).build();
@@ -197,24 +189,24 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response updateSchema(@NotNull @Valid TopicDTOUpdate _topic) {
-    	topicRepository.validateTopicIds(Arrays.asList(_topic.getId()));
-    	TopicDTO topic = topicRepository.findTopicBy(_topic.getId(),_topic.getVersion());
-    	topic.setSchema(_topic.getSchema());
-    	topic.setTags(_topic.getTags());
-    	topic.setVersion(_topic.getVersion());
-    	topic.validateOwner(roles);
-    	if(!topic.validOwner()) {
-    		ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");
-			this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
-    		return Response.status(400).entity( error).build();
-    	}
-    	
-    	if(!topic.validateSchemaType()) {
-    		ErrorResponse error = new ErrorResponse("12", "schema validation failed");
-			this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
-    		return Response.status(400).entity( error).build();
-    	}
-    	
+        topicRepository.validateTopicIds(Arrays.asList(_topic.getId()));
+        TopicDTO topic = topicRepository.findTopicBy(_topic.getId(), _topic.getVersion());
+        topic.setSchema(_topic.getSchema());
+        topic.setTags(_topic.getTags());
+        topic.setVersion(_topic.getVersion());
+        topic.validateOwner(roles);
+        if (!topic.validOwner()) {
+            ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+            return Response.status(400).entity(error).build();
+        }
+
+        if (!topic.validateSchemaType()) {
+            ErrorResponse error = new ErrorResponse("13", "schema validation failed");
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+            return Response.status(400).entity(error).build();
+        }
+
         topic.setDid(DID);
         topicRepository.updateTopic(topic);
         return Response.ok().entity(topic).build();

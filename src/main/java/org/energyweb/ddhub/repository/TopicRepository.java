@@ -141,7 +141,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				map.remove("tags");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
-				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
@@ -187,7 +187,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				map.remove("tags");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
-				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
@@ -208,7 +208,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			map.remove("schemaType");
 			map.remove("tags");
 			BeanUtils.copyProperties(topicDTO, map);
-			topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+			topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 			topicDTO.setTags(entity.getTags());
 			topicDTO.setSchema(entity.getSchema());
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {

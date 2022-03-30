@@ -21,6 +21,8 @@ public class FileUpload {
 	private String fqcn;
 	private String topicId;
 	private String ownerdid;
+	private String signature;
+	private String clientGatewayMessageId;
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
 	

@@ -16,21 +16,22 @@ import javax.xml.XMLConstants;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.SchemaFactory;
 
+import org.energyweb.ddhub.helper.constraint.ValueOfEnum;
 import org.jose4j.json.internal.json_simple.parser.JSONParser;
 import org.jose4j.json.internal.json_simple.parser.ParseException;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonMetaSchema;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaException;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
-import com.networknt.schema.SpecVersionDetector;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -41,9 +42,26 @@ import lombok.Setter;
 public class TopicDTO {
 
 	public enum SchemaType {
-		JSD7,
-		XSD6,
-		XML
+		JSD7("JSD7"),
+		XSD6("XSD6"),
+		XML("XML"),
+		CSV("CSV"),
+		TSV("TSV");
+		
+		private String name;
+		
+		SchemaType(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+		
 	}
 
 	private String id;
@@ -51,7 +69,11 @@ public class TopicDTO {
 	@NotEmpty
 	private String name;
 	@NotNull
-	private SchemaType schemaType;
+	@Valid
+//	@SchemaTypeSet(anyOf = {SchemaType.JSD7,SchemaType.XSD6,SchemaType.XML,SchemaType.CSV,SchemaType.TSV})
+//	@EnumNamePattern(regexp = "JSD7|XSD6|XML|CSV|TSV")
+	@ValueOfEnum(enumClass = SchemaType.class)
+	private String schemaType;
 	@NotNull
 	@NotEmpty
 	@Getter(AccessLevel.NONE)
@@ -82,12 +104,7 @@ public class TopicDTO {
 
 	private HashMap stringParser() {
 		HashMap map = new HashMap();
-		if(schemaType == SchemaType.XML) {
-			map.put("XML", schema);
-		}
-		else{
-			map.put("STRING", schema);
-		}
+		map.put(SchemaType.valueOf(schemaType).name(), schema);
 		schema = JsonbBuilder.create().toJson(map);
 		return jsonParser();
 	}
@@ -115,15 +132,13 @@ public class TopicDTO {
 
 	public boolean validateSchemaType() {
 		boolean isValid = false;
-		if(schemaType == SchemaType.XML) {
-			SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			try {
-				factory.newSchema(new StreamSource(new StringReader(schema)));
-				isValid = true;
-			} catch (SAXException e) {
-				e.printStackTrace();
-			}
-		}else if(schemaType == SchemaType.JSD7) {
+		if(schemaType.contentEquals(SchemaType.XML.name)) {
+			isValid = true;
+		}else if(schemaType.contentEquals(SchemaType.CSV.name)) {
+			isValid = true;
+		}else if(schemaType.contentEquals(SchemaType.TSV.name)) {
+			isValid = true;
+		}else if(schemaType.contentEquals(SchemaType.JSD7.name)) {
 			try {
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode schemaNode = mapper.readTree(schema);
@@ -138,7 +153,7 @@ public class TopicDTO {
 			} catch (JsonProcessingException e) {
 				e.printStackTrace();
 			}
-		}else if(schemaType == SchemaType.XSD6) {
+		}else if(schemaType.contentEquals(SchemaType.XSD6.name)) {
 			SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 			try {
 				factory.newSchema(new StreamSource(new StringReader(schema)));

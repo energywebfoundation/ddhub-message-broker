@@ -238,9 +238,27 @@ public class TopicTest {
 				.when()
 				.delete("/topics/{id}", id).andReturn();
 
-		logger.info(response.then().extract().asString());
 		response.then()
 				.statusCode(200);
+		
+		response = given().auth()
+				.oauth2(generateValidUserToken2(did))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.delete("/topics/{id}", id).andReturn();
+
+		response.then()
+				.statusCode(401);
+		
+		response = given().auth()
+				.oauth2(generateValidUserToken3(did))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.delete("/topics/{id}", id).andReturn();
+
+		response.then()
+				.statusCode(401);
+		
 	}
 
 	static String generateValidUserToken(String did) throws Exception {
@@ -249,6 +267,28 @@ public class TopicTest {
 
 		String[] roles = new String[] { "topiccreator.roles.messagebroker.apps.energyweb.iam.ewc",
 				"topiccreator.roles.ddhub-1.apps.energyweb.iam.ewc","topiccreator.roles.ddhub-1.apps.energyweb1.iam.ewc","topiccreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
+		return Jwt
+				.claim("did", did)
+				.claim("roles", new JSONArray(List.of(roles)))
+				.sign(privateKey);
+	}
+	
+	static String generateValidUserToken2(String did) throws Exception {
+		String privateKeyLocation = "/privatekey.pem";
+		PrivateKey privateKey = readPrivateKey(privateKeyLocation);
+
+		String[] roles = new String[] { "topiccreator.roles.ddhub.apps.energyweb.iam.ewc","topiccreator.roles.test.apps.energyweb.iam.ewc" };
+		return Jwt
+				.claim("did", did)
+				.claim("roles", new JSONArray(List.of(roles)))
+				.sign(privateKey);
+	}
+	
+	static String generateValidUserToken3(String did) throws Exception {
+		String privateKeyLocation = "/privatekey.pem";
+		PrivateKey privateKey = readPrivateKey(privateKeyLocation);
+
+		String[] roles = new String[] { "topiccreator.roles.test.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
 				.claim("roles", new JSONArray(List.of(roles)))

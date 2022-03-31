@@ -89,15 +89,20 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					}
 				});
 				
-				jsonArray.forEach(item -> {
-					String namespace = (String) item;
-					if (!ruleMatch.contains(namespace) && service.rules().stream()
-							.filter(str -> namespace.matches(str.replace("*", "(\\w*.*)")))
-							.findFirst().isPresent()) {
-						ruleMatch.add(namespace);
+				result = service.rules().stream().filter(str -> str.contains("*")).collect(Collectors.toList());
+				result.forEach(rule->{
+					Optional<String> ruleToken = jsonArray.stream().filter(str -> !ruleMatch.contains(str.toString()) && str.toString().matches(rule.replace("*", "(\\w*.*)"))).findFirst();
+					if (ruleToken.isEmpty()) {
+						this.logger.error("[" + jsonObject.get("did") + "]" + "current rule match " + ruleMatch.toString());
+						this.logger.error("[" + jsonObject.get("did") + "]" + "rule " + rule + " not match " + jsonArray.toString());
+						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+						requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+								.entity(error).build());
+						return;
+					}else {
+						ruleMatch.add(ruleToken.get());
 					}
 				});
-				
 				
 				if (service.rules().size() > ruleMatch.size()) {
 					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));

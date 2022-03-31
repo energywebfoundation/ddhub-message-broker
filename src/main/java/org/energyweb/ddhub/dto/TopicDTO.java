@@ -69,9 +69,6 @@ public class TopicDTO {
 	@NotEmpty
 	private String name;
 	@NotNull
-	@Valid
-//	@SchemaTypeSet(anyOf = {SchemaType.JSD7,SchemaType.XSD6,SchemaType.XML,SchemaType.CSV,SchemaType.TSV})
-//	@EnumNamePattern(regexp = "JSD7|XSD6|XML|CSV|TSV")
 	@ValueOfEnum(enumClass = SchemaType.class)
 	private String schemaType;
 	@NotNull

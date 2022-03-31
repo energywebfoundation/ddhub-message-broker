@@ -1,11 +1,12 @@
 package org.energyweb.ddhub.dto;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.regex.Pattern;
+
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -16,11 +17,17 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class InternalMessageDTO extends DDHub {
+public class InternalMessageDTO {
    
-
+	@NotNull
+    @NotEmpty
     @Size(max = 200, message = "The maximum length is 200 characters")
-    private String transactionId;
+	private String fqcn;
+    
+    @NotNull
+    @NotEmpty
+    @Size(max = 200, message = "The maximum length is 200 characters")
+    private String clientGatewayMessageId;
 
     @NotNull
     @NotEmpty
@@ -38,6 +45,13 @@ public class InternalMessageDTO extends DDHub {
     
     @JsonIgnore
 	private long timestampNanos;
+    
+	@JsonIgnore
+	public String streamName() {
+		String[] streamName = fqcn.split(Pattern.quote("."));
+		Collections.reverse(Arrays.asList(streamName));
+		return String.join("_", streamName);
+	}
     
     
     

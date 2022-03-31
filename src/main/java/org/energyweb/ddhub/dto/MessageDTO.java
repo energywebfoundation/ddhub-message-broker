@@ -1,5 +1,6 @@
 package org.energyweb.ddhub.dto;
 
+import javax.json.bind.annotation.JsonbProperty;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -9,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,6 +23,11 @@ public class MessageDTO extends DDHub {
 
     @Size(max = 200, message = "The maximum length is 200 characters")
     private String transactionId;
+    
+    @NotNull
+    @NotEmpty
+    @Size(max = 200, message = "The maximum length is 200 characters")
+    private String clientGatewayMessageId;
 
     @NotNull
     @NotEmpty
@@ -43,8 +50,9 @@ public class MessageDTO extends DDHub {
     private String signature;
 
     @JsonIgnore
+    @JsonbProperty(value = "messageId")
     private String id;
-    
+
     @JsonIgnore
     private String senderDid;
 
@@ -54,6 +62,14 @@ public class MessageDTO extends DDHub {
     @JsonIgnore
 	private long timestampNanos;
     
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    private boolean fromUpload = false;
+    
+    
+    public boolean getIsFile() {
+    	return fromUpload;
+    }
     
     @JsonIgnore
 	public String subjectName() {

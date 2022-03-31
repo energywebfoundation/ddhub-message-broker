@@ -32,7 +32,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
     		TopicDTO topicDTO = new TopicDTO();
 			BeanUtils.copyProperties(topicDTO, map);
 			topicDTO.setTags(topicVersion.getTags());
-			topicDTO.setSchemaType(SchemaType.valueOf(topicVersion.getSchemaType()));
+			topicDTO.setSchemaType(SchemaType.valueOf(topicVersion.getSchemaType()).name());
 			topicDTO.setSchema(topicVersion.getSchema());
 			return topicDTO;
 		} catch (IllegalAccessException | InvocationTargetException | MongoException | NoSuchMethodException e) {
@@ -63,7 +63,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 				map.remove("tags");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
-				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()));
+				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
@@ -72,24 +72,6 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		});
     	return new TopicDTOPage(totalRecord,size==0?totalRecord:size,page,topicDTOs);
 	}
-
-	public TopicDTO findByIdAndVersion( String id, String versionNumber, String owner) {
-		try {
-    		TopicVersion topicVersion = find("topicId = ?1 and version = ?2 and owner = ?3", new ObjectId(id), versionNumber, owner).firstResultOptional().orElseThrow(()-> new MongoException("id:" + id + " not exists"));
-    		Map map = BeanUtils.describe(topicVersion);
-			map.remove("schemaType");
-			map.remove("tags");
-    		TopicDTO topicDTO = new TopicDTO();
-			BeanUtils.copyProperties(topicDTO, map);
-			topicDTO.setSchemaType(SchemaType.valueOf(topicVersion.getSchemaType()));
-			topicDTO.setTags(topicVersion.getTags());
-			topicDTO.setSchema(topicVersion.getSchema());
-			return topicDTO;
-		} catch (IllegalAccessException | InvocationTargetException | MongoException | NoSuchMethodException e) {
-			throw new MongoException("id:" + id + " not exists");
-		}
-	}
-
 
 	
 }

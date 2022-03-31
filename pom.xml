@@ -119,9 +119,23 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jacoco</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5-mockito</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-metrics</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.camel.quarkus</groupId>
@@ -186,11 +200,29 @@
       <artifactId>commons-beanutils</artifactId>
       <version>1.9.4</version>
     </dependency>
-    
+	<!-- https://mvnrepository.com/artifact/org.webjars.npm/ajv -->
+	<dependency>
+	    <groupId>org.webjars.npm</groupId>
+	    <artifactId>ajv</artifactId>
+	    <version>8.5.0</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.webjars.npm/libxml-xsd -->
+	<dependency>
+	    <groupId>org.webjars.npm</groupId>
+	    <artifactId>libxml-xsd</artifactId>
+	    <version>0.5.2</version>
+	</dependency>
+	
+	<dependency>
+	    <groupId>com.networknt</groupId>
+	    <artifactId>json-schema-validator</artifactId>
+	    <version>1.0.68</version>
+	</dependency>
+
     <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
-        <scope>test</scope>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
@@ -229,6 +261,7 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
   <profiles>

@@ -5,6 +5,7 @@ import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.List;
 
 import javax.enterprise.context.RequestScoped;
 import javax.json.Json;
@@ -51,7 +52,7 @@ public class JWT {
 		long currentTimeInSecs = currentTimeInSecs();
 
 		claimsBuilder.claim("did", did);
-		claimsBuilder.claim("roles", roles);
+		claimsBuilder.claim("roles", new JSONArray(List.of(roles)));
 
 		claimsBuilder.issuedAt(currentTimeInSecs);
 		claimsBuilder.expiresAt(currentTimeInSecs + 3600);

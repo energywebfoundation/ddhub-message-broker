@@ -3,6 +3,7 @@ package org.energyweb.ddhub;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.File;
 import java.io.InputStream;
@@ -19,8 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObjectBuilder;
 import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -64,7 +63,7 @@ public class DDhubTest {
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.when()
-				.get("/topic/createindex").andReturn();
+				.get("/topics/createindex").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -102,37 +101,49 @@ public class DDhubTest {
 	@Test
 	@Order(3)
 	public void testSendMessage() throws Exception {
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic01");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
 		Response response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"string\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		id2 = response.then()
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 		id = id2;
+		
+		HashMap sendmsg = new HashMap<>();
+		sendmsg.put("fqcns", Arrays.asList(did,"diderror"));
+		sendmsg.put("transactionId", "testid");
+		sendmsg.put("clientGatewayMessageId", "testid");
+		sendmsg.put("payload", "payload");
+		sendmsg.put("topicId", id);
+		sendmsg.put("topicVersion", "1.0.0");
+		sendmsg.put("signature", "signature");
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"fqcn\": \"" + did
-						+ "\",\n  \"transactionId\": \"string\",\n  \"payload\": \"string\",\n  \"topicId\": \"" + id
-						+ "\",\n  \"topicVersion\": \"1.0.0\",\n  \"signature\": \"string\"\n}")
+				.body(JsonbBuilder.create().toJson(sendmsg))
 				.when()
-				.post("/message").andReturn();
+				.post("/messages").andReturn();
 
 		String msgId = response.then()
-				.statusCode(200).extract().body().jsonPath().getString("id");
-		;
+				.statusCode(200).extract().body().jsonPath().getString("messageId");
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + did + "\"\n  ]\n}")
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -156,30 +167,38 @@ public class DDhubTest {
 				.statusCode(200)
 				.body("returnCode", is("00"));
 
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic02");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
+		
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"UploadDownload\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		id = response.then()
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 
-		String filename = "testUploadDownload.txt";
+		String filename = "testUploadDownload.csv";
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA)
-				.multiPart("fqcn", didUpload)
+				.multiPart("fqcns", didUpload)
 				.multiPart("file", new File(DDhubTest.class.getResource("/sample.txt").getFile()))
 				.multiPart("fileName", filename)
 				// .multiPart("transactionId", fruit)
 				.multiPart("signature", "signature")
 				.multiPart("topicId", id)
 				.multiPart("topicVersion", "1.0.0")
+				.multiPart("clientGatewayMessageId", "test")
 				.when()
-				.post("/message/upload").andReturn();
+				.post("/messages/upload").andReturn();
 
 		response.then()
 				.statusCode(200);
@@ -190,7 +209,7 @@ public class DDhubTest {
 				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + didUpload
 						+ "\"\n  ]\n}")
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		HashMap payload = response.then().statusCode(200).extract().body().jsonPath().getList(".", HashMap.class)
 				.get(0);
@@ -199,7 +218,7 @@ public class DDhubTest {
 		response = given().auth()
 				.oauth2(generateValidUserToken(didUpload))
 				.when()
-				.get("/message/download?fileId=" + jsonObject.get("fileId")).andReturn();
+				.get("/messages/download?fileId=" + jsonObject.get("fileId")).andReturn();
 
 		response.then()
 				.statusCode(200);
@@ -211,26 +230,40 @@ public class DDhubTest {
 	@Test
 	@Order(5)
 	public void testGetMessage() throws Exception {
+		HashMap createTopic = new HashMap<>();
+		createTopic.put("name", "createTopic03");
+		createTopic.put("schemaType", "JSD7");
+		createTopic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+		createTopic.put("version", "1.0.0");
+		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
 
 		Response response = given().auth()
 				.oauth2(generateValidUserToken(didTest))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"name\": \"stringid3\",\n  \"schemaType\": \"JSD7\",\n  \"schema\": \"string\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"string\",\n  \"tags\": [\n    \"string\"\n  ]\n}")
+				.body(JsonbBuilder.create().toJson(createTopic))
 				.when()
-				.post("/topic").andReturn();
+				.post("/topics").andReturn();
 
 		String id3 = response.then()
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 
+		
+		HashMap sendmsg = new HashMap<>();
+		sendmsg.put("fqcns", Arrays.asList(didUpload));
+		sendmsg.put("transactionId", "testid");
+		sendmsg.put("clientGatewayMessageId", "testid");
+		sendmsg.put("payload", "payload");
+		sendmsg.put("topicId", id3);
+		sendmsg.put("topicVersion", "1.0.0");
+		sendmsg.put("signature", "signature");
+		
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"fqcn\": \"" + didUpload
-						+ "\",\n  \"transactionId\": \"string\",\n  \"payload\": \"string\",\n  \"topicId\": \"" + id3
-						+ "\",\n  \"topicVersion\": \"1.0.0\",\n  \"signature\": \"string\"\n}")
+				.body(JsonbBuilder.create().toJson(sendmsg))
 				.when()
-				.post("/message").andReturn();
+				.post("/messages").andReturn();
 
 		response.then()
 				.statusCode(200);
@@ -245,7 +278,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -262,7 +295,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -282,7 +315,7 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
@@ -302,12 +335,76 @@ public class DDhubTest {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.post("/message/search").andReturn();
+				.post("/messages/search").andReturn();
 
 		response.then()
 				.statusCode(200)
 				.body("size()", equalTo(0));
 
+	}
+
+	@Test
+	public void testRole() throws Exception {
+
+		Response response = given().auth()
+				.oauth2(generateValidUserToken(did))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.get("/roles/check?did=" + did + "&roles=topiccreator.roles.messagebroker.apps.energyweb.iam.ewc")
+				.andReturn();
+
+		response.then()
+				.statusCode(200)
+				.body("hasRole", equalTo(true));
+
+		response = given().auth()
+				.oauth2(generateValidUserToken(did))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.get("/roles/list?roles=topiccreator.roles.messagebroker.apps.energyweb.iam.ewc").andReturn();
+
+		response.then()
+				.statusCode(200)
+				.body("dids.size()", equalTo(2));
+	}
+
+	@Test
+	public void testInternalMessage() throws Exception {
+
+		String payload = "test data";
+		HashMap msg = new HashMap();
+		msg.put("fqcn", didTest);
+		msg.put("clientGatewayMessageId", didTest);
+		msg.put("payload", payload);
+
+		Response response = given().auth()
+				.oauth2(generateValidUserToken(didTest))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.body("")
+				.when()
+				.post("/channel/initExtChannel").andReturn();
+
+		response = given().auth()
+				.oauth2(generateValidUserToken(didTest))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.body(JsonbBuilder.create().toJson(msg))
+				.when()
+				.post("/messages/internal").andReturn();
+
+		response.then()
+				.statusCode(200)
+				.body("messageId", notNullValue());
+
+		response = given().auth()
+				.oauth2(generateValidUserToken(didTest))
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.when()
+				.get("/messages/internal").andReturn();
+
+		logger.info(response.then().statusCode(200).extract().asString());
+		response.then()
+				.statusCode(200)
+				.body("[0].payload", equalTo(payload));
 	}
 
 	@Test

@@ -2,6 +2,7 @@ package org.energyweb.ddhub;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -14,7 +15,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.FileUploadDTO;
-import org.energyweb.ddhub.dto.MessageDTO;
+import org.energyweb.ddhub.dto.FileUploadDTOs;
+import org.energyweb.ddhub.dto.MessageDTOs;
 import org.jboss.logging.Logger;
 import org.jose4j.json.internal.json_simple.JSONObject;
 import org.jose4j.json.internal.json_simple.parser.JSONParser;
@@ -58,13 +60,16 @@ public class Routes extends RouteBuilder {
                 from("direct:azureupload")
                                 .process(e -> {
 
-                                        FileUploadDTO multipartBody = (FileUploadDTO) e.getIn().getBody();
-                                        MessageDTO messageDTO = new MessageDTO();
-                                        messageDTO.setFqcn(multipartBody.getFqcn());
+                                        FileUploadDTOs multipartBody = (FileUploadDTOs) e.getIn().getBody();
+                                        MessageDTOs messageDTO = new MessageDTOs();
+                                        messageDTO.setFqcns(Arrays.asList(multipartBody.getFqcns().split(",")));
+                                        messageDTO.setFqcn(multipartBody.getOwnerdid());
+                                        messageDTO.setClientGatewayMessageId(multipartBody.getClientGatewayMessageId());
                                         messageDTO.setTopicId(multipartBody.getTopicId());
                                         messageDTO.setSignature(multipartBody.getSignature());
                                         messageDTO.setTopicVersion(multipartBody.getTopicVersion());
                                         messageDTO.setTransactionId(multipartBody.getTransactionId());
+                                        messageDTO.setFromUpload(true);
                                         e.setProperty("multipartBody", multipartBody);
                                         e.setProperty("messageDTO", messageDTO);
 
@@ -76,16 +81,11 @@ public class Routes extends RouteBuilder {
                                 })
                                 .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=uploadBlockBlob&serviceClient=#client")
                                 .process(e -> {
-                                        MessageDTO messageDTO = (MessageDTO) e.getProperty("messageDTO");
+                                        MessageDTOs messageDTO = (MessageDTOs) e.getProperty("messageDTO");
                                         FileUploadDTO multipartBody = (FileUploadDTO) e.getProperty("multipartBody");
                                         JsonObjectBuilder builder = Json.createObjectBuilder();
                                         JsonObject jsonObject = builder
                                                         .add("fileId", multipartBody.getFileName())
-                                                        .add("download", ddhubContextURL + "/message/download"
-                                                                        + "?fileId="
-                                                                        + URLEncoder.encode(multipartBody.getFileName(),
-                                                                                        StandardCharsets.UTF_8
-                                                                                                        .toString()))
                                                         .build();
                                         messageDTO.setPayload(jsonObject.toString());
                                         e.getIn().setHeader("Authorization", e.getProperty("token"));
@@ -94,7 +94,7 @@ public class Routes extends RouteBuilder {
                                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                                 .doTry()
-                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/message?throwExceptionOnFailure=true")
+                                .to("netty-http:http://127.0.0.1:{{quarkus.http.port}}/messages?throwExceptionOnFailure=true")
                                 .doCatch(Exception.class)
                                 .process(e -> {
                                         Exception exception = e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);

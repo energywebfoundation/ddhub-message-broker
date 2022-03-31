@@ -3,10 +3,7 @@ package org.energyweb.ddhub;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -43,15 +40,17 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBodySchema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
-import org.energyweb.ddhub.dto.DDHub;
-import org.energyweb.ddhub.dto.FileUploadDTO;
+import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
+import org.energyweb.ddhub.dto.MessageDTOs;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
-import org.energyweb.ddhub.dto.TopicDTOCreate;
+import org.energyweb.ddhub.helper.MessageResponse;
+import org.energyweb.ddhub.helper.Recipients;
+import org.energyweb.ddhub.helper.ReturnErrorMessage;
+import org.energyweb.ddhub.helper.ReturnMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.MessageRepository;
@@ -59,6 +58,8 @@ import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
+
+import com.sun.mail.handlers.message_rfc822;
 
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -71,7 +72,7 @@ import io.nats.client.api.ConsumerConfiguration.Builder;
 import io.nats.client.api.PublishAck;
 import io.quarkus.security.Authenticated;
 
-@Path("/message")
+@Path("/messages")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = "AuthServer")
@@ -119,41 +120,82 @@ public class Message {
     String internalTopicId;
 
     @POST
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
-    public Response publish(@Valid @NotNull MessageDTO messageDTO)
-            throws InterruptedException, JetStreamApiException, TimeoutException, IOException {
-        topicRepository.validateTopicIds(Arrays.asList(messageDTO.getTopicId()));
-        topicVersionRepository.validateByIdAndVersion(messageDTO.getTopicId(), messageDTO.getTopicVersion());
-        // channelRepository.validateChannel(messageDTO.getFqcn(),messageDTO.getTopicId(),DID);
+    public Response publish(@Valid @NotNull MessageDTOs messageDTOs) {
+        topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
+        List<String> fqcns = new ArrayList<String>();
+        List<ReturnMessage> success = new ArrayList<ReturnMessage>();
+        List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
+        messageDTOs.getFqcns().forEach(fqcn -> {
+            Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
+            	failed.add(item);
+            	this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(item));
+            }, () -> {
+                fqcns.add(fqcn);
+            });
+        });
 
-        Connection nc = Nats.connect(natsJetstreamUrl);
+        try {
+            Connection nc = Nats.connect(natsJetstreamUrl);
 
-        JetStream js = nc.jetStream();
-        PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                .messageId(messageDTO.getTransactionId());
+            JetStream js = nc.jetStream();
+            PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+                    .messageId(messageDTOs.getTransactionId());
 
-        String id = messageRepository.save(messageDTO, DID);
+            fqcns.forEach(fqcn -> {
 
-        JsonObjectBuilder builder = Json.createObjectBuilder();
-        builder.add("id", id);
-        builder.add("payload", messageDTO.getPayload());
-        builder.add("topicVersion", messageDTO.getTopicVersion());
-        builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
-        builder.add("sender", DID);
-        builder.add("signature", messageDTO.getSignature());
-        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+                MessageDTO messageDTO = messageDTOs;
+                messageDTO.setFqcn(fqcn);
+                String id = messageRepository.save(messageDTO, DID);
 
-        PublishAck pa = js.publish(messageDTO.subjectName(),
-                builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+                JsonObjectBuilder builder = Json.createObjectBuilder();
+                builder.add("messageId", id);
+                builder.add("payload", messageDTO.getPayload());
+                builder.add("topicVersion", messageDTO.getTopicVersion());
+                builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
+                builder.add("sender", DID);
+                builder.add("signature", messageDTO.getSignature());
+                builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
+                builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+                
+                builder.add("isFile", messageDTO.getIsFile());
+                
+                
+                try {
+                    PublishAck pa = js.publish(messageDTO.subjectName(),
+                            builder.build().toString().getBytes(StandardCharsets.UTF_8),
+                            (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+                    ReturnMessage successMessage = new ReturnMessage();
+                    successMessage.setDid(fqcn);
+                    successMessage.setStatusCode(200);
+                    successMessage.setMessageId(id);
+                    success.add(successMessage);
+                } catch (IOException | JetStreamApiException ex) {
+                    ReturnMessage errorMessage = new ReturnMessage();
+                    errorMessage.setStatusCode(500);
+                    errorMessage.setDid(fqcn);
+                    errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
+                    failed.add(errorMessage);
+                    this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+                }
+            });
 
-        nc.flush(Duration.ZERO);
-        nc.close();
+            nc.flush(Duration.ZERO);
+            nc.close();
 
-        HashMap<String, String> map = new HashMap<>();
-        map.put("id", id);
-        return Response.ok().entity(map).build();
+        } catch (IOException | TimeoutException | InterruptedException ex) {
+            ReturnMessage errorMessage = new ReturnMessage();
+            errorMessage.setStatusCode(500);
+            errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
+            failed.add(errorMessage);
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+        }
+        MessageResponse messageResponse = new MessageResponse();
+        messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
+        messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(),success.size(),failed.size()));
+        messageResponse.add(success,failed);
+        return Response.ok().entity(messageResponse).build();
 
     }
 
@@ -167,7 +209,7 @@ public class Message {
         MessageDTO messageDTO = new MessageDTO();
         messageDTO.setFqcn(internalMessageDTO.getFqcn());
         messageDTO.setPayload(internalMessageDTO.getPayload());
-        messageDTO.setTransactionId(internalMessageDTO.getTransactionId());
+        messageDTO.setClientGatewayMessageId(internalMessageDTO.getClientGatewayMessageId());
         messageDTO.setTopicId(internalTopicId);
 
         Connection nc = Nats.connect(natsJetstreamUrl);
@@ -179,10 +221,11 @@ public class Message {
         String id = messageRepository.save(messageDTO, DID);
 
         JsonObjectBuilder builder = Json.createObjectBuilder();
-        builder.add("id", id);
+        builder.add("messageId", id);
         builder.add("payload", messageDTO.getPayload());
         builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
         builder.add("sender", DID);
+        builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
         builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
 
         PublishAck pa = js.publish(messageDTO.subjectName(),
@@ -193,9 +236,8 @@ public class Message {
         nc.close();
 
         HashMap<String, String> map = new HashMap<>();
-        map.put("id", id);
+        map.put("messageId", id);
         return Response.ok().entity(map).build();
-
     }
 
     @GET
@@ -241,9 +283,10 @@ public class Message {
                 MessageDTO message = new MessageDTO();
                 message.setPayload((String) natPayload.get("payload"));
                 message.setFqcn(messageDTO.getFqcn());
-                message.setId((String) natPayload.get("id"));
+                message.setId((String) natPayload.get("messageId"));
                 message.setSenderDid(sender);
                 message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+                message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
                 messageDTOs.add(message);
                 m.ack();
             }
@@ -290,9 +333,7 @@ public class Message {
                 HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
                         HashMap.class);
 
-                logger.info(messageDTO.getSenderId());
                 String sender = (String) natPayload.get("sender");
-                logger.info(sender);
 
                 if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
                         TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
@@ -313,11 +354,13 @@ public class Message {
                 message.setPayload((String) natPayload.get("payload"));
                 message.setFqcn(messageDTO.getFqcn());
                 message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
-                message.setId((String) natPayload.get("id"));
+                message.setId((String) natPayload.get("messageId"));
                 message.setSenderDid(sender);
                 message.setTopicVersion((String) natPayload.get("topicVersion"));
                 message.setSignature((String) natPayload.get("signature"));
                 message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+                message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
+                message.setFromUpload((boolean)natPayload.get("isFile"));
                 messageDTOs.add(message);
                 m.ack();
             }
@@ -330,13 +373,12 @@ public class Message {
     @POST
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
-    public Response uploadFile(@Valid @MultipartForm FileUploadDTO data, @HeaderParam("Authorization") String token) {
+    public Response uploadFile(@Valid @MultipartForm FileUploadDTOs data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
-        // channelRepository.validateChannel(data.getFqcn(), data.getTopicId(), DID);
         data.setOwnerdid(DID);
-        String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(data.getFqcn()));
+        String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(DID));
         data.setFileName(fileId);
         return Response.ok()
                 .entity(producerTemplate.sendBodyAndProperty("direct:azureupload", ExchangePattern.InOut, data, "token",
@@ -357,6 +399,9 @@ public class Message {
                         "CamelAzureStorageBlobBlobName", messageDTO.storageName() + fileId),
                         MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("clientGatewayMessageId", messageDTO.getClientGatewayMessageId())
+                .header("ownerDid", messageDTO.getSenderDid())
+                .header("signature", messageDTO.getSignature())
                 .build();
 
     }

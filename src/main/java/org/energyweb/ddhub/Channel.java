@@ -15,6 +15,9 @@ import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -57,6 +60,12 @@ public class Channel {
     @ConfigProperty(name = "NATS_JS_URL")
     String natsJetstreamUrl;
 
+    @ConfigProperty(name = "NATS_MAX_AGE")
+    long natsMaxAge;
+
+    @ConfigProperty(name = "NATS_MAX_SIZE")
+    long natsMaxSize;
+
     @ConfigProperty(name = "DUPLICATE_WINDOW")
     int duplicateWindow;
 
@@ -75,14 +84,16 @@ public class Channel {
     String verifiedRoles;
 
     @POST
+    @Counted(name = "restCountRetrieve", description = "How many times a person had been retrieve.")
+    @Timed(name = "restTimeRetrieve", description = "A measure of how long it takes to retrieve a person.", unit = MetricUnits.MILLISECONDS)
     @Path("initExtChannel")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response initExtChannel() throws IOException, JetStreamApiException, InterruptedException, ParseException {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(DID);
-        channelDTO.setMaxMsgAge(86400000l);
-        channelDTO.setMaxMsgSize(8388608l);
+        channelDTO.setMaxMsgAge(natsMaxAge);
+        channelDTO.setMaxMsgSize(natsMaxSize);
         Connection nc = Nats.connect(natsJetstreamUrl);
         try {
             JetStreamManagement jsm = nc.jetStreamManagement();
@@ -91,7 +102,7 @@ public class Channel {
             this.logger.info("[" + DID + "]" + JsonbBuilder.create().toJson(_streamInfo));
             channelRepository.validateChannel(DID);
         } catch (MongoException | JetStreamApiException ex) {
-            logger.debug("Channel not exist. creating channel:" + DID);
+            logger.info("Channel not exist. creating channel:" + DID);
             JetStreamManagement jsm = nc.jetStreamManagement();
 
             StreamConfiguration streamConfig = StreamConfiguration.builder()

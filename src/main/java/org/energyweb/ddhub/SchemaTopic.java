@@ -185,12 +185,12 @@ public class SchemaTopic {
     }
 
     @PUT
-    @RequestBodySchema(TopicDTOUpdate.class)
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Path("{id}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
     @Authenticated
-    public Response updateSchema(@NotNull @Valid TopicDTOUpdate _topic) {
-        topicRepository.validateTopicIds(Arrays.asList(_topic.getId()));
-        TopicDTO topic = topicRepository.findTopicBy(_topic.getId(), _topic.getVersion());
+    public Response updateSchema(@NotNull @Valid TopicDTOUpdate _topic,@NotNull @PathParam("id") String id) {
+        topicRepository.validateTopicIds(Arrays.asList(id));
+        TopicDTO topic = topicRepository.findTopicBy(id, _topic.getVersion());
         topic.setSchema(_topic.getSchema());
         topic.setTags(_topic.getTags());
         topic.setVersion(_topic.getVersion());
@@ -209,6 +209,7 @@ public class SchemaTopic {
 
         topic.setDid(DID);
         topicRepository.updateTopic(topic);
+        
         return Response.ok().entity(topic).build();
     }
 

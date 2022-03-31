@@ -9,7 +9,6 @@ import javax.validation.constraints.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,9 +16,6 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties({"name","schemaType","owner","did","isOwnerValid","ownerValid"})
 public class TopicDTOUpdate{
-	@NotNull
-	@NotEmpty
-	private String id;
 	@NotNull
 	@NotEmpty
 	private String schema;

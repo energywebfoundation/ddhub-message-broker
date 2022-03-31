@@ -42,7 +42,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		TopicVersion topicVersion = new TopicVersion();
 		try {
 			BeanUtils.copyProperties(topic, topicDTO);
-			topic.setCreatedBy(topicDTO.getDid());
+			topic.setCreatedBy(topicDTO.did());
 			topic.setCreatedDate(LocalDateTime.now());
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
@@ -72,7 +72,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			map.remove("owner");
 			map.remove("schemaType");
 			map.remove("tags");
-			topic.setUpdatedBy(topicDTO.getDid());
+			topic.setUpdatedBy(topicDTO.did());
 			topic.setUpdatedDate(LocalDateTime.now());
 			BeanUtils.copyProperties(topic, map);
 			topic.setId(_topic.getId());

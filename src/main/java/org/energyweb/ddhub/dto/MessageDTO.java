@@ -69,6 +69,11 @@ public class MessageDTO extends DDHub {
     
     public boolean getIsFile() {
     	return fromUpload;
+
+    }
+    
+    public void setIsFile(boolean isFile) {
+    	fromUpload = isFile;
     }
     
     @JsonIgnore

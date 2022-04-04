@@ -316,7 +316,7 @@ public class DDhubTest {
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
 				.post("/messages/search").andReturn();
-
+		logger.info(response.then().extract().asString());
 		response.then()
 				.statusCode(200)
 				.body("size()", equalTo(1));

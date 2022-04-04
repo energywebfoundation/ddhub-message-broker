@@ -11,6 +11,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Getter;
@@ -33,7 +34,7 @@ public class SearchMessageDTO {
 	@Valid
 	private List<@NotNull @NotNull String> senderId;
 
-	private String clientId = "default";
+	private String clientId = "mb-default";
 
 	private int amount = 1;
 

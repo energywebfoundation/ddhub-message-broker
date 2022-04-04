@@ -94,17 +94,13 @@ public class Channel {
         channelDTO.setFqcn(DID);
         channelDTO.setMaxMsgAge(natsMaxAge);
         channelDTO.setMaxMsgSize(natsMaxSize);
-        Connection nc = Nats.connect(natsJetstreamUrl);
         try {
-            JetStreamManagement jsm = nc.jetStreamManagement();
-            StreamInfo _streamInfo = jsm.getStreamInfo(channelDTO.streamName());
-
-            this.logger.info("[" + DID + "]" + JsonbBuilder.create().toJson(_streamInfo));
-            channelRepository.validateChannel(DID);
-        } catch (MongoException | JetStreamApiException ex) {
+            channelRepository.findByFqcn(DID);
+        } catch (MongoException ex) {
             logger.info("Channel not exist. creating channel:" + DID);
-            JetStreamManagement jsm = nc.jetStreamManagement();
 
+            Connection nc = Nats.connect(natsJetstreamUrl);
+            JetStreamManagement jsm = nc.jetStreamManagement();
             StreamConfiguration streamConfig = StreamConfiguration.builder()
                     .name(channelDTO.streamName())
                     .addSubjects(channelDTO.subjectNameAll())
@@ -113,10 +109,9 @@ public class Channel {
                     .duplicateWindow(duplicateWindow * 1000000000)
                     .build();
             StreamInfo streamInfo = jsm.addStream(streamConfig);
+            nc.close();
             channelDTO.setOwnerdid(DID);
             channelRepository.save(channelDTO);
-
-            nc.close();
         }
         ownerRepository.save(DID, verifiedRoles);
 

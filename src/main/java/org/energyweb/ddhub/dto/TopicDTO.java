@@ -21,9 +21,8 @@ import org.jose4j.json.internal.json_simple.parser.JSONParser;
 import org.jose4j.json.internal.json_simple.parser.ParseException;
 import org.xml.sax.SAXException;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,6 +84,7 @@ public class TopicDTO {
 	@Valid
 	private Set<@NotEmpty String> tags;
 	@JsonIgnore
+	@Getter(AccessLevel.NONE)
 	private String did;
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
@@ -160,5 +160,10 @@ public class TopicDTO {
 			}
 		}
 		return isValid;
+	}
+
+
+	public String did() {
+		return this.did;
 	}
 }

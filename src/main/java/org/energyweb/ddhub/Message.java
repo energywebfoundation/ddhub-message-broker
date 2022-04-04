@@ -244,55 +244,59 @@ public class Message {
     @Path("internal")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
-    public Response searchInternal(@DefaultValue("default") @QueryParam("clientId") String clientId)
+    public Response searchInternal(@DefaultValue("mb-default") @QueryParam("clientId") String clientId)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         SearchMessageDTO messageDTO = new SearchMessageDTO();
         messageDTO.setFqcn(DID);
         messageDTO.setClientId(clientId);
 
-        Connection nc = Nats.connect(natsJetstreamUrl);
-        JetStream js = nc.jetStream();
-
-        Builder builder = ConsumerConfiguration.builder();
-        builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-        builder.durable(messageDTO.getClientId()); // required
-
-        JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
-                builder.buildPullSubscribeOptions());
-        nc.flush(Duration.ofSeconds(1));
-
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
-        while (messageDTOs.size() < messageDTO.getAmount()) {
-            List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
-            // messages.forEach(m -> m.inProgress());
-            if (messages.isEmpty()) {
-                break;
-            }
-            for (io.nats.client.Message m : messages) {
-                m.inProgress();
-                if (m.isStatusMessage()) {
-                    m.nak();
-                    continue;
-                }
-
-                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
-                        HashMap.class);
-
-                String sender = (String) natPayload.get("sender");
-
-                MessageDTO message = new MessageDTO();
-                message.setPayload((String) natPayload.get("payload"));
-                message.setFqcn(messageDTO.getFqcn());
-                message.setId((String) natPayload.get("messageId"));
-                message.setSenderDid(sender);
-                message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
-                message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-                messageDTOs.add(message);
-                m.ack();
-            }
+        try {
+        	Connection nc = Nats.connect(natsJetstreamUrl);
+        	JetStream js = nc.jetStream();
+        	
+        	Builder builder = ConsumerConfiguration.builder();
+        	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+        	builder.durable(messageDTO.getClientId()); // required
+        	
+        	JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
+        			builder.buildPullSubscribeOptions());
+        	nc.flush(Duration.ofSeconds(1));
+        	
+        	while (messageDTOs.size() < messageDTO.getAmount()) {
+        		List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+        		// messages.forEach(m -> m.inProgress());
+        		if (messages.isEmpty()) {
+        			break;
+        		}
+        		for (io.nats.client.Message m : messages) {
+        			m.inProgress();
+        			if (m.isStatusMessage()) {
+        				m.nak();
+        				continue;
+        			}
+        			
+        			HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+        					HashMap.class);
+        			
+        			String sender = (String) natPayload.get("sender");
+        			
+        			MessageDTO message = new MessageDTO();
+        			message.setPayload((String) natPayload.get("payload"));
+        			message.setFqcn(messageDTO.getFqcn());
+        			message.setId((String) natPayload.get("messageId"));
+        			message.setSenderDid(sender);
+        			message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+        			message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
+        			messageDTOs.add(message);
+        			m.ack();
+        		}
+        	}
+        	sub.unsubscribe();
+        	nc.close();
+        }catch(IllegalArgumentException ex) {
+        	this.logger.warn("[" + DID + "]" + ex.getMessage());
         }
-        sub.unsubscribe();
-        nc.close();
         return Response.ok().entity(messageDTOs).build();
     }
 
@@ -306,68 +310,72 @@ public class Message {
         // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
         messageDTO.setFqcn(DID);
 
-        Connection nc = Nats.connect(natsJetstreamUrl);
-        JetStream js = nc.jetStream();
-
-        Builder builder = ConsumerConfiguration.builder();
-        builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-        builder.durable(messageDTO.getClientId()); // required
-
-        JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-        nc.flush(Duration.ofSeconds(1));
-
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
-        while (messageDTOs.size() < messageDTO.getAmount()) {
-            List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
-            // messages.forEach(m -> m.inProgress());
-            if (messages.isEmpty()) {
-                break;
-            }
-            for (io.nats.client.Message m : messages) {
-                m.inProgress();
-                if (m.isStatusMessage()) {
-                    m.nak();
-                    continue;
-                }
-
-                HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
-                        HashMap.class);
-
-                String sender = (String) natPayload.get("sender");
-
-                if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
-                        TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
-                                .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
-                                        .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
-                    continue;
-                }
-
-                if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
-                    continue;
-                }
-
-                if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
-                    continue;
-                }
-
-                MessageDTO message = new MessageDTO();
-                message.setPayload((String) natPayload.get("payload"));
-                message.setFqcn(messageDTO.getFqcn());
-                message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
-                message.setId((String) natPayload.get("messageId"));
-                message.setSenderDid(sender);
-                message.setTopicVersion((String) natPayload.get("topicVersion"));
-                message.setSignature((String) natPayload.get("signature"));
-                message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
-                message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-                message.setFromUpload((boolean)natPayload.get("isFile"));
-                messageDTOs.add(message);
-                m.ack();
-            }
+        try {
+        	Connection nc = Nats.connect(natsJetstreamUrl);
+        	JetStream js = nc.jetStream();
+        	
+        	Builder builder = ConsumerConfiguration.builder();
+        	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+        	builder.durable(messageDTO.getClientId()); // required
+        	
+        	JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
+        	nc.flush(Duration.ofSeconds(1));
+        	
+        	while (messageDTOs.size() < messageDTO.getAmount()) {
+        		List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+        		if (messages.isEmpty()) {
+        			break;
+        		}
+        		for (io.nats.client.Message m : messages) {
+        			m.inProgress();
+        			if (m.isStatusMessage()) {
+        				m.nak();
+        				continue;
+        			}
+        			
+        			HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+        					HashMap.class);
+        			
+        			String sender = (String) natPayload.get("sender");
+        			
+        			if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
+        					TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
+        							.atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+        					.valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+        				continue;
+        			}
+        			
+        			if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
+        				continue;
+        			}
+        			
+        			if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+        				continue;
+        			}
+        			
+        			MessageDTO message = new MessageDTO();
+        			message.setPayload((String) natPayload.get("payload"));
+        			message.setFqcn(messageDTO.getFqcn());
+        			message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
+        			message.setId((String) natPayload.get("messageId"));
+        			message.setSenderDid(sender);
+        			message.setTopicVersion((String) natPayload.get("topicVersion"));
+        			message.setSignature((String) natPayload.get("signature"));
+        			message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+        			message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
+        			message.setFromUpload((boolean)natPayload.get("isFile"));
+        			messageDTOs.add(message);
+        			m.ack();
+        		}
+        	}
+        	sub.unsubscribe();
+        	nc.close();
+        	
+        }catch(IllegalArgumentException ex) {
+        	this.logger.warn("[" + DID + "]" + ex.getMessage());
         }
-        sub.unsubscribe();
-        nc.close();
-        return Response.ok().entity(messageDTOs).build();
+		return Response.ok().entity(messageDTOs).build();
     }
 
     @POST

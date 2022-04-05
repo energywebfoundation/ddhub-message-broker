@@ -60,4 +60,8 @@ public class SearchMessageDTO {
 		Collections.reverse(Arrays.asList(streamName));
 		return String.join("_", streamName);
 	}
+
+	public String getDurable() {
+		return clientId.concat(streamName());
+	}
 }

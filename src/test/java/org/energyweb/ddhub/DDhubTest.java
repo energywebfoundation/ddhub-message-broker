@@ -395,11 +395,16 @@ public class DDhubTest {
 				.statusCode(200)
 				.body("messageId", notNullValue());
 
+		msg = new HashMap();
+		msg.put("senderId", Arrays.asList(didTest));
+		msg.put("clientId", id + "1");
+		msg.put("amount", 10);
 		response = given().auth()
 				.oauth2(generateValidUserToken(didTest))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+				.body(JsonbBuilder.create().toJson(msg))
 				.when()
-				.get("/messages/internal").andReturn();
+				.post("/messages/internal/search").andReturn();
 
 		logger.info(response.then().statusCode(200).extract().asString());
 		response.then()

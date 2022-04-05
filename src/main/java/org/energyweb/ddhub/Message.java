@@ -22,7 +22,6 @@ import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -46,6 +45,7 @@ import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MessageDTOs;
+import org.energyweb.ddhub.dto.SearchInternalMessageDTO;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
 import org.energyweb.ddhub.helper.MessageResponse;
 import org.energyweb.ddhub.helper.Recipients;
@@ -58,8 +58,6 @@ import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
-
-import com.sun.mail.handlers.message_rfc822;
 
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -240,24 +238,22 @@ public class Message {
         return Response.ok().entity(map).build();
     }
 
-    @GET
-    @Path("internal")
+    @POST
+    @Path("internal/search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
-    public Response searchInternal(@DefaultValue("mb-default") @QueryParam("clientId") String clientId)
+    public Response searchInternal(@Valid @NotNull SearchInternalMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        SearchMessageDTO messageDTO = new SearchMessageDTO();
         messageDTO.setFqcn(DID);
-        messageDTO.setClientId(clientId);
 
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
         try {
         	Connection nc = Nats.connect(natsJetstreamUrl);
         	JetStream js = nc.jetStream();
         	
-        	Builder builder = ConsumerConfiguration.builder();
+        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.getClientId());
         	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-        	builder.durable(messageDTO.getClientId()); // required
+//        	builder.durable(messageDTO.getClientId()); // required
         	
         	JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
         			builder.buildPullSubscribeOptions());
@@ -280,6 +276,17 @@ public class Message {
         					HashMap.class);
         			
         			String sender = (String) natPayload.get("sender");
+        			
+        			if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
+        					TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
+        							.atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+        					.valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+        				continue;
+        			}
+        			
+        			if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+        				continue;
+        			}
         			
         			MessageDTO message = new MessageDTO();
         			message.setPayload((String) natPayload.get("payload"));
@@ -304,7 +311,7 @@ public class Message {
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
-    public Response search(@Valid SearchMessageDTO messageDTO)
+    public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         topicRepository.validateTopicIds(messageDTO.getTopicId());
         // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
@@ -315,9 +322,9 @@ public class Message {
         	Connection nc = Nats.connect(natsJetstreamUrl);
         	JetStream js = nc.jetStream();
         	
-        	Builder builder = ConsumerConfiguration.builder();
+        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.getClientId());
         	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-        	builder.durable(messageDTO.getClientId()); // required
+//        	builder.durable(messageDTO.getClientId()); // required
         	
         	JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
         	nc.flush(Duration.ofSeconds(1));

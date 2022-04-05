@@ -26,7 +26,7 @@ public class SearchInternalMessageDTO  {
 	@Valid
 	private List<@NotNull @NotEmpty String> senderId;
 
-	private String clientId = "mb-default";
+	private String clientId = "mb-default-internal";
 
 	private int amount = 1;
 

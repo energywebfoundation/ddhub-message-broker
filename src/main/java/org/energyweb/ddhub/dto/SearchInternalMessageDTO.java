@@ -1,9 +1,11 @@
 package org.energyweb.ddhub.dto;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
@@ -46,6 +48,9 @@ public class SearchInternalMessageDTO  {
 	}
 
 	public String getDurable() {
+		if(Optional.ofNullable(from).isPresent()) {
+			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(streamName());
+		}
 		return clientId.concat(streamName());
 	}
 }

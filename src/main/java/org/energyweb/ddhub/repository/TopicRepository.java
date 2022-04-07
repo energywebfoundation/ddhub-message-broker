@@ -216,4 +216,26 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicDTO;
 	}
 
+	public void deleteTopic(String id, String version) {
+		long totaltopic = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).count();
+		if(totaltopic == 1) {
+			throw new MongoException("id:" + id + " minimum number of version reached");
+		}
+		topicVersionRepository.delete("topicId","version", new ObjectId(id),version);
+	}
+
+	public void updateCurrentTopic(String id) {
+		TopicVersion latest = findLatestVersion(id);
+		Topic entity = findById(new ObjectId(id));
+		entity.setSchema(latest.getSchema());
+		entity.setTags(latest.getTags());
+		entity.setVersion(latest.getVersion());
+		persistOrUpdate(entity);
+	}
+
+	public TopicVersion findLatestVersion(String id) {
+		List<TopicVersion> topics = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).list();
+		return topics.get(topics.size() - 1);
+	}
+
 }

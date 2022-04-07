@@ -183,6 +183,16 @@ public class SchemaTopic {
         topicRepository.validateTopicIds(Arrays.asList(id));
         return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
     }
+    
+    @PUT
+    @Path("{id}/version/{versionNumber}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
+    @Authenticated
+    public Response updateTopicVersionByNumber(@NotNull @Valid TopicDTOUpdate _topic,@NotNull @PathParam("id") String id,
+            @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
+        topicRepository.validateTopicIds(Arrays.asList(id));
+        return Response.ok().entity(topicVersionRepository.updateByIdAndVersion(id, versionNumber)).build();
+    }
 
     @PUT
     @Path("{id}")
@@ -237,7 +247,6 @@ public class SchemaTopic {
             return Response.status(400).entity(error).build();
         }
         topicRepository.deleteTopic(id,version);
-        topicRepository.updateCurrentTopic(id);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
 

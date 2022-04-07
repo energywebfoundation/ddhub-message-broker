@@ -23,12 +23,8 @@ public class TopicVersion {
 	@Getter(AccessLevel.NONE)
 	private ObjectId id;
 	private ObjectId topicId;
-	private String name;
-	private String schemaType;
 	private String schema;
 	private String version;
-	private String owner;
-	private Set<String> tags;
 	private String createdBy;
 	private String updatedBy;
 	private LocalDateTime createdDate;

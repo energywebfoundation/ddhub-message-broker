@@ -10,7 +10,6 @@ import javax.enterprise.context.ApplicationScoped;
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
 import org.energyweb.ddhub.dto.TopicDTO;
-import org.energyweb.ddhub.dto.TopicDTO.SchemaType;
 import org.energyweb.ddhub.dto.TopicDTOPage;
 import org.energyweb.ddhub.model.TopicVersion;
 
@@ -28,11 +27,8 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 			
 			Map map = BeanUtils.describe(topicVersion);
 			map.remove("schemaType");
-			map.remove("tags");
     		TopicDTO topicDTO = new TopicDTO();
 			BeanUtils.copyProperties(topicDTO, map);
-			topicDTO.setTags(topicVersion.getTags());
-			topicDTO.setSchemaType(SchemaType.valueOf(topicVersion.getSchemaType()).name());
 			topicDTO.setSchema(topicVersion.getSchema());
 			return topicDTO;
 		} catch (IllegalAccessException | InvocationTargetException | MongoException | NoSuchMethodException e) {
@@ -60,17 +56,18 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 			try {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
-				map.remove("tags");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
-				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
-				topicDTO.setTags(entity.getTags());
 				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			}
 		});
     	return new TopicDTOPage(totalRecord,size==0?totalRecord:size,page,topicDTOs);
+	}
+
+	public TopicDTO updateByIdAndVersion(String id,String versionNumber) {
+		return null;
 	}
 
 	

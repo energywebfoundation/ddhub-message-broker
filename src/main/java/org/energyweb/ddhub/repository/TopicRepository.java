@@ -10,9 +10,6 @@ import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -143,7 +140,6 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				BeanUtils.copyProperties(topicDTO, map);
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
-				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			}
@@ -189,7 +185,6 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				BeanUtils.copyProperties(topicDTO, map);
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
-				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			}
@@ -201,16 +196,15 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		TopicDTO topicDTO = new TopicDTO();
 		try {
 			Topic entity = findById(new ObjectId(id));
-			if(entity.getVersion().equalsIgnoreCase(versionNumber)) {
-				throw new MongoException("id:" + id + " version " + versionNumber + " exists");
-			}
+//			if(entity.getVersion().equalsIgnoreCase(versionNumber)) {
+//				throw new MongoException("id:" + id + " version " + versionNumber + " exists");
+//			}
 			Map map = BeanUtils.describe(entity);
 			map.remove("schemaType");
 			map.remove("tags");
 			BeanUtils.copyProperties(topicDTO, map);
 			topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 			topicDTO.setTags(entity.getTags());
-			topicDTO.setSchema(entity.getSchema());
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 		}
 		return topicDTO;
@@ -222,15 +216,6 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			throw new MongoException("id:" + id + " minimum number of version reached");
 		}
 		topicVersionRepository.delete("topicId","version", new ObjectId(id),version);
-	}
-
-	public void updateCurrentTopic(String id) {
-		TopicVersion latest = findLatestVersion(id);
-		Topic entity = findById(new ObjectId(id));
-		entity.setSchema(latest.getSchema());
-		entity.setTags(latest.getTags());
-		entity.setVersion(latest.getVersion());
-		persistOrUpdate(entity);
 	}
 
 	public TopicVersion findLatestVersion(String id) {

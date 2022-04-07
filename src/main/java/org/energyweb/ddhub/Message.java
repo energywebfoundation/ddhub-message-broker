@@ -284,7 +284,7 @@ public class Message {
         				continue;
         			}
         			
-        			if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+        			if (Optional.ofNullable(messageDTO.getSenderId()).isPresent() && messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
         				continue;
         			}
         			

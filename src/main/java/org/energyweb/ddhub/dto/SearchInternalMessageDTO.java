@@ -47,7 +47,7 @@ public class SearchInternalMessageDTO  {
 		return String.join("_", streamName);
 	}
 
-	public String getDurable() {
+	public String findDurable() {
 		if(Optional.ofNullable(from).isPresent()) {
 			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(streamName());
 		}

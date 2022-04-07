@@ -222,5 +222,23 @@ public class SchemaTopic {
         topicRepository.deleteTopic(id);
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
+    
+    @DELETE
+    @Path("{id}/version/{version}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Authenticated
+    public Response deleteSchemaVersion(@NotNull @PathParam("id") String id, @NotNull @PathParam("version") String version) {
+    	topicRepository.validateTopicIds(Arrays.asList(id));
+    	TopicDTO topic = topicVersionRepository.findByIdAndVersion(id,version);
+    	topic.validateOwner(roles);
+        if (!topic.validOwner()) {
+            ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");
+            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(error));
+            return Response.status(400).entity(error).build();
+        }
+        topicRepository.deleteTopic(id,version);
+        topicRepository.updateCurrentTopic(id);
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+    }
 
 }

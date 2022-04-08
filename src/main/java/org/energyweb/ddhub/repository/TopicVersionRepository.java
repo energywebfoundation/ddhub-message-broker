@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -66,8 +67,24 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
     	return new TopicDTOPage(totalRecord,size==0?totalRecord:size,page,topicDTOs);
 	}
 
-	public TopicDTO updateByIdAndVersion(String id,String versionNumber) {
-		return null;
+	public TopicDTO updateByIdAndVersion(String id,String versionNumber, String schema, String did) {
+		TopicDTO topicDTO = new TopicDTO();
+		topicDTO.setSchema(schema);
+		topicDTO.setVersion(versionNumber);
+		
+		TopicVersion topicVersion = find("topicId = ?1 and version = ?2", new ObjectId(id), versionNumber).firstResultOptional().orElse(new TopicVersion());
+		topicVersion.setSchema(schema);
+		topicVersion.setUpdatedBy(did);
+		topicVersion.setUpdatedDate(LocalDateTime.now());
+		if(topicVersion.getId() == null) {
+			topicVersion.setTopicId(new ObjectId(id));
+			topicVersion.setVersion(versionNumber);
+			topicVersion.setCreatedBy(did);
+			topicVersion.setCreatedDate(LocalDateTime.now());
+		}
+		persistOrUpdate(topicVersion);
+		
+		return topicDTO;
 	}
 
 	

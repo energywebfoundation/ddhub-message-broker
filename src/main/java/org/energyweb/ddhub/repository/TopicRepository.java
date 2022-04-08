@@ -10,6 +10,8 @@ import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -43,6 +45,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			topic.setCreatedDate(LocalDateTime.now());
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
+			topicVersion.setVersion(topicDTO.getVersion());
+			topicVersion.setSchema(topicDTO.schemaValue());
 			topicVersion.setTopicId(topic.getId());
 		} catch (IllegalAccessException | InvocationTargetException e) {
 			throw new MongoException("Unable to save");
@@ -59,10 +63,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 	public void updateTopic(TopicDTO topicDTO) {
 		Topic topic = new Topic();
-		TopicVersion topicVersion = new TopicVersion();
 		try {
 			Topic _topic = findById(new ObjectId(topicDTO.getId()));
-			topicVersion.setTopicId(_topic.getId());
 			Map map = BeanUtils.describe(topicDTO);
 			map.remove("id");
 			map.remove("name");
@@ -77,18 +79,14 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			topic.setOwner(_topic.getOwner());
 			topic.setSchemaType(_topic.getSchemaType());
 			topic.setTags(topicDTO.getTags());
-			BeanUtils.copyProperties(topicVersion, topic);
-			topicVersionRepository.persist(topicVersion);
+			topic.setCreatedBy(_topic.getCreatedBy());
+			topic.setCreatedDate(_topic.getCreatedDate());
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			throw new MongoException("Unable to update");
 		}
 
-		try {
-			topic.setUpdatedDate(LocalDateTime.now());
-			update(topic);
-		} catch (Exception ex) {
-			topicVersionRepository.delete(topicVersion);
-		}
+		topic.setUpdatedDate(LocalDateTime.now());
+		update(topic);
 	}
 
 	public void validateTopicIds(List<String> topicIds) {
@@ -213,14 +211,25 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	public void deleteTopic(String id, String version) {
 		long totaltopic = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).count();
 		if(totaltopic == 1) {
-			throw new MongoException("id:" + id + " minimum number of version reached");
+			deleteTopic(id);
+		}else {
+			topicVersionRepository.delete("topicId = ?1 and version = ?2", new ObjectId(id),version);
 		}
-		topicVersionRepository.delete("topicId","version", new ObjectId(id),version);
 	}
 
 	public TopicVersion findLatestVersion(String id) {
 		List<TopicVersion> topics = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).list();
 		return topics.get(topics.size() - 1);
+	}
+
+	public TopicDTO updateByIdAndVersion(String id,
+			String versionNumber,
+			String schema, String did) {
+		TopicDTO topicDTO = findTopicBy(id, versionNumber);
+		topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
+		topicDTO.setSchema(schema);
+		topicDTO.setVersion(versionNumber);
+		return topicDTO;
 	}
 
 }

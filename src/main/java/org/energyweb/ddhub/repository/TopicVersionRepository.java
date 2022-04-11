@@ -7,11 +7,13 @@ import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTOPage;
+import org.energyweb.ddhub.model.Topic;
 import org.energyweb.ddhub.model.TopicVersion;
 
 import com.mongodb.MongoException;
@@ -22,6 +24,10 @@ import io.quarkus.panache.common.Page;
 
 @ApplicationScoped
 public class TopicVersionRepository implements PanacheMongoRepository<TopicVersion> {
+	
+	@Inject
+	TopicRepository topicRepository;
+
     public TopicDTO findByIdAndVersion(String id, String versionNumber) {
     	try {
     		TopicVersion topicVersion = find("topicId = ?1 and version = ?2", new ObjectId(id), versionNumber).firstResultOptional().orElseThrow(()-> new MongoException("id:" + id + " version not exists"));
@@ -45,6 +51,8 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
 		
+		Topic topic = topicRepository.findById(new ObjectId(id));
+		
 		PanacheQuery<TopicVersion> topics = find("topicId = ?1", new ObjectId(id));
 		if (size > 0) {
 			if(size == 1) {
@@ -58,6 +66,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
 				TopicDTO topicDTO = new TopicDTO();
+				BeanUtils.copyProperties(topicDTO, topic);
 				BeanUtils.copyProperties(topicDTO, map);
 				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);

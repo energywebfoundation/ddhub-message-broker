@@ -2,6 +2,7 @@ package org.energyweb.ddhub.dto;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -66,6 +67,6 @@ public class SearchMessageDTO {
 		if(Optional.ofNullable(from).isPresent()) {
 			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(streamName());
 		}
-		return clientId.concat(streamName());
+		return clientId.concat(LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE)).concat(streamName());
 	}
 }

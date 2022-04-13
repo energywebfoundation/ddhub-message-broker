@@ -299,7 +299,7 @@ public class Message {
         			m.ack();
         		}
         	}
-        	sub.unsubscribe();
+//        	sub.unsubscribe();
         	nc.close();
         }catch(IllegalArgumentException ex) {
         	this.logger.warn("[" + DID + "]" + ex.getMessage());
@@ -376,7 +376,7 @@ public class Message {
         			m.ack();
         		}
         	}
-        	sub.unsubscribe();
+//        	sub.unsubscribe();
         	nc.close();
         	
         }catch(IllegalArgumentException ex) {

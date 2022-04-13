@@ -16,8 +16,6 @@ public class Topic {
 	private ObjectId id;
 	private String name;
 	private String schemaType;
-	private String schema;
-	private String version;
 	private String owner;
 	private Set<String> tags;
 	private String createdBy;

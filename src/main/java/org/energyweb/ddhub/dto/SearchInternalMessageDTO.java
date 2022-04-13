@@ -12,6 +12,7 @@ import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -29,6 +30,7 @@ public class SearchInternalMessageDTO  {
 	@Valid
 	private List<@NotNull @NotEmpty String> senderId;
 
+	@Pattern(regexp = "^[a-zA-Z0-9\\-:]+$", message = "Required Alphanumeric string")
 	private String clientId = "mb-default-internal";
 
 	private int amount = 1;

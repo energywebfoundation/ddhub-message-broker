@@ -108,40 +108,18 @@ public class TopicTest {
 		id = response.then().statusCode(200).extract().body().jsonPath().get("id");
 
 		topic = new HashMap();
-		topic.put("name", "topic2");
-		topic.put("schemaType", "JSD7");
 		topic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
-		topic.put("version", "1.0.1");
-		topic.put("owner", "ddhub-1.apps.energyweb.iam.ewc");
-		topic.put("tags", Arrays.asList("test2").toArray());
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
 				.body(JsonbBuilder.create().toJson(topic))
 				.when()
-				.put("/topics/" + id).andReturn();
+				.put("/topics/" + id + "/version/1.0.1").andReturn();
 		
 		response.then()
 				.statusCode(200);
 
-		topic = new HashMap();
-		topic.put("name", "topic3");
-		topic.put("schemaType", "JSD7");
-		topic.put("schema", "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
-		topic.put("version", "1.0.1");
-		topic.put("owner", "ddhub-1.apps.energyweb.iam.ewc");
-		topic.put("tags", Arrays.asList("test2").toArray());
-
-		response = given().auth()
-				.oauth2(generateValidUserToken(did))
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body(JsonbBuilder.create().toJson(topic))
-				.when()
-				.put("/topics/" + id).andReturn();
-
-		response.then()
-				.statusCode(400);
 
 	}
 

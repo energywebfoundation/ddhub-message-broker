@@ -94,8 +94,12 @@ public class TopicDTO {
 		return isOwnerValid;
 	}
 
+	public String schemaValue() {
+		return schema;
+	}
 	
 	public HashMap getSchema() {
+		if(schema == null) return null;
 		return jsonParser();
 	}
 

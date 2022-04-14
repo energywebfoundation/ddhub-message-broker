@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Optional;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -40,15 +41,21 @@ public class DDHubLogging implements ContainerRequestFilter {
 			
 			
 			String parameters = requestContext.hasEntity()? new String(arrayInputStream.readAllBytes(), "UTF-8"):JsonbBuilder.create().toJson(requestContext.getUriInfo().getQueryParameters());
-			HashMap parametersObject = (JSONObject) parser.parse(parameters);
-			parametersObject.remove("payload");
-			parametersObject.remove("schema");
 			
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
 			HashMap<String, String> data = new HashMap<>(); 
 			data.put("method", requestContext.getMethod());
 			data.put("path", requestContext.getUriInfo().getPath());
-			data.put("request", JsonbBuilder.create().toJson(parametersObject));
+			
+			try {
+				HashMap parametersObject = (JSONObject) parser.parse(parameters);
+				parametersObject.remove("payload");
+				parametersObject.remove("schema");
+				data.put("request", JsonbBuilder.create().toJson(parametersObject));
+			} catch (ParseException e) {
+				data.put("request", JsonbBuilder.create().toJson(parameters));
+				
+			}
 			
 			this.logger.info("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(data));
 

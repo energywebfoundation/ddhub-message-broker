@@ -16,6 +16,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -54,6 +57,8 @@ public class Role {
     @Claim(value = "roles")
     String verifiedRoles;
 
+    @Counted(name = "roles_get_count", description = "", tags = {"ddhub=roles"}, absolute = true)
+    @Timed(name = "roles_get_timed", description = "", tags = {"ddhub=roles"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("check")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
@@ -66,6 +71,8 @@ public class Role {
 
     }
 
+    @Counted(name = "list_get_count", description = "", tags = {"ddhub=roles"}, absolute = true)
+    @Timed(name = "list_get_timed", description = "", tags = {"ddhub=roles"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("list")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))

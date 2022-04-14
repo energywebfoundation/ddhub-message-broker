@@ -36,6 +36,9 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -117,6 +120,8 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_TOPIC")
     String internalTopicId;
 
+    @Counted(name = "messages_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
+    @Timed(name = "messages_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
@@ -197,6 +202,8 @@ public class Message {
 
     }
 
+    @Counted(name = "internal_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
+    @Timed(name = "internal_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("internal")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
@@ -238,6 +245,8 @@ public class Message {
         return Response.ok().entity(map).build();
     }
 
+    @Counted(name = "internal-search_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
+    @Timed(name = "internal-search_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("internal/search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
@@ -307,6 +316,8 @@ public class Message {
         return Response.ok().entity(messageDTOs).build();
     }
 
+    @Counted(name = "search_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
+    @Timed(name = "search_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
@@ -385,6 +396,8 @@ public class Message {
 		return Response.ok().entity(messageDTOs).build();
     }
 
+    @Counted(name = "upload_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
+    @Timed(name = "upload_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -401,6 +414,8 @@ public class Message {
                 .build();
     }
 
+    @Counted(name = "download_get_count", description = "", tags = {"ddhub=messages"}, absolute = true)
+    @Timed(name = "download_get_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)

@@ -49,10 +49,7 @@ did-auth-proxy-helm:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
       nginx.ingress.kubernetes.io/server-snippet: |
-        location = /health {
-            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
-        }
-        location ~ ^/(swagger-ui|q/openapi) {
+        location ~ ^/(swagger-ui|q/openapi|health) {
             proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
         }
         location ~ / {

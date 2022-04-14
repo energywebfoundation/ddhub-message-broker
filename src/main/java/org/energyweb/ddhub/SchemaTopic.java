@@ -38,6 +38,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTOCreate;
+import org.energyweb.ddhub.dto.TopicDTOGetPage;
 import org.energyweb.ddhub.dto.TopicDTOPage;
 import org.energyweb.ddhub.dto.TopicDTOSchema;
 import org.energyweb.ddhub.dto.TopicDTOUpdate;
@@ -133,14 +134,14 @@ public class SchemaTopic {
     }
 
     @GET
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOGetPage.class)))
     @Authenticated
     public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,
             @QueryParam("name") String name, @DefaultValue("1") @QueryParam("page") int page,
             @DefaultValue("0") @QueryParam("limit") int size, @QueryParam("tags") String... tags)
             throws ValidationException {
         if (page > 1 && size == 0)
-            return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+            return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();
         return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, tags)).build();
     }
 
@@ -170,7 +171,7 @@ public class SchemaTopic {
     public Response listOfVersionById(@NotNull @PathParam("id") String id,
             @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
         if (page > 1 && size == 0) {
-            return Response.status(400).entity(new ErrorResponse("12", "Required to set limit with page > 1")).build();
+            return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();
         }
         topicRepository.validateTopicIds(Arrays.asList(id));
         return Response.ok().entity(topicVersionRepository.findListById(id, page, size)).build();
@@ -248,11 +249,11 @@ public class SchemaTopic {
     }
 
     @DELETE
-    @Path("{id}/versions/{version}")
+    @Path("{id}/versions/{versionNumber}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response deleteSchemaVersion(@NotNull @PathParam("id") String id,
-            @NotNull @PathParam("version") String version) {
+            @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String version) {
         topicRepository.validateTopicIds(Arrays.asList(id));
         topicVersionRepository.findByIdAndVersion(id, version);
         TopicDTO topic = topicRepository.findTopicBy(id, version);

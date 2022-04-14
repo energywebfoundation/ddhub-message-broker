@@ -31,10 +31,14 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
     public TopicDTO findByIdAndVersion(String id, String versionNumber) {
     	try {
     		TopicVersion topicVersion = find("topicId = ?1 and version = ?2", new ObjectId(id), versionNumber).firstResultOptional().orElseThrow(()-> new MongoException("id:" + id + " version not exists"));
-			
+    		
+    		Topic topic = topicRepository.findById(new ObjectId(id));
+    		
 			Map map = BeanUtils.describe(topicVersion);
 			map.remove("schemaType");
+			map.remove("id");
     		TopicDTO topicDTO = new TopicDTO();
+    		BeanUtils.copyProperties(topicDTO, topic);
 			BeanUtils.copyProperties(topicDTO, map);
 			topicDTO.setSchema(topicVersion.getSchema());
 			return topicDTO;
@@ -65,6 +69,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 			try {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
+				map.remove("id");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, topic);
 				BeanUtils.copyProperties(topicDTO, map);

@@ -148,11 +148,11 @@ public class TopicDTO {
 				schema.initializeValidators(); 
 				isValid = true;
 			} catch (JsonSchemaException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			} catch (JsonMappingException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			} catch (JsonProcessingException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}else if(schemaType.contentEquals(SchemaType.XSD6.name)) {
 			SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
@@ -160,7 +160,7 @@ public class TopicDTO {
 				factory.newSchema(new StreamSource(new StringReader(schema)));
 				isValid = true;
 			} catch (SAXException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		return isValid;

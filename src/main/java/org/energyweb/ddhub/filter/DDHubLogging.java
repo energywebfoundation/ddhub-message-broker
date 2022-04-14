@@ -38,11 +38,17 @@ public class DDHubLogging implements ContainerRequestFilter {
 			ByteArrayInputStream arrayInputStream = new ByteArrayInputStream(requestContext.getEntityStream().readAllBytes()); 
 			requestContext.setEntityStream(arrayInputStream);
 			
+			
+			String parameters = requestContext.hasEntity()? new String(arrayInputStream.readAllBytes(), "UTF-8"):JsonbBuilder.create().toJson(requestContext.getUriInfo().getQueryParameters());
+			HashMap parametersObject = (JSONObject) parser.parse(parameters);
+			parametersObject.remove("payload");
+			parametersObject.remove("schema");
+			
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
 			HashMap<String, String> data = new HashMap<>(); 
 			data.put("method", requestContext.getMethod());
 			data.put("path", requestContext.getUriInfo().getPath());
-			data.put("request", requestContext.hasEntity()? new String(arrayInputStream.readAllBytes(), "UTF-8"):JsonbBuilder.create().toJson(requestContext.getUriInfo().getQueryParameters()));
+			data.put("request", JsonbBuilder.create().toJson(parametersObject));
 			
 			this.logger.info("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(data));
 

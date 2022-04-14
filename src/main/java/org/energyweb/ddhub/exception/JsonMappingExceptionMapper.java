@@ -18,7 +18,7 @@ public class JsonMappingExceptionMapper extends DDHubHeaderMapper implements Exc
 
 	@Override
 	public Response toResponse(final JsonMappingException exception) {
-		ErrorResponse error = new ErrorResponse("14", "Cannot parse JSON");
+		ErrorResponse error = new ErrorResponse("15", "Cannot parse JSON");
 		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}

@@ -18,7 +18,7 @@ public class IllegalArgumentExceptionMapper extends DDHubHeaderMapper
 
 	@Override
 	public Response toResponse(IllegalArgumentException exception) {
-		ErrorResponse error = new ErrorResponse("15", exception.getMessage());
+		ErrorResponse error = new ErrorResponse("16", exception.getMessage());
 		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}

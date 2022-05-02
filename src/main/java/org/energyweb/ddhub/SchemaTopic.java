@@ -29,6 +29,9 @@ import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.bson.Document;
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBodySchema;
@@ -86,6 +89,8 @@ public class SchemaTopic {
     @Claim(value = "roles")
     String roles;
 
+    @Counted(name = "topics_post_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "topics_post_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @RequestBodySchema(TopicDTOCreate.class)
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
@@ -109,6 +114,8 @@ public class SchemaTopic {
         return Response.ok().entity(topic).build();
     }
 
+    @Counted(name = "createindex_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "createindex_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("createindex")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
@@ -133,6 +140,8 @@ public class SchemaTopic {
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
 
+    @Counted(name = "topics_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "topics_get_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOGetPage.class)))
     @Authenticated
@@ -145,6 +154,8 @@ public class SchemaTopic {
         return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, tags)).build();
     }
 
+    @Counted(name = "search_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "search_get_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
@@ -155,6 +166,8 @@ public class SchemaTopic {
         return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, page, size)).build();
     }
 
+    @Counted(name = "count_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "count_get_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("count")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
@@ -164,6 +177,8 @@ public class SchemaTopic {
         return Response.ok().entity(topicRepository.countByOwner(owner)).build();
     }
 
+    @Counted(name = "id-versions_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "id-versions_get_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("{id}/versions")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
@@ -177,6 +192,8 @@ public class SchemaTopic {
         return Response.ok().entity(topicVersionRepository.findListById(id, page, size)).build();
     }
 
+    @Counted(name = "id-versions-number_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "id-versions-number_get_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("{id}/versions/{versionNumber}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
@@ -187,6 +204,8 @@ public class SchemaTopic {
         return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
     }
 
+    @Counted(name = "id-versions-number_put_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "id-versions-number_put_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @PUT
     @Path("{id}/versions/{versionNumber}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
@@ -214,6 +233,8 @@ public class SchemaTopic {
                 .build();
     }
 
+    @Counted(name = "id_put_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "id_put_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @PUT
     @Path("{id}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
@@ -238,6 +259,8 @@ public class SchemaTopic {
         return Response.ok().entity(topic).build();
     }
 
+    @Counted(name = "id_del_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "id_del_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @DELETE
     @Path("{id}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
@@ -248,6 +271,8 @@ public class SchemaTopic {
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
     }
 
+    @Counted(name = "id-versions-number_del_count", description = "", tags = {"ddhub=topics"}, absolute = true)
+    @Timed(name = "id-versions-number_del_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @DELETE
     @Path("{id}/versions/{versionNumber}")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))

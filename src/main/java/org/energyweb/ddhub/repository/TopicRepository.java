@@ -112,7 +112,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				buffer.append(" and name = ?2");
 			}
 		});
-		
+
 		Optional.ofNullable(tags).ifPresent(value -> {
 			if (value.length > 0) {
 				buffer.append(" and tags in ?3");
@@ -123,11 +123,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 		PanacheQuery<Topic> topics = find(buffer.toString(), owner, name, tags);
 		if (size > 0) {
-			if (size == 1) {
-				topics.page(Page.of(page - 1, size));
-			} else {
-				topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
-			}
+			topics.page(Page.of(page - 1, size));
 		}
 		topics.list().forEach(entity -> {
 			try {
@@ -168,11 +164,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, keyword);
 		if (size > 0) {
-			if (size == 1) {
-				topics.page(Page.of(page - 1, size));
-			} else {
-				topics.page(Page.of((((page - 1) * size) - (page > 1 ? 1 : 0)), size));
-			}
+			topics.page(Page.of(page - 1, size));
 		}
 		topics.list().forEach(entity -> {
 			try {
@@ -194,9 +186,10 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		TopicDTO topicDTO = new TopicDTO();
 		try {
 			Topic entity = findById(new ObjectId(id));
-//			if(entity.getVersion().equalsIgnoreCase(versionNumber)) {
-//				throw new MongoException("id:" + id + " version " + versionNumber + " exists");
-//			}
+			// if(entity.getVersion().equalsIgnoreCase(versionNumber)) {
+			// throw new MongoException("id:" + id + " version " + versionNumber + "
+			// exists");
+			// }
 			Map map = BeanUtils.describe(entity);
 			map.remove("schemaType");
 			map.remove("tags");
@@ -210,10 +203,10 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 	public void deleteTopic(String id, String version) {
 		long totaltopic = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).count();
-		if(totaltopic == 1) {
+		if (totaltopic == 1) {
 			deleteTopic(id);
-		}else {
-			topicVersionRepository.delete("topicId = ?1 and version = ?2", new ObjectId(id),version);
+		} else {
+			topicVersionRepository.delete("topicId = ?1 and version = ?2", new ObjectId(id), version);
 		}
 	}
 

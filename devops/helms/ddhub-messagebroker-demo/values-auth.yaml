@@ -79,7 +79,7 @@ did-auth-proxy-helm:
     tls: 
       - secretName: dsb-tls-secret
         hosts:
-          - ddhub-dev.energyweb.org
+          - ddhub-demo.energyweb.org
 
   config:
     enabled: false

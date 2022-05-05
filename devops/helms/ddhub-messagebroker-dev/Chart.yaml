@@ -33,4 +33,4 @@ dependencies:
   - name: nginx
     condition: did-auth-proxy-helm.enabled
     version: 10.2.1
-    repository: https://bitnami https://charts.bitnami.com/bitnami
+    repository: https://charts.bitnami.com/bitnami

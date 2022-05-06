@@ -142,8 +142,26 @@ nginx:
       kubernetes.io/ingress.class: azure/application-gateway
       appgw.ingress.kubernetes.io/ssl-redirect: "true"
     hostname: ddhub-dev.energyweb.org
+    pathType: Prefix
     path: /
-    tls: 
-      - secretName: dsb-tls-secret
-        hosts:
-          - ddhub-dev.energyweb.org
+    tls: false
+    extraTls:
+      - hosts:
+        - ddhub-dev.energyweb.org
+        secretName: dsb-tls-secret
+
+  livenessProbe:
+    enabled: false
+
+  readinessProbe:
+    enabled: false
+
+  customLivenessProbe:
+    httpGet:
+      path: /auth
+      port: http
+
+  customReadinessProbe:
+    httpGet:
+      path: /auth
+      port: http

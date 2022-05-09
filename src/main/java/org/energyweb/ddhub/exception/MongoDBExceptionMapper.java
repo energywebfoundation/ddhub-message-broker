@@ -21,7 +21,7 @@ public class MongoDBExceptionMapper extends DDHubHeaderMapper implements Excepti
 	public Response toResponse(final MongoException exception) {
 		ErrorResponse error = new ErrorResponse("50", exception.getMessage());
 		if (error.getReturnMessage().contains("E11000")) {
-			error.setReturnCode("51");
+			error = new ErrorResponse("51", "Record existing");
 		}
 		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();

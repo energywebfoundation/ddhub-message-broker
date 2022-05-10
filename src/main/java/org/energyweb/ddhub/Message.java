@@ -120,6 +120,9 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_TOPIC")
     String internalTopicId;
 
+    @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID",defaultValue = "20220510")
+    String clientIdPostfix;
+
     @Counted(name = "messages_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
     @Timed(name = "messages_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
@@ -260,7 +263,7 @@ public class Message {
         	Connection nc = Nats.connect(natsJetstreamUrl);
         	JetStream js = nc.jetStream();
         	
-        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable(clientIdPostfix));
         	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
 //        	builder.durable(messageDTO.getClientId()); // required
         	
@@ -333,7 +336,7 @@ public class Message {
         	Connection nc = Nats.connect(natsJetstreamUrl);
         	JetStream js = nc.jetStream();
         	
-        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable(clientIdPostfix));
         	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
 //        	builder.durable(messageDTO.getClientId()); // required
         	

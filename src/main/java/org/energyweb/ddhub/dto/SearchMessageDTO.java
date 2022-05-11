@@ -64,10 +64,10 @@ public class SearchMessageDTO {
 		return String.join("_", streamName);
 	}
 
-	public String findDurable() {
+	public String findDurable(String clientIdPostfix) {
 		if(Optional.ofNullable(from).isPresent()) {
 			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(streamName());
 		}
-		return clientId.concat(LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE)).concat(streamName());
+		return clientId.concat(clientIdPostfix).concat(streamName());
 	}
 }

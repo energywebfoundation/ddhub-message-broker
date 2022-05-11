@@ -386,6 +386,7 @@ public class Message {
         			message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
         			message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
         			message.setFromUpload((boolean)natPayload.get("isFile"));
+        			message.setTransactionId((String) natPayload.get("transactionId"));
         			messageDTOs.add(message);
         			m.ack();
         		}

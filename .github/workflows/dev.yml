@@ -2,7 +2,7 @@ name: Build and deploy
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, test-republish ]
 
 jobs:
   cancel-previous:
@@ -45,28 +45,28 @@ jobs:
     - name: Login to Azure registry
       uses: azure/docker-login@v1
       with:
-        login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
-        username: ${{ secrets.REGISTRY_USERNAME }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        login-server: ${{ secrets.REGISTRY_LOGIN_SERVER_P }}
+        username: ${{ secrets.REGISTRY_USERNAME_P }}
+        password: ${{ secrets.REGISTRY_PASSWORD_P }}
         
     - name: Push image (Azure)
       run: |
-        docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
-        docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
-        docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:canary
-        docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/ddhub-messagebroker:canary
+        docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER_P }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
+        docker push ${{ secrets.REGISTRY_LOGIN_SERVER_P }}/ddhub-messagebroker:${{needs.unique_id.outputs.unique_id}}
+        docker tag energyweb/ddhub-messagebroker ${{ secrets.REGISTRY_LOGIN_SERVER_P }}/ddhub-messagebroker:canary
+        docker push ${{ secrets.REGISTRY_LOGIN_SERVER_P }}/ddhub-messagebroker:canary
 
-    - name: ArgoCD login
-      uses: clowdhaus/argo-cd-action/@v1.8.0
-      id: argocd_login
-      with:
-        command: login ${{ secrets.ARGOCD_DEV_URL }}
-        options: --insecure --password ${{ secrets.ARGOCD_DEV_PASS }} --username ${{ secrets.ARGOCD_DEV_USERNAME }}
+    # - name: ArgoCD login
+    #   uses: clowdhaus/argo-cd-action/@v1.8.0
+    #   id: argocd_login
+    #   with:
+    #     command: login ${{ secrets.ARGOCD_DEV_URL }}
+    #     options: --insecure --password ${{ secrets.ARGOCD_DEV_PASS }} --username ${{ secrets.ARGOCD_DEV_USERNAME }}
 
-    - name: ArgoCD overvrite values.yaml
-      uses: clowdhaus/argo-cd-action/@v1.8.0
-      id: argocd_image_tag_overwrite
-      with:
-        command: app set ddhub-messagebroker-dev
-        options: -p ddhub-messagebroker.image.tag=${{needs.unique_id.outputs.unique_id}}
+    # - name: ArgoCD overvrite values.yaml
+    #   uses: clowdhaus/argo-cd-action/@v1.8.0
+    #   id: argocd_image_tag_overwrite
+    #   with:
+    #     command: app set ddhub-messagebroker-dev
+    #     options: -p ddhub-messagebroker.image.tag=${{needs.unique_id.outputs.unique_id}}
   

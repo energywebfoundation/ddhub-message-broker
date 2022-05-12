@@ -147,6 +147,7 @@ public class TopicDTO {
 				JsonSchema schema = factory.getSchema(schemaNode);
 				schema.initializeValidators(); 
 				isValid = true;
+				this.schema = schemaNode.toString();
 			} catch (JsonSchemaException e) {
 //				e.printStackTrace();
 			} catch (JsonMappingException e) {

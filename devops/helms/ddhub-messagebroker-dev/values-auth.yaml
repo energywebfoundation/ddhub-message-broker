@@ -44,42 +44,7 @@ did-auth-proxy-helm:
     port: 80
 
   ingress:
-    enabled: true
-    annotations: 
-      kubernetes.io/ingress.class: nginx
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/server-snippet: |
-        location ~ ^/(swagger-ui|q/openapi|health) {
-            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
-        }
-        location ~ / {
-            auth_request /token_introspection;
-            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
-        }
-        location = /token_introspection {
-              internal;
-              proxy_method      GET;
-              proxy_set_header  Authorization "$http_authorization";
-              proxy_set_header  Content-Length "";
-              proxy_pass        http://did-auth-proxy-dev.ddhub-dev.svc.cluster.local/auth/token-introspection;
-        }
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: ddhub-dev.energyweb.org
-        paths:
-        - path: /auth
-          pathType: Prefix
-        - path: /auth/login
-          pathType: Prefix
-        - path: /auth/refresh-token
-          pathType: Prefix
-        - path: /auth/token-introspection
-          pathType: Prefix
-    tls: 
-      - secretName: dsb-tls-secret
-        hosts:
-          - ddhub-dev.energyweb.org
+    enabled: false
 
   config:
     enabled: false
@@ -142,3 +107,45 @@ did-auth-proxy-helm:
     auth:
       existingSecret: did-auth-proxy-dev-sealedsecret
       existingSecretPasswordKey: REDIS_PASSWORD
+      
+  ########
+  # nginx
+  nginx:
+    fullnameOverride: "ddhub-messagebroker-proxy-dev"
+
+    serverBlock: |-
+      server {
+        listen 0.0.0.0:8080;
+        server_name  _;
+        location ~ ^/(swagger-ui|q/openapi|health) {
+            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
+        }
+        location ~ ^/auth {
+            proxy_pass http://did-auth-proxy-dev.ddhub-dev.svc.cluster.local;
+        }
+        location ~ / {
+            auth_request /token_introspection;
+            proxy_pass http://ddhub-messagebroker.ddhub-dev.svc.cluster.local;
+        }
+        location = /token_introspection {
+              internal;
+              proxy_method      GET;
+              proxy_set_header  Authorization "$http_authorization";
+              proxy_set_header  Content-Length "";
+              proxy_pass        http://did-auth-proxy-dev.ddhub-dev.svc.cluster.local/auth/token-introspection;
+        }
+      }
+
+    ingress:
+      enabled: true
+      annotations: 
+        kubernetes.io/ingress.class: azure/application-gateway
+        appgw.ingress.kubernetes.io/ssl-redirect: "true"
+      hostname: ddhub-dev.energyweb.org
+      pathType: Prefix
+      path: /
+      tls: false
+      extraTls:
+        - hosts:
+          - ddhub-dev.energyweb.org
+          secretName: dsb-tls-secret

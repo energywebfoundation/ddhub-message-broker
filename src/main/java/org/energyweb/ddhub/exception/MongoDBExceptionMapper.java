@@ -24,6 +24,10 @@ public class MongoDBExceptionMapper extends DDHubHeaderMapper implements Excepti
 			error = new ErrorResponse("51", "Record exists");
 		}
 		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
-		return Response.status(400).entity(error).build();
+		int httpCode = 400;
+		if(error.getReturnMessage().contains("not exists")) {
+			httpCode = 404;
+		}
+		return Response.status(httpCode).entity(error).build();
 	}
 }

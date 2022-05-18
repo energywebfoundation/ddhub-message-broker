@@ -151,6 +151,8 @@ public class SchemaTopic {
             throws ValidationException {
         if (page > 1 && size == 0)
             return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();
+        
+        
         return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, tags)).build();
     }
 

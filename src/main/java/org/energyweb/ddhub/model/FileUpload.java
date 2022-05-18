@@ -23,6 +23,7 @@ public class FileUpload {
 	private String ownerdid;
 	private String signature;
 	private String clientGatewayMessageId;
+	private boolean payloadEncryption;
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
 	

@@ -69,6 +69,7 @@ public class Routes extends RouteBuilder {
                                         messageDTO.setSignature(multipartBody.getSignature());
                                         messageDTO.setTopicVersion(multipartBody.getTopicVersion());
                                         messageDTO.setTransactionId(multipartBody.getTransactionId());
+                                        messageDTO.setPayloadEncryption(multipartBody.isPayloadEncryption());
                                         messageDTO.setFromUpload(true);
                                         e.setProperty("multipartBody", multipartBody);
                                         e.setProperty("messageDTO", messageDTO);

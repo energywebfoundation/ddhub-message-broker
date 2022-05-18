@@ -157,6 +157,7 @@ public class Message {
 
                 JsonObjectBuilder builder = Json.createObjectBuilder();
                 builder.add("messageId", id);
+                builder.add("payloadEncryption", messageDTO.isPayloadEncryption());
                 builder.add("payload", messageDTO.getPayload());
                 builder.add("topicVersion", messageDTO.getTopicVersion());
                 builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
@@ -377,6 +378,7 @@ public class Message {
         			
         			MessageDTO message = new MessageDTO();
         			message.setPayload((String) natPayload.get("payload"));
+        			message.setPayloadEncryption((boolean)natPayload.get("payloadEncryption"));
         			message.setFqcn(messageDTO.getFqcn());
         			message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
         			message.setId((String) natPayload.get("messageId"));
@@ -434,6 +436,7 @@ public class Message {
                         MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .header("clientGatewayMessageId", messageDTO.getClientGatewayMessageId())
+                .header("payloadEncryption", messageDTO.isPayloadEncryption())
                 .header("ownerDid", messageDTO.getSenderDid())
                 .header("signature", messageDTO.getSignature())
                 .build();

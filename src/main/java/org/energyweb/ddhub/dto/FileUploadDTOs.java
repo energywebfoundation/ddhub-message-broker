@@ -23,5 +23,10 @@ public class FileUploadDTOs extends FileUploadDTO {
 	@FormParam("clientGatewayMessageId")
 	@Size(max = 200, message = "The maximum length is 200 characters")
     private String clientGatewayMessageId;
+
+	@NotNull
+	@NotEmpty
+	@FormParam("payloadEncryption")
+	private boolean payloadEncryption;
     
 }

@@ -30,7 +30,6 @@ public class MessageDTO extends DDHub {
     private String clientGatewayMessageId;
     
     @NotNull
-    @NotEmpty
     private boolean payloadEncryption;
 
     @NotNull

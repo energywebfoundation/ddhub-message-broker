@@ -399,6 +399,7 @@ public class Message {
         }catch(IllegalArgumentException ex) {
         	this.logger.warn("[" + DID + "]" + ex.getMessage());
         }
+        this.logger.info("[" + DID + "] result size " +  messageDTOs.size());
 		return Response.ok().entity(messageDTOs).build();
     }
 

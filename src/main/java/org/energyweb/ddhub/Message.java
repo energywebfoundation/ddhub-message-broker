@@ -264,7 +264,7 @@ public class Message {
         	Connection nc = Nats.connect(natsJetstreamUrl);
         	JetStream js = nc.jetStream();
         	
-        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable(clientIdPostfix));
+        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
         	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
 //        	builder.durable(messageDTO.getClientId()); // required
         	
@@ -337,7 +337,7 @@ public class Message {
         	Connection nc = Nats.connect(natsJetstreamUrl);
         	JetStream js = nc.jetStream();
         	
-        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable(clientIdPostfix));
+        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
         	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
 //        	builder.durable(messageDTO.getClientId()); // required
         	

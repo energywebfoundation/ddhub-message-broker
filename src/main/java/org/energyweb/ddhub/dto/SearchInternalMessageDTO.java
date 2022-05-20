@@ -50,10 +50,10 @@ public class SearchInternalMessageDTO  {
 		return String.join("_", streamName);
 	}
 
-	public String findDurable(String clientIdPostfix) {
+	public String findDurable() {
 		if(Optional.ofNullable(from).isPresent()) {
-			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(streamName());
+			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat("internal-ddhub").concat(streamName());
 		}
-		return clientId.concat(clientIdPostfix).concat(streamName());
+		return clientId.concat("internal-ddhub").concat(streamName());
 	}
 }

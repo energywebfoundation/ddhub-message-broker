@@ -8,7 +8,7 @@ did-auth-proxy-helm:
 
   image:
     repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "canary"
 
@@ -59,7 +59,7 @@ did-auth-proxy-helm:
     JWT_REFRESH_TTL: 86400
 
   opsValues:
-    RPC_URL: https://volta-rpc.energyweb.org/
+    RPC_URL: https://volta-rpc-vkn5r5zx4ke71f9hcu0c.energyweb.org/
     CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
     REDIS_HOST: ddhub-messagebroker-dev-redis-master.ddhub-dev.svc
     REDIS_PORT: 6379

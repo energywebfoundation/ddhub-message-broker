@@ -15,13 +15,17 @@ import lombok.Setter;
 public class FileUploadDTOs extends FileUploadDTO {
 
 	@NotNull
-    @FormParam("fqcns")
-    private String fqcns;
-    
+	@FormParam("fqcns")
+	private String fqcns;
+
 	@NotNull
-    @NotEmpty
+	@NotEmpty
 	@FormParam("clientGatewayMessageId")
 	@Size(max = 200, message = "The maximum length is 200 characters")
-    private String clientGatewayMessageId;
-    
+	private String clientGatewayMessageId;
+
+	@NotNull
+	@FormParam("payloadEncryption")
+	private boolean payloadEncryption;
+
 }

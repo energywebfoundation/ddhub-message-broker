@@ -168,7 +168,7 @@ public class TopicTest {
 				.when()
 				.get("/topics/{id}/versions/{versionNumber}", id, "1.0.2").andReturn();
 		response.then()
-				.statusCode(400)
+				.statusCode(404)
 				.body("returnMessage", containsString("version not exists"));
 
 	}

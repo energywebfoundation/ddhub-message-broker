@@ -28,6 +28,9 @@ public class MessageDTO extends DDHub {
     @NotEmpty
     @Size(max = 200, message = "The maximum length is 200 characters")
     private String clientGatewayMessageId;
+    
+    @NotNull
+    private boolean payloadEncryption;
 
     @NotNull
     @NotEmpty

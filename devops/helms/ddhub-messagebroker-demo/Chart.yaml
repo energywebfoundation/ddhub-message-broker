@@ -28,5 +28,5 @@ dependencies:
     repository: https://aemoprivatecontainerregistry.azurecr.io/helm/v1/repo
   - name: did-auth-proxy-helm
     condition: did-auth-proxy-helm.enabled
-    version: 0.0.12
+    version: 0.1.0
     repository: https://aemoprivatecontainerregistry.azurecr.io/helm/v1/repo

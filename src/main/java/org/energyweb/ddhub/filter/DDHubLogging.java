@@ -35,35 +35,64 @@ public class DDHubLogging implements ContainerRequestFilter {
 				StandardCharsets.UTF_8);
 		JSONParser parser = new JSONParser();
 		try {
-			
-			ByteArrayInputStream arrayInputStream = new ByteArrayInputStream(requestContext.getEntityStream().readAllBytes()); 
+
+			ByteArrayInputStream arrayInputStream = new ByteArrayInputStream(
+					requestContext.getEntityStream().readAllBytes());
 			requestContext.setEntityStream(arrayInputStream);
-			
-			
-			String parameters = requestContext.hasEntity()? new String(arrayInputStream.readAllBytes(), "UTF-8"):JsonbBuilder.create().toJson(requestContext.getUriInfo().getQueryParameters());
-			
+
+			String parameters = requestContext.hasEntity() ? new String(arrayInputStream.readAllBytes(), "UTF-8")
+					: JsonbBuilder.create().toJson(requestContext.getUriInfo().getQueryParameters());
+
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
-			HashMap<String, String> data = new HashMap<>(); 
+			HashMap<String, String> data = new HashMap<>();
 			data.put("method", requestContext.getMethod());
 			data.put("path", requestContext.getUriInfo().getPath());
-			
+
 			try {
 				HashMap parametersObject = (JSONObject) parser.parse(parameters);
-				data.put("payloadSize", String.valueOf(JsonbBuilder.create().toJson(parametersObject.get("payload")).toCharArray().length));
-				data.put("totalSize", String.valueOf(JsonbBuilder.create().toJson(parametersObject).toCharArray().length));
+				data.put("payloadSize", bytesIntoHumanReadable(
+						JsonbBuilder.create().toJson(parametersObject.get("payload")).toCharArray().length));
+				data.put("totalSize",
+						bytesIntoHumanReadable(JsonbBuilder.create().toJson(parametersObject).toCharArray().length));
 				parametersObject.remove("payload");
 				parametersObject.remove("schema");
 				data.put("request", JsonbBuilder.create().toJson(parametersObject));
 			} catch (ParseException e) {
 				data.put("request", JsonbBuilder.create().toJson(parameters));
-				
+
 			}
-			
+
 			this.logger.info("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(data));
 
 			requestContext.getEntityStream().reset();
 		} catch (ParseException e) {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
+		}
+	}
+
+	private String bytesIntoHumanReadable(long bytes) {
+		long kilobyte = 1024;
+		long megabyte = kilobyte * 1024;
+		long gigabyte = megabyte * 1024;
+		long terabyte = gigabyte * 1024;
+
+		if ((bytes >= 0) && (bytes < kilobyte)) {
+			return bytes + " B";
+
+		} else if ((bytes >= kilobyte) && (bytes < megabyte)) {
+			return (bytes / kilobyte) + " KB";
+
+		} else if ((bytes >= megabyte) && (bytes < gigabyte)) {
+			return (bytes / megabyte) + " MB";
+
+		} else if ((bytes >= gigabyte) && (bytes < terabyte)) {
+			return (bytes / gigabyte) + " GB";
+
+		} else if (bytes >= terabyte) {
+			return (bytes / terabyte) + " TB";
+
+		} else {
+			return bytes + " Bytes";
 		}
 	}
 

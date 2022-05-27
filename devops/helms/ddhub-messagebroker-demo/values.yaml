@@ -7,13 +7,13 @@ ddhub-messagebroker:
   messagebroker:
     config:
       port: 9000
-      natsClusterUrl: nats://ddhub-nats-dsb-nats.ddhub-dev.svc:4222
+      natsClusterUrl: nats://ddhub-demo-nats-dsb-nats.ddhub-demo.svc:4222
       withSwagger: "true"
       webUrl: https://volta-rpc.energyweb.org/
-      cacheServerUrl: https://identitycache-dev.energyweb.org/v1
+      cacheServerUrl: https://identitycache-staging.energyweb.org/v1
       mbDid: "did:ethr:0x5aEa5Bf5c5b341A0BF30Cc5b51b77Fb9807F1b52"
-      jwt_issuer: "ddhub-dev.energyweb.org"
-      context_url: "ddhub-dev.energyweb.org"
+      jwt_issuer: "ddhub-demo.energyweb.org"
+      context_url: "ddhub-demo.energyweb.org"
 
   image:
     # repository: 098061033856.dkr.ecr.us-east-1.amazonaws.com/ew-dos-dsb-ecr
@@ -24,8 +24,8 @@ ddhub-messagebroker:
     tag: "canary"
 
   imagePullSecrets: []
-  nameOverride: "ddhub-messagebroker"
-  fullnameOverride: "ddhub-messagebroker"
+  nameOverride: "ddhub-messagebroker-demo"
+  fullnameOverride: "ddhub-messagebroker-demo"
 
   serviceAccount:
     # Specifies whether a service account should be created
@@ -57,15 +57,6 @@ ddhub-messagebroker:
     # ingress is not neccesary when did-auth-proxy-helm is enabled
     # did-auth component ingress exposes the ddhub-messagebroker
     enabled: false 
-    annotations: {kubernetes.io/ingress.class: nginx, appgw.ingress.kubernetes.io/ssl-redirect: "true"}
-    hosts:
-      - host: ddhub-dev.energyweb.org
-        paths:
-        - path: "/"
-    tls:
-     - secretName: dsb-tls-secret
-       hosts:
-         - ddhub-dev.energyweb.org
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious

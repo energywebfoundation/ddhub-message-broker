@@ -49,6 +49,8 @@ public class DDHubLogging implements ContainerRequestFilter {
 			
 			try {
 				HashMap parametersObject = (JSONObject) parser.parse(parameters);
+				data.put("payloadSize", String.valueOf(JsonbBuilder.create().toJson(parametersObject.get("payload")).toCharArray().length));
+				data.put("totalSize", String.valueOf(JsonbBuilder.create().toJson(parametersObject).toCharArray().length));
 				parametersObject.remove("payload");
 				parametersObject.remove("schema");
 				data.put("request", JsonbBuilder.create().toJson(parametersObject));

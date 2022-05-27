@@ -31,7 +31,6 @@ public class InternalMessageDTO {
 
     @NotNull
     @NotEmpty
-    @Size(max = 8192, message = "The maximum length is 8192 characters")
     private String payload;
     
     @JsonIgnore

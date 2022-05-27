@@ -3,6 +3,7 @@ package org.energyweb.ddhub;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -13,6 +14,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
@@ -50,7 +52,11 @@ public class Config {
 
     @ConfigProperty(name = "NATS_MAX_SIZE")
     long natsMaxSize;
+    
+    @ConfigProperty(name = "quarkus.http.limits.max-body-size")
+    String fileMaxSize;
 
+    
     @GET
     @Counted(name = "configuration_get_count", description = "", tags = {"ddhub=config"}, absolute = true)
     @Timed(name = "configuration_get_timed", description = "", tags = {"ddhub=config"}, unit = MetricUnits.MILLISECONDS, absolute = true)
@@ -61,7 +67,36 @@ public class Config {
         Map config = new HashMap<>();
         config.put("msg-expired", natsMaxAge);
         config.put("msg-max-size", natsMaxSize);
+        config.put("file-max-size", convertKtoByte().longValue());
         return Response.ok().entity(config).build();
 
     }
+
+
+	private Float convertKtoByte() {
+		final String[] METRIC_PREFIXES = new String[]{"", "k", "M", "G", "T"};
+
+    	boolean isNegative = fileMaxSize.charAt(0) == '-';
+        int length = fileMaxSize.length();
+
+        String number = isNegative ? fileMaxSize.substring(1, length - 1) : fileMaxSize.substring(0, length - 1);
+        String metricPrefix = Character.toString(fileMaxSize.charAt(length - 1));
+
+        Number absoluteNumber = NumberUtils.createNumber(number);
+
+        int index = 0;
+
+        for (; index < METRIC_PREFIXES.length; index++) {
+            if (METRIC_PREFIXES[index].equals(metricPrefix)) {
+                break;
+            }
+        }
+
+        Integer exponent = 3 * index;
+        Double factor = Math.pow(10, exponent);
+        factor *= isNegative ? -1 : 1;
+
+        Float result = absoluteNumber.floatValue() * factor.longValue();
+		return result;
+	}
 }

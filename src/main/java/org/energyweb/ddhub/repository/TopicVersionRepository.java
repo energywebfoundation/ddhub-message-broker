@@ -38,9 +38,13 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 			Map map = BeanUtils.describe(topicVersion);
 			map.remove("schemaType");
 			map.remove("id");
+			map.remove("createdDate");
+			map.remove("updatedDate");
 			TopicDTO topicDTO = new TopicDTO();
 			BeanUtils.copyProperties(topicDTO, topic);
 			BeanUtils.copyProperties(topicDTO, map);
+			topicDTO.setUpdatedDate(topicVersion.getUpdatedDate());
+			topicDTO.setCreatedDate(topicVersion.getCreatedDate());
 			topicDTO.setSchema(topicVersion.getSchema());
 			return topicDTO;
 		} catch (IllegalAccessException | InvocationTargetException | MongoException | NoSuchMethodException e) {
@@ -67,9 +71,13 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
 				map.remove("id");
+				map.remove("createdDate");
+				map.remove("updatedDate");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, topic);
 				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setUpdatedDate(entity.getUpdatedDate());
+				topicDTO.setCreatedDate(entity.getCreatedDate());
 				topicDTO.setSchema(entity.getSchema());
 				topicDTOs.add(topicDTO);
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -95,7 +103,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 			topicVersion.setCreatedDate(LocalDateTime.now());
 		}
 		persistOrUpdate(topicVersion);
-
+		topicDTO.setUpdatedDate(topicVersion.getUpdatedDate());
 		return topicDTO;
 	}
 

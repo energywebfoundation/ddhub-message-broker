@@ -10,8 +10,6 @@ import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -71,6 +69,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			map.remove("owner");
 			map.remove("schemaType");
 			map.remove("tags");
+			map.remove("createdDate");
+			map.remove("updatedDate");
 			topic.setUpdatedBy(topicDTO.did());
 			topic.setUpdatedDate(LocalDateTime.now());
 			BeanUtils.copyProperties(topic, map);
@@ -130,8 +130,12 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
 				map.remove("tags");
+				map.remove("createdDate");
+				map.remove("updatedDate");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setUpdatedDate(entity.getUpdatedDate());
+				topicDTO.setCreatedDate(entity.getCreatedDate());
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTOs.add(topicDTO);
@@ -171,8 +175,12 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
 				map.remove("tags");
+				map.remove("createdDate");
+				map.remove("updatedDate");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setUpdatedDate(entity.getUpdatedDate());
+				topicDTO.setCreatedDate(entity.getCreatedDate());
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTOs.add(topicDTO);
@@ -193,7 +201,11 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			Map map = BeanUtils.describe(entity);
 			map.remove("schemaType");
 			map.remove("tags");
+			map.remove("createdDate");
+			map.remove("updatedDate");
 			BeanUtils.copyProperties(topicDTO, map);
+			topicDTO.setUpdatedDate(entity.getUpdatedDate());
+			topicDTO.setCreatedDate(entity.getCreatedDate());
 			topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 			topicDTO.setTags(entity.getTags());
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -219,7 +231,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			String versionNumber,
 			String schema, String did) {
 		TopicDTO topicDTO = findTopicBy(id, versionNumber);
-		topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
+		topicDTO = topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
 		topicDTO.setSchema(schema);
 		topicDTO.setVersion(versionNumber);
 		return topicDTO;

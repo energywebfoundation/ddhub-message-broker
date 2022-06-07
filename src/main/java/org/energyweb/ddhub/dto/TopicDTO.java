@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.dto;
 
 import java.io.StringReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,6 +90,9 @@ public class TopicDTO {
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private boolean isOwnerValid;
+	
+	private LocalDateTime createdDate;
+	private LocalDateTime updatedDate;
 	
 	public boolean validOwner() {
 		return isOwnerValid;

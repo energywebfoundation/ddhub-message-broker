@@ -1,0 +1,151 @@
+
+# Default values for did-auth-proxy-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+did-auth-proxy-helm:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "canary"
+
+  imagePullSecrets: 
+    - name: regcred
+  nameOverride: "did-auth-proxy-demo"
+  fullnameOverride: "did-auth-proxy-demo"
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  ingress:
+    enabled: false
+
+  config:
+    enabled: false
+    secretRefName: {}
+    configRefName: {}
+
+  #for now dummy configs
+  appValues:
+    PORT: 80
+    ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
+    JWT_ACCESS_TTL: 3600
+    JWT_REFRESH_TTL: 86400
+
+  opsValues:
+    RPC_URL: https://volta-rpc-vkn5r5zx4ke71f9hcu0c.energyweb.org/
+    CACHE_SERVER_URL: https://identitycache-staging.energyweb.org/v1
+    REDIS_HOST: ddhub-messagebroker-demo-redis-master.ddhub-demo.svc
+    REDIS_PORT: 6379
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  sealedSecret:
+    enabled: true
+    annotations: {}
+    encryptedData: 
+      CACHE_SERVER_LOGIN_PRVKEY: AgAXAALqkDH+mJU4AR2fNqc1HP7LeQy7+oN3CVOk61zCJwk80khiW8/QznoUFrur2ZC642/kypXLRX6XV9uyU0o/7LNIP/EmF57SSUE8BwTYtDd2S5ZKl1eVF5DMm///7TR6g08rsDfaRzB1vxU6uW8bqowxgyxMk2pTCHn0Pr/OePq4bwyxfk5xq4ldMx8S3YM8TiZBZUD/2y+z55VsRI8eZ3BOC+2BmAPmjjKvtC2wyDqHcX4aZBVpq/Aj+NhXpe3hc1TR/0I80cqMa3WKqn+3wFYSLOp41cuwj36hjWIMTiwwheurPZhZMUtHtiR+zPSeBzrlc0Lrf3777ciO8xPcFvdm4k36mllbDvS61QYWCB23Mp4G34h+6E36XZCYLfFd+cC+gWOey8PLMng0YhsxDCJGfdNtWqDJKr+/n3iQtMSIHoVm/3ltGeANGBn1uLxl7ksncMnK4WHK+TB6Hu11YNEWnNGWkzL64QQvtkHElW8motAvJjqHNfIyJTqpAgfb2teD1zTVjnKr35BQk8SkANRWiPCBwrN9xbiy583gADOMJEmkxm4bX4mnjJd/VOPpWWUezgOB3n9d0kZZAHmcCi8Ja7nNbeL8sEAtJR6NjU2PBETh6icjpqGw4lq/BPfdGrgv8XT8wSI4AmEv7NrQU8U8MnnyOhAGsOwXih9xYZrOqfWgI6kcxgsADdzHSYjCSad6weeZpYPLFYcPfqhW7twQ0F8Sc5pbSpMISLTvnZP8C53q2cDvPPIdgTcZ1X1okRRNVHtatloFjr8QBJ7s
+      JWT_SECRET: AgBQX8yB42uxJNXH9sv9nn+rk/uotGAllfwLtmC3jz5B06ASfwhuTkpuxo4rlP7Yg2GFphCkM4t7pHt8WAqh0euUVNsz6CV7diUr/dWGoosTOPviTOO7pjv5VGRhmP/JIMT6gRl2aRjO6MWvQNhJDEFQ9LrkTv/f4uqJLlfYWcnxOpFDKMrV1cN7gPDTeaJzx/g6qL8ZeccVpNSuk21hikFUF9eAHparDPxo6qj1QyffcHjbjHRsIiNsIHSoAxC9T+DUs5I8fHVEGiK8Lf2fv2T9jiStW0ziyPHyKeT+ML1hglYPWqC1KeLcnXd+oU8wx2u0VCp2Ti6XIHLhOsTJ01+bvlk2d4x4DTjCkNXXyMyAcPaVV+ihJayWGcdbuE8lV5V54F9qSDoezjiJd+sQA/vyfN5cNkL2rYtJsAuv2/tSFX25bGBO9K1+1jjo0+5waksTYaa4toa37aeBJO/DcwDBLAsMzMb3US/WhdigDF2fqPZ7TZADee3Sx6U4L8vD2aeAk+jJA9Jf1E/3U0cP5YkENBQmsh/nWut1s8GzCy4RCDk7rHYBvv738hEiB/KYpsWraWpCzSae1lUF4eKvfGxgB2Rzcvl3wvQ9SWMs9w3tnFetN30hesp75s0AeEmcB2wuvBTQRXbT7kOBAZKpUpBZmz24oMkjY/QSyU6Et9IJIjPE3SvEq5zK3pWIc2J8Ad3nYe2HgAvLulbR0uoUE0+pDiJy
+      REDIS_PASSWORD: AgB1XTLhuAWEvFL3DOFgWtgT7ZblmZgOwrk4iV74wefi9D7CM5j7RAd7d10sFzo+DnnmUOHfEvYzVm1mSzxgjo/t65zW9ltvMUaG1ERe2e+CVXDvVkISr20J+jpM5d7OVKM71T8Fy4X1c5lG94gys5arLuk4ERTgdH3P5ZZMqA6vy+ivCpSMfINVYH9exzqFaCRfSzIoucDWDVCe76DYtFy8HZLZrrGrcimBWng9w6jTaQwqcAArF7PjULepsrL+WJ+c62DB4kkZgkSwbroyhmjTwcwpBybVJNN2a8Q11KBPLS+rRoUpYH51iMruva3XutNlBTrif1z3/nV3sBG4jAiGqHshkJQWJqJxcOAo6OGVG0WmPkchpl1w8BL89G+UaXsJixm4BiBjki51YOeEWaiieAJmUIlK/ZZ2/IVMeC0NNckJKKmroXk2L5oU6XD+lPaZc71gelRccyhTrOuh6EYSu6YLMd9iLQThS5W27Xzz3RLdxxBeR73iQJhdAI1T+oVYp+hKT4Lo94nvPe1fOidl1rpn9GNRHkhwt2fvOv9cdRnSV7282KgRxkmWdXT/ZMINOxZx0zUPlCCG4dRqplTYe+VNHiSnADbPjJOBnPQyFnbhI25re4NuWAx2pPBAy9nkBD+h4JCcA7kIyOEmygLBBFr1yyN6iMJWX1nJ18uvZHG/hEkORO9Hbts43g8tf408Iurf5P9fus3t0NrU/JRW9Q==
+      DID_REGISTRY_ADDRESS: AgAtMJ0i/fwt8HqZmRsYVUG5nODHC2AmKhCCYRMwU5JcqwhTfHTweQxEw845+20pM3UQ18Qfa4E3g8hvXrfR0lpHmmU4DWz9YqFjLD2+Aokh99yY7OSWNX5UjnmImUlSD4YA07MbVkMwtEpZJw6n2mYI+TuIsJIiTb3rOToHFToLhfpdp/yk4LIwoXVe9yFZLNxBs5FsKgUPNSYfJcBuZ8qaHeoSrg8LL29iJFo/FkaAfWrTEzE2Jj542AsRHUbsjuJ6zju7anBDll+vPt3gezxXzjswZ98bjg/65zkRVbIstbq+sI4P8Kk7zPqV9rh/Eud9hzBVpPH2KN8OPsYdwcf/9s4GZ9Dzvrq8zUCmyLlbfw2hY6K1Ajj3bwj/8QnRy9ZZT69PpPI4/rfH2XiunFDAyLld/A3B9PN3nYYbHe2I8JFYQljbdLFoeuNux3YpQh3zkgUUVUzYYm6id/FDt410u+Z4MwZAYFfIaQEOaxeU7bkHSz+SyDM/TnyPnbqwwSmLPSHHkEa8qNAnSMaZZBp4aCJfx8l7smKGZNUQcPGfCOnuudJ4Zy/dIW6Wn2KB6Zs79s7DSejRAl7qY+CYhbVCiPBXk21DVP+rKiFvAtGYkmlTvrFLiA8ipDBCG2QMjyAM/RKPNWlxPC4ZiCz48BiVJbCclRroJSKQY68+vO9O8Jatc5XGPVXbSoy2JOC/+8fkwxltsCmeGgBhsgFLBxZyPKH7nhmjrgGyuqACiJ10L6SsuUy/YmFz9w4=
+      ENS_REGISTRY_ADDRESS: AgBVq6dXdOtMxnEtO1vG72BHP7xQXmRa7o+drnmQJrW4L2DUBeDArM4sFUuLS09v5ljNYpUmCGXSnbwnnUrjmkqdjBIJKCU6ym74JcNJei9nP0CxN1GX14N3IWgLcvTJE4LhZqZZ8+xg8peeopd3XJfZZyIWLpECk4ZZMjpmF4DKgANau2IQqiN2ULCCM93bTf7012DBU+dPr/lOgffzpqQ4e6pWmdQF8dFPdklB5W36WgjZcVdxQRXCFJ4lZwiZeeOh0JsnbmbeMYe+hz8ZXADHMNlBNmO6IMg1sJSpdVaT7Ou6bueclM4+o6/XxyGAjdaPNfLFsVvoQGikDQbpD4AcEUeNcFAL+UrtGG9JMmu5NBa+K5tH4K/06LMXlV2MTQ48A+jFlKM5qDcsQxGl5xmMHJtKiqd8Catm1D8Ezgmwyl05uHRVX1xyNKNjuMFBrOfD7eocbKPKSzlAFk7u8GRAb2hbtUk05snlb4IMnYmgEIXcx/I3PpgBuOMUad8jaDzRL6vwvcZszpql6o/OiE6xE/sxVBI/6vgkORfcKPq1zlloAmNkiHUlVrcT9OxgVbUMevrApX/WVT6xFpqHLtDZmLCK3pQhfqr5jMJsZTmJYp4bMxVM+7uVVTw27zjPzfrBT8tgdcTf7Unb4Dh7r/DCrKVTELhUvOKehjOc+qTrULSz9GcEURI64wnGfi4nHN4CHc4MY27U3HmbzedIIaOxQ/yquHpNqA9kretaf8avsVpNnzzMXMkkr0E=
+
+  ########
+  # Redis
+
+  redis:
+    architecture: standalone
+    auth:
+      existingSecret: did-auth-proxy-demo-sealedsecret
+      existingSecretPasswordKey: REDIS_PASSWORD
+
+  ########
+  # nginx
+  nginx:
+    fullnameOverride: "ddhub-messagebroker-proxy-demo"
+
+    serverBlock: |-
+      server {
+        listen 0.0.0.0:8080;
+        server_name  _;
+        location ~ ^/(swagger-ui|q/openapi|health) {
+            proxy_pass http://ddhub-messagebroker-demo.ddhub-demo.svc.cluster.local;
+        }
+        location ~ ^/auth {
+            proxy_pass http://did-auth-proxy-demo.ddhub-demo.svc.cluster.local;
+        }
+        location ~ / {
+            auth_request /token_introspection;
+            proxy_pass http://ddhub-messagebroker-demo.ddhub-demo.svc.cluster.local;
+        }
+        location = /token_introspection {
+              internal;
+              proxy_method      GET;
+              proxy_set_header  Authorization "$http_authorization";
+              proxy_set_header  Content-Length "";
+              proxy_pass        http://did-auth-proxy-demo.ddhub-demo.svc.cluster.local/auth/token-introspection;
+        }
+      }
+
+    ingress:
+      enabled: true
+      annotations: 
+        kubernetes.io/ingress.class: azure/application-gateway
+        appgw.ingress.kubernetes.io/ssl-redirect: "true"
+      hostname: ddhub-demo-au.energyweb.org
+      pathType: Prefix
+      path: /
+      tls: false
+      extraTls:
+        - hosts:
+          - ddhub-demo-au.energyweb.org
+          secretName: dsb-tls-secret

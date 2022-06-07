@@ -2,6 +2,7 @@ package org.energyweb.ddhub;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -186,7 +187,8 @@ public class TopicTest {
 		logger.info(response.then().extract().asString());
 		response.then()
 				.statusCode(200)
-				.body("'ddhub-1.apps.energyweb.iam.ewc'", is(2));
+				.body("[0].owner", equalTo("ddhub-1.apps.energyweb.iam.ewc"))
+				.body("[0].count", is(2));
 	}
 
 	@Test

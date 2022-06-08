@@ -231,7 +231,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			String versionNumber,
 			String schema, String did) {
 		TopicDTO topicDTO = findTopicBy(id, versionNumber);
-		topicDTO = topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
+		TopicDTO _topicDTO = topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
+		topicDTO.setUpdatedDate(_topicDTO.getUpdatedDate());
 		topicDTO.setSchema(schema);
 		topicDTO.setVersion(versionNumber);
 		return topicDTO;

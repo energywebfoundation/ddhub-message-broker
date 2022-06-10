@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
@@ -65,9 +66,10 @@ public class SearchMessageDTO {
 	}
 
 	public String findDurable() {
-		if(Optional.ofNullable(from).isPresent()) {
-			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(String.join(":", topicId)).concat(streamName());
-		}
-		return clientId.concat(String.join(":", topicId)).concat(streamName());
+//		if(Optional.ofNullable(from).isPresent()) {
+//			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(String.join(":", topicId)).concat(streamName());
+//		}
+//		return UUID.nameUUIDFromBytes((clientId.concat(String.join(":", topicId)).concat(streamName())).getBytes()).toString();
+		return clientId;
 	}
 }

@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import com.azure.core.implementation.annotation.SkipParentValidation;
+
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
@@ -231,8 +233,8 @@ public class DDhubTest {
 
 	}
 
-	@Test
-	@Order(5)
+//	@Test
+//	@Order(5)
 	public void testGetMessage() throws Exception {
 		HashMap createTopic = new HashMap<>();
 		createTopic.put("name", "createTopic03");

@@ -166,10 +166,10 @@ public class SchemaTopic {
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
-    public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword,
+    public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword, @QueryParam("owner") String owner,
             @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size)
             throws ValidationException {
-        return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, page, size)).build();
+        return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, owner, page, size)).build();
     }
 
     @Counted(name = "count_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)

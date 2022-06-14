@@ -160,13 +160,18 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicOwner;
 	}
 
-	public TopicDTOPage queryByOwnerOrName(String keyword, int page, int size) {
+	public TopicDTOPage queryByOwnerOrName(String keyword, String owner, int page, int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
-		StringBuffer buffer = new StringBuffer("owner like ?1 or name like ?2");
+		StringBuffer buffer = new StringBuffer("name like ?1");
+		Optional.ofNullable(owner).ifPresent(value -> {
+			if (!value.isEmpty()) {
+				buffer.append(" and owner = ?2");
+			}
+		});
 
-		long totalRecord = find(buffer.toString(), keyword, keyword).count();
+		long totalRecord = find(buffer.toString(), keyword, owner).count();
 
-		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, keyword);
+		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, owner);
 		if (size > 0) {
 			topics.page(Page.of(page - 1, size));
 		}

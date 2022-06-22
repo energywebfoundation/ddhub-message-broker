@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Optional;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -27,6 +26,8 @@ public class DDHubLogging implements ContainerRequestFilter {
 
 	@Inject
 	Logger logger;
+
+	private static final String DEFAULT_CHARSET = "UTF-8";
 
 	@Override
 	public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -58,7 +59,7 @@ public class DDHubLogging implements ContainerRequestFilter {
 				parametersObject.remove("schema");
 				data.put("request", JsonbBuilder.create().toJson(parametersObject));
 			} catch (ParseException e) {
-				data.put("request", JsonbBuilder.create().toJson(parameters));
+				data.put("request", "--form-data--");
 
 			}
 
@@ -69,7 +70,7 @@ public class DDHubLogging implements ContainerRequestFilter {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
 		}
 	}
-
+	
 	private String bytesIntoHumanReadable(long bytes) {
 		long kilobyte = 1024;
 		long megabyte = kilobyte * 1024;

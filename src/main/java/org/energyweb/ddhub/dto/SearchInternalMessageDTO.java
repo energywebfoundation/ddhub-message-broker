@@ -30,7 +30,7 @@ public class SearchInternalMessageDTO  {
 	@Valid
 	private List<@NotNull @NotEmpty String> senderId;
 
-	@Pattern(regexp = "^[a-zA-Z0-9\\-:.]+$", message = "Required Alphanumeric string")
+	@Pattern(regexp = "^[a-zA-Z0-9\\-:]+$", message = "Required Alphanumeric string")
 	private String clientId = "mb-default-internal";
 
 	private int amount = 1;

@@ -81,6 +81,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					if (jsonArray.stream().filter(str->str.toString().contains(rule)).findFirst().isEmpty()) {
 						this.logger.error("[" + jsonObject.get("did") + "]" + "exact match rule " + rule + " not match " + jsonArray.toString());
 						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+						this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
 						requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
 								.entity(error).build());
 						return;
@@ -96,6 +97,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 						this.logger.error("[" + jsonObject.get("did") + "]" + "current rule match " + ruleMatch.toString());
 						this.logger.error("[" + jsonObject.get("did") + "]" + "rule " + rule + " not match " + jsonArray.toString());
 						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+						this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
 						requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
 								.entity(error).build());
 						return;
@@ -106,6 +108,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 				
 				if (service.rules().size() > ruleMatch.size()) {
 					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+					this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
 					requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
 							.entity(error).build());
 					return;
@@ -113,10 +116,12 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 
 			}, () -> {
 				this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
+				this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
 				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
 			});
 		} catch (ParseException e) {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
+			this.logger.error(authorizationHeader);
 			requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
 					.entity(error).build());
 		}

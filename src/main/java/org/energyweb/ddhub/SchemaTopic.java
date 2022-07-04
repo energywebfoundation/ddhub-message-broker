@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.ValidationException;
@@ -32,6 +34,7 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBodySchema;
@@ -39,6 +42,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
+import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTOCreate;
 import org.energyweb.ddhub.dto.TopicDTOGetPage;
@@ -151,6 +155,8 @@ public class SchemaTopic {
             throws ValidationException {
         if (page > 1 && size == 0)
             return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();
+        
+        
         return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, tags)).build();
     }
 
@@ -160,21 +166,27 @@ public class SchemaTopic {
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
-    public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword,
+    public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword, @QueryParam("owner") String owner,
             @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size)
             throws ValidationException {
-        return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, page, size)).build();
+        return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, owner, page, size)).build();
     }
 
     @Counted(name = "count_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
     @Timed(name = "count_get_timed", description = "", tags = {"ddhub=topics"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("count")
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = HashMap.class)))
     @Authenticated
     public Response countByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String... owner)
             throws ValidationException {
-        return Response.ok().entity(topicRepository.countByOwner(owner)).build();
+    	JsonArrayBuilder response = Json.createArrayBuilder();
+    	topicRepository.countByOwner(owner).forEach((_owner,count)->{
+    		response.add(Json.createObjectBuilder()
+    				.add("owner", _owner)
+    				.add("count", count));
+    	});
+        return Response.ok().entity(response.build()).build();
     }
 
     @Counted(name = "id-versions_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)

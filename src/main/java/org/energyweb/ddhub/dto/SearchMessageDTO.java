@@ -1,12 +1,10 @@
 package org.energyweb.ddhub.dto;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
@@ -36,7 +34,8 @@ public class SearchMessageDTO {
 	@Valid
 	private List<@NotNull @NotNull String> senderId;
 
-	@Pattern(regexp = "^[a-zA-Z0-9\\-:]+$", message = "Required Alphanumeric string")
+	@Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
+
 	private String clientId = "mb-default";
 
 	private int amount = 1;
@@ -64,10 +63,14 @@ public class SearchMessageDTO {
 		return String.join("_", streamName);
 	}
 
-	public String findDurable(String clientIdPostfix) {
-		if(Optional.ofNullable(from).isPresent()) {
-			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(streamName());
-		}
-		return clientId.concat(clientIdPostfix).concat(streamName());
+	public String findDurable() {
+//		if(Optional.ofNullable(from).isPresent()) {
+//			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(String.join(":", topicId)).concat(streamName());
+//		}
+//		return UUID.nameUUIDFromBytes((clientId.concat(String.join(":", topicId)).concat(streamName())).getBytes()).toString();
+		List<String> _clientId = new ArrayList<>();
+		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
+		_clientId.removeIf(String::isEmpty);
+		return String.join(":", _clientId);
 	}
 }

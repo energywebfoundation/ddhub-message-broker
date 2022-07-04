@@ -10,8 +10,6 @@ import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.bson.types.ObjectId;
@@ -71,6 +69,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			map.remove("owner");
 			map.remove("schemaType");
 			map.remove("tags");
+			map.remove("createdDate");
+			map.remove("updatedDate");
 			topic.setUpdatedBy(topicDTO.did());
 			topic.setUpdatedDate(LocalDateTime.now());
 			BeanUtils.copyProperties(topic, map);
@@ -130,8 +130,12 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
 				map.remove("tags");
+				map.remove("createdDate");
+				map.remove("updatedDate");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setUpdatedDate(entity.getUpdatedDate());
+				topicDTO.setCreatedDate(entity.getCreatedDate());
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTOs.add(topicDTO);
@@ -156,13 +160,18 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicOwner;
 	}
 
-	public TopicDTOPage queryByOwnerOrName(String keyword, int page, int size) {
+	public TopicDTOPage queryByOwnerOrName(String keyword, String owner, int page, int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
-		StringBuffer buffer = new StringBuffer("owner like ?1 or name like ?2");
+		StringBuffer buffer = new StringBuffer("name like ?1");
+		Optional.ofNullable(owner).ifPresent(value -> {
+			if (!value.isEmpty()) {
+				buffer.append(" and owner = ?2");
+			}
+		});
 
-		long totalRecord = find(buffer.toString(), keyword, keyword).count();
+		long totalRecord = find(buffer.toString(), keyword, owner).count();
 
-		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, keyword);
+		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, owner);
 		if (size > 0) {
 			topics.page(Page.of(page - 1, size));
 		}
@@ -171,8 +180,12 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				Map map = BeanUtils.describe(entity);
 				map.remove("schemaType");
 				map.remove("tags");
+				map.remove("createdDate");
+				map.remove("updatedDate");
 				TopicDTO topicDTO = new TopicDTO();
 				BeanUtils.copyProperties(topicDTO, map);
+				topicDTO.setUpdatedDate(entity.getUpdatedDate());
+				topicDTO.setCreatedDate(entity.getCreatedDate());
 				topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 				topicDTO.setTags(entity.getTags());
 				topicDTOs.add(topicDTO);
@@ -193,7 +206,11 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			Map map = BeanUtils.describe(entity);
 			map.remove("schemaType");
 			map.remove("tags");
+			map.remove("createdDate");
+			map.remove("updatedDate");
 			BeanUtils.copyProperties(topicDTO, map);
+			topicDTO.setUpdatedDate(entity.getUpdatedDate());
+			topicDTO.setCreatedDate(entity.getCreatedDate());
 			topicDTO.setSchemaType(SchemaType.valueOf(entity.getSchemaType()).name());
 			topicDTO.setTags(entity.getTags());
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -219,7 +236,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			String versionNumber,
 			String schema, String did) {
 		TopicDTO topicDTO = findTopicBy(id, versionNumber);
-		topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
+		TopicDTO _topicDTO = topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
+		topicDTO.setUpdatedDate(_topicDTO.getUpdatedDate());
 		topicDTO.setSchema(schema);
 		topicDTO.setVersion(versionNumber);
 		return topicDTO;

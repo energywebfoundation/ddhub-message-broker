@@ -1,0 +1,9 @@
+
+.DS_Store
+/target/
+.project
+.classpath
+*.prefs
+*.json
+/.apt_generated/
+/.apt_generated_tests/

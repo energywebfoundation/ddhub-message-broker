@@ -1,0 +1,36 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+      monitor: 'docker-host-alpha'
+
+# Load and evaluate rules in this file every 'evaluation_interval' seconds.
+rule_files:
+
+# A scrape configuration containing exactly one endpoint to scrape.
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'quarkus-micrometer'
+    metrics_path: '/q/metrics'
+    scrape_interval: 3s
+    static_configs:
+      - targets: ['host.docker.internal:9000']
+
+alerting:
+
+#  - job_name: 'nginx'
+#    scrape_interval: 10s
+#    static_configs:
+#      - targets: ['nginxexporter:9113']
+
+#  - job_name: 'aspnetcore'
+#    scrape_interval: 10s
+#    static_configs:
+#      - targets: ['eventlog-proxy:5000', 'eventlog:5000']

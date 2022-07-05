@@ -17,11 +17,11 @@ ddhub-messagebroker:
 
   image:
     # repository: 098061033856.dkr.ecr.us-east-1.amazonaws.com/ew-dos-dsb-ecr
-    repository: aemoprivatecontainerregistry.azurecr.io/ddhub-messagebroker
+    repository: aemocontainerregistry.azurecr.io/ddhub-messagebroker
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     # This is just an innitial tag -> every time there is a merge to master it is overwritten by Github actions in ArgoCD.
-    tag: "canary"
+    tag: "latest"
 
   imagePullSecrets: []
   nameOverride: "ddhub-messagebroker-demo"

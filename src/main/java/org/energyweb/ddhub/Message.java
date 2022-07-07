@@ -1,5 +1,6 @@
 package org.energyweb.ddhub;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -34,6 +35,9 @@ import javax.ws.rs.core.Response;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -44,6 +48,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.energyweb.ddhub.dto.FileUploadChunkDTOs;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
 import org.energyweb.ddhub.dto.MessageDTO;
@@ -120,11 +125,12 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_TOPIC")
     String internalTopicId;
 
-    @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID",defaultValue = "20220510")
+    @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID", defaultValue = "20220510")
     String clientIdPostfix;
 
-    @Counted(name = "messages_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
-    @Timed(name = "messages_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Counted(name = "messages_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "messages_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
@@ -135,8 +141,8 @@ public class Message {
         List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
         messageDTOs.getFqcns().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
-            	failed.add(item);
-            	this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(item));
+                failed.add(item);
+                this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(item));
             }, () -> {
                 fqcns.add(fqcn);
             });
@@ -165,10 +171,9 @@ public class Message {
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
                 builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
-                
+
                 builder.add("isFile", messageDTO.getIsFile());
-                
-                
+
                 try {
                     PublishAck pa = js.publish(messageDTO.subjectName(),
                             builder.build().toString().getBytes(StandardCharsets.UTF_8),
@@ -200,14 +205,15 @@ public class Message {
         }
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
-        messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(),success.size(),failed.size()));
-        messageResponse.add(success,failed);
+        messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(), success.size(), failed.size()));
+        messageResponse.add(success, failed);
         return Response.ok().entity(messageResponse).build();
 
     }
 
-    @Counted(name = "internal_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
-    @Timed(name = "internal_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "internal_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("internal")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = HashMap.class)))
@@ -249,8 +255,9 @@ public class Message {
         return Response.ok().entity(map).build();
     }
 
-    @Counted(name = "internal-search_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
-    @Timed(name = "internal-search_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Counted(name = "internal-search_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "internal-search_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("internal/search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
@@ -261,67 +268,69 @@ public class Message {
 
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
         try {
-        	Connection nc = Nats.connect(natsJetstreamUrl);
-        	JetStream js = nc.jetStream();
-        	
-        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-        	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-//        	builder.durable(messageDTO.getClientId()); // required
-        	
-        	JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
-        			builder.buildPullSubscribeOptions());
-        	nc.flush(Duration.ofSeconds(1));
-        	
-        	while (messageDTOs.size() < messageDTO.getAmount()) {
-        		List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
-        		// messages.forEach(m -> m.inProgress());
-        		if (messages.isEmpty()) {
-        			break;
-        		}
-        		for (io.nats.client.Message m : messages) {
-        			m.inProgress();
-        			if (m.isStatusMessage()) {
-        				m.nak();
-        				continue;
-        			}
-        			
-        			HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
-        					HashMap.class);
-        			
-        			String sender = (String) natPayload.get("sender");
-        			
-        			if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
-        					TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
-        							.atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
-        					.valueOf((String) natPayload.get("timestampNanos")).longValue()) {
-        				continue;
-        			}
-        			
-        			if (Optional.ofNullable(messageDTO.getSenderId()).isPresent() && messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
-        				continue;
-        			}
-        			
-        			MessageDTO message = new MessageDTO();
-        			message.setPayload((String) natPayload.get("payload"));
-        			message.setFqcn(messageDTO.getFqcn());
-        			message.setId((String) natPayload.get("messageId"));
-        			message.setSenderDid(sender);
-        			message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
-        			message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-        			messageDTOs.add(message);
-        			m.ack();
-        		}
-        	}
-//        	sub.unsubscribe();
-        	nc.close();
-        }catch(IllegalArgumentException ex) {
-        	this.logger.warn("[" + DID + "]" + ex.getMessage());
+            Connection nc = Nats.connect(natsJetstreamUrl);
+            JetStream js = nc.jetStream();
+
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+            // builder.durable(messageDTO.getClientId()); // required
+
+            JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
+                    builder.buildPullSubscribeOptions());
+            nc.flush(Duration.ofSeconds(1));
+
+            while (messageDTOs.size() < messageDTO.getAmount()) {
+                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+                // messages.forEach(m -> m.inProgress());
+                if (messages.isEmpty()) {
+                    break;
+                }
+                for (io.nats.client.Message m : messages) {
+                    m.inProgress();
+                    if (m.isStatusMessage()) {
+                        m.nak();
+                        continue;
+                    }
+
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                            HashMap.class);
+
+                    String sender = (String) natPayload.get("sender");
+
+                    if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
+                            TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
+                                    .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+                                            .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+                        continue;
+                    }
+
+                    if (Optional.ofNullable(messageDTO.getSenderId()).isPresent() && messageDTO.getSenderId().stream()
+                            .filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+                        continue;
+                    }
+
+                    MessageDTO message = new MessageDTO();
+                    message.setPayload((String) natPayload.get("payload"));
+                    message.setFqcn(messageDTO.getFqcn());
+                    message.setId((String) natPayload.get("messageId"));
+                    message.setSenderDid(sender);
+                    message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+                    message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
+                    messageDTOs.add(message);
+                    m.ack();
+                }
+            }
+            // sub.unsubscribe();
+            nc.close();
+        } catch (IllegalArgumentException ex) {
+            this.logger.warn("[" + DID + "]" + ex.getMessage());
         }
         return Response.ok().entity(messageDTOs).build();
     }
 
-    @Counted(name = "search_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
-    @Timed(name = "search_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Counted(name = "search_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "search_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("search")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
@@ -334,77 +343,79 @@ public class Message {
 
         List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
         try {
-        	Connection nc = Nats.connect(natsJetstreamUrl);
-        	JetStream js = nc.jetStream();
-        	
-        	Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-        	builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-//        	builder.durable(messageDTO.getClientId()); // required
-        	
-        	JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-        	nc.flush(Duration.ofSeconds(1));
-        	
-        	while (messageDTOs.size() < messageDTO.getAmount()) {
-        		List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
-        		if (messages.isEmpty()) {
-        			break;
-        		}
-        		for (io.nats.client.Message m : messages) {
-        			m.inProgress();
-        			if (m.isStatusMessage()) {
-        				m.nak();
-        				continue;
-        			}
-        			
-        			HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
-        					HashMap.class);
-        			
-        			String sender = (String) natPayload.get("sender");
-        			
-        			if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
-        					TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
-        							.atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
-        					.valueOf((String) natPayload.get("timestampNanos")).longValue()) {
-        				continue;
-        			}
-        			
-        			if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
-        				continue;
-        			}
-        			
-        			if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
-        				continue;
-        			}
-        			
-        			MessageDTO message = new MessageDTO();
-        			message.setPayload((String) natPayload.get("payload"));
-        			message.setPayloadEncryption((boolean)natPayload.get("payloadEncryption"));
-        			message.setFqcn(messageDTO.getFqcn());
-        			message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
-        			message.setId((String) natPayload.get("messageId"));
-        			message.setSenderDid(sender);
-        			message.setTopicVersion((String) natPayload.get("topicVersion"));
-        			message.setSignature((String) natPayload.get("signature"));
-        			message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
-        			message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-        			message.setFromUpload((boolean)natPayload.get("isFile"));
-        			message.setTransactionId((String) natPayload.get("transactionId"));
-        			messageDTOs.add(message);
-        			m.ack();
-        		}
-        	}
-//        	sub.unsubscribe();
-        	nc.close();
-        	
-        }catch(IllegalArgumentException ex) {
-        	this.logger.warn("[" + DID + "]" + ex.getMessage());
+            Connection nc = Nats.connect(natsJetstreamUrl);
+            JetStream js = nc.jetStream();
+
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+            // builder.durable(messageDTO.getClientId()); // required
+
+            JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
+            nc.flush(Duration.ofSeconds(1));
+
+            while (messageDTOs.size() < messageDTO.getAmount()) {
+                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+                if (messages.isEmpty()) {
+                    break;
+                }
+                for (io.nats.client.Message m : messages) {
+                    m.inProgress();
+                    if (m.isStatusMessage()) {
+                        m.nak();
+                        continue;
+                    }
+
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                            HashMap.class);
+
+                    String sender = (String) natPayload.get("sender");
+
+                    if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
+                            TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
+                                    .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+                                            .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+                        continue;
+                    }
+
+                    if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst()
+                            .isEmpty()) {
+                        continue;
+                    }
+
+                    if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+                        continue;
+                    }
+
+                    MessageDTO message = new MessageDTO();
+                    message.setPayload((String) natPayload.get("payload"));
+                    message.setPayloadEncryption((boolean) natPayload.get("payloadEncryption"));
+                    message.setFqcn(messageDTO.getFqcn());
+                    message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
+                    message.setId((String) natPayload.get("messageId"));
+                    message.setSenderDid(sender);
+                    message.setTopicVersion((String) natPayload.get("topicVersion"));
+                    message.setSignature((String) natPayload.get("signature"));
+                    message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
+                    message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
+                    message.setFromUpload((boolean) natPayload.get("isFile"));
+                    message.setTransactionId((String) natPayload.get("transactionId"));
+                    messageDTOs.add(message);
+                    m.ack();
+                }
+            }
+            // sub.unsubscribe();
+            nc.close();
+
+        } catch (IllegalArgumentException ex) {
+            this.logger.warn("[" + DID + "]" + ex.getMessage());
         }
-        this.logger.info("[" + DID + "] result size " +  messageDTOs.size());
-		return Response.ok().entity(messageDTOs).build();
+        this.logger.info("[" + DID + "] result size " + messageDTOs.size());
+        return Response.ok().entity(messageDTOs).build();
     }
 
-    @Counted(name = "upload_post_count", description = "", tags = {"ddhub=messages"}, absolute = true)
-    @Timed(name = "upload_post_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Counted(name = "upload_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "upload_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -421,8 +432,61 @@ public class Message {
                 .build();
     }
 
-    @Counted(name = "download_get_count", description = "", tags = {"ddhub=messages"}, absolute = true)
-    @Timed(name = "download_get_timed", description = "", tags = {"ddhub=messages"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Counted(name = "uploadc_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "uploadc_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @POST
+    @Path("uploadc")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
+    @Authenticated
+    public Response uploadFileChunks(@Valid @MultipartForm FileUploadChunkDTOs data,
+            @HeaderParam("Authorization") String token) {
+
+        Double chunks = Math.ceil(data.getFileSize() / data.getChunkSize());
+        File tempFile = new File(FileUtils.getTempDirectory(), data.getFileName());
+
+        if (data.getCurrentChunkIndex() == 0 && tempFile.length() != 0l) {
+            FileUtils.deleteQuietly(tempFile);
+            tempFile = new File(FileUtils.getTempDirectory(), data.getFileName());
+        }
+
+        try {
+            FileUtils.writeByteArrayToFile(tempFile, data.getFile().readAllBytes(), true);
+        } catch (IOException e) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+        if (data.getCurrentChunkIndex() == (chunks - 1)) {
+            try {
+                data.setFile(FileUtils.openInputStream(tempFile));
+                String checksum = DigestUtils.sha256Hex(data.getFile()); 
+                if(checksum.compareTo(data.getFileChecksum()) != 0) {
+                	ReturnMessage errorMessage = new ReturnMessage();
+                    errorMessage.setStatusCode(400);
+                    errorMessage.setDid(data.getFqcn());
+                    errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Checksum failed"));
+                    
+                	MessageResponse messageResponse = new MessageResponse();
+                    messageResponse.setClientGatewayMessageId(data.getClientGatewayMessageId());
+                    messageResponse.setRecipients(new Recipients(1, 0, 1));
+                    messageResponse.add(Arrays.asList(), Arrays.asList(errorMessage));
+                	return Response.ok().entity(messageResponse).build();
+                }
+            } catch (IOException e) {
+            	return Response.status(Response.Status.BAD_REQUEST).build();
+            } finally {
+                FileUtils.deleteQuietly(tempFile);
+            }
+            return this.uploadFile(data, token);
+        } else {
+            return Response.ok().build();
+        }
+    }
+
+    @Counted(name = "download_get_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "download_get_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @GET
     @Path("download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)

@@ -120,7 +120,7 @@ public class TopicDTO {
 		try {
 			JSONParser parser = new JSONParser();
 			return (HashMap)parser.parse(schema);
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			return stringParser();
 		}
 	}

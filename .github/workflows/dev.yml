@@ -3,6 +3,8 @@ name: Build and deploy
 on:
   push:
     branches: [ dev ]
+    paths-ignore:
+      - 'devops/**'
 
 jobs:
   cancel-previous:
@@ -39,7 +41,7 @@ jobs:
 
     - name: Build packages and docker image
       run: |
-        ./mvnw package
+        ./mvnw package -DskipTests
         docker build -f src/main/docker/Dockerfile.jvm -t energyweb/ddhub-messagebroker .
         
     - name: Login to Azure registry

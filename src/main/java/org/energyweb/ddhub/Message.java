@@ -444,7 +444,7 @@ public class Message {
             @HeaderParam("Authorization") String token) {
 
         Double chunks = Math.ceil(data.getFileSize() / data.getChunkSize());
-        File tempFile = new File(FileUtils.getTempDirectory(), data.getFileName());
+        File tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId());
 
         if (data.getCurrentChunkIndex() == 0 && tempFile.length() != 0l) {
             FileUtils.deleteQuietly(tempFile);

@@ -26,7 +26,7 @@ public class DDHubLogging implements ContainerRequestFilter {
 
 	@Inject
 	Logger logger;
-
+	
 	private static final String DEFAULT_CHARSET = "UTF-8";
 
 	@Override
@@ -59,7 +59,12 @@ public class DDHubLogging implements ContainerRequestFilter {
 				parametersObject.remove("schema");
 				data.put("request", JsonbBuilder.create().toJson(parametersObject));
 			} catch (ParseException e) {
-				data.put("request", "--form-data--");
+			    if(requestContext.getUriInfo().getPath().contains("upload")) {
+			    	data.put("request", "--form-data--");
+			    }else {
+			    	data.put("request", JsonbBuilder.create().toJson(parameters));
+			    	
+			    }
 
 			}
 

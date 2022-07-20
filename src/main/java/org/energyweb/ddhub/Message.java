@@ -399,8 +399,13 @@ public class Message {
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
                     message.setFromUpload((boolean) natPayload.get("isFile"));
                     message.setTransactionId((String) natPayload.get("transactionId"));
-                    messageDTOs.add(message);
-                    m.ack();
+                    
+                    if(messageDTOs.size() < messageDTO.getAmount()) {
+                    	messageDTOs.add(message);
+                    	m.ack();
+                    }else {
+                    	break;
+                    }
                 }
             }
             // sub.unsubscribe();

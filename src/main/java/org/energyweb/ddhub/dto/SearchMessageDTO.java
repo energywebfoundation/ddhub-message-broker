@@ -45,9 +45,6 @@ public class SearchMessageDTO {
 
 	@JsonIgnore
 	public String subjectAll() {
-		if (topicId.size() == 1) {
-			return streamName().concat(".").concat(topicId.get(0));
-		}
 		return streamName().concat(".").concat("*");
 	}
 
@@ -64,10 +61,6 @@ public class SearchMessageDTO {
 	}
 
 	public String findDurable() {
-//		if(Optional.ofNullable(from).isPresent()) {
-//			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat(String.join(":", topicId)).concat(streamName());
-//		}
-//		return UUID.nameUUIDFromBytes((clientId.concat(String.join(":", topicId)).concat(streamName())).getBytes()).toString();
 		List<String> _clientId = new ArrayList<>();
 		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
 		_clientId.removeIf(String::isEmpty);

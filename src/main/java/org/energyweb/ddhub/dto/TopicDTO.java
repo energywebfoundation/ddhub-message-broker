@@ -4,6 +4,7 @@ import java.io.StringReader;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -83,7 +84,8 @@ public class TopicDTO {
 	@Pattern(regexp = "\\w*.*.iam.ewc", message = "Required format .iam.ewc")
 	private String owner;
 	@Valid
-	private Set<@NotEmpty String> tags;
+	@Getter(AccessLevel.NONE)
+	private Set<@NotEmpty String> tags = new HashSet<String>();
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private String did;
@@ -118,7 +120,7 @@ public class TopicDTO {
 		try {
 			JSONParser parser = new JSONParser();
 			return (HashMap)parser.parse(schema);
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			return stringParser();
 		}
 	}
@@ -174,5 +176,10 @@ public class TopicDTO {
 
 	public String did() {
 		return this.did;
+	}
+
+	public Set<String> getTags() {
+		if(this.tags == null) return new HashSet<>();
+		return tags;
 	}
 }

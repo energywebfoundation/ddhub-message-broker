@@ -459,8 +459,8 @@ public class Message {
 
         if (data.getCurrentChunkIndex() == (chunks - 1)) {
             try {
+                String checksum = DigestUtils.sha256Hex(FileUtils.openInputStream(tempFile));
                 data.setFile(FileUtils.openInputStream(tempFile));
-                String checksum = DigestUtils.sha256Hex(data.getFile());
                 if (checksum.compareTo(data.getFileChecksum()) != 0) {
                     ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(400);
@@ -475,6 +475,8 @@ public class Message {
                 }
             } catch (IOException e) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
+            } finally {
+            	FileUtils.deleteQuietly(tempFile);
             }
             return this.uploadFile(data, token);
         } else {

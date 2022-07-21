@@ -1,6 +1,5 @@
 package org.energyweb.ddhub;
 
-import java.io.File;
 import java.util.Arrays;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -12,8 +11,6 @@ import javax.json.bind.JsonbBuilder;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.energyweb.ddhub.dto.FileUploadDTO;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
@@ -77,11 +74,6 @@ public class Routes extends RouteBuilder {
 
                                         String key = multipartBody.getFileName();
                                         byte[] bytes = multipartBody.getFile().readAllBytes();
-                                        if(bytes.length == 0) {
-                                        	File tempFile = new File(FileUtils.getTempDirectory(), messageDTO.getClientGatewayMessageId() + ".enc");
-                                        	bytes = FileUtils.openInputStream(tempFile).readAllBytes();
-                                        	FileUtils.deleteQuietly(tempFile);
-                                        }
                                         e.getIn().setHeader("CamelAzureStorageBlobBlobName",
                                                         messageDTO.storageName() + key);
                                         e.getIn().setBody(bytes);

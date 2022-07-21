@@ -204,7 +204,7 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>1.0.68</version>
+      <version>1.0.71</version>
     </dependency>
 
     <dependency>

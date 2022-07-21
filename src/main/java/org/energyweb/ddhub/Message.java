@@ -449,11 +449,11 @@ public class Message {
             @HeaderParam("Authorization") String token) {
 
         Double chunks = Math.ceil(data.getFileSize() / data.getChunkSize());
-        File tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId());
+        File tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId() + ".enc");
 
         if (data.getCurrentChunkIndex() == 0 && tempFile.length() != 0l) {
             FileUtils.deleteQuietly(tempFile);
-            tempFile = new File(FileUtils.getTempDirectory(), data.getFileName());
+            tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId() + ".enc");
         }
 
         try {
@@ -464,24 +464,24 @@ public class Message {
 
         if (data.getCurrentChunkIndex() == (chunks - 1)) {
             try {
+                String checksum = DigestUtils.sha256Hex(FileUtils.openInputStream(tempFile));
                 data.setFile(FileUtils.openInputStream(tempFile));
-                String checksum = DigestUtils.sha256Hex(data.getFile()); 
-                if(checksum.compareTo(data.getFileChecksum()) != 0) {
-                	ReturnMessage errorMessage = new ReturnMessage();
+                if (checksum.compareTo(data.getFileChecksum()) != 0) {
+                    ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(400);
                     errorMessage.setDid(data.getFqcn());
                     errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Checksum failed"));
-                    
-                	MessageResponse messageResponse = new MessageResponse();
+
+                    MessageResponse messageResponse = new MessageResponse();
                     messageResponse.setClientGatewayMessageId(data.getClientGatewayMessageId());
                     messageResponse.setRecipients(new Recipients(1, 0, 1));
                     messageResponse.add(Arrays.asList(), Arrays.asList(errorMessage));
-                	return Response.ok().entity(messageResponse).build();
+                    return Response.ok().entity(messageResponse).build();
                 }
             } catch (IOException e) {
-            	return Response.status(Response.Status.BAD_REQUEST).build();
+                return Response.status(Response.Status.BAD_REQUEST).build();
             } finally {
-                FileUtils.deleteQuietly(tempFile);
+            	FileUtils.deleteQuietly(tempFile);
             }
             return this.uploadFile(data, token);
         } else {

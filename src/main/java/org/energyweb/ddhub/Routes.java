@@ -1,7 +1,5 @@
 package org.energyweb.ddhub;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import javax.enterprise.context.ApplicationScoped;

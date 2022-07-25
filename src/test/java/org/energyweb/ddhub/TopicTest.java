@@ -229,7 +229,7 @@ public class TopicTest {
 				.delete("/topics/{id}", id).andReturn();
 
 		response.then()
-				.statusCode(401);
+				.statusCode(403);
 
 		response = given().auth()
 				.oauth2(generateValidUserToken3(did))
@@ -238,7 +238,7 @@ public class TopicTest {
 				.delete("/topics/{id}", id).andReturn();
 
 		response.then()
-				.statusCode(401);
+				.statusCode(403);
 
 	}
 

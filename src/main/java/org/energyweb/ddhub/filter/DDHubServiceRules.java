@@ -46,14 +46,14 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 		String json = new String(Base64.getUrlDecoder().decode(authorizationHeader.split("\\.")[1]),
 				StandardCharsets.UTF_8);
 		JSONParser parser = new JSONParser();
-		ErrorResponse error = new ErrorResponse("10", "Unauthorize access");
+		ErrorResponse error = new ErrorResponse("10", "Forbidden access");
 		try {
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
 			JSONArray jsonArray = (JSONArray) jsonObject.get("roles");
 			if (Optional.ofNullable(jsonObject.get("did")).isEmpty()) {
 				this.logger.error("missing did -> "
 						+ authorizationHeader);
-				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 						.entity(error).build());
 				return;
 			}
@@ -61,7 +61,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 			if (Optional.ofNullable(jsonArray).isEmpty()) {
 				this.logger.error("[" + jsonObject.get("did") + "]" + " missing roles -> "
 						+ authorizationHeader);
-				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 						.entity(error).build());
 				return;
 			}
@@ -82,7 +82,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 						this.logger.error("[" + jsonObject.get("did") + "]" + "exact match rule " + rule + " not match " + jsonArray.toString());
 						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 						this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
-						requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+						requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 								.entity(error).build());
 						return;
 					}else {
@@ -98,7 +98,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 						this.logger.error("[" + jsonObject.get("did") + "]" + "rule " + rule + " not match " + jsonArray.toString());
 						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 						this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
-						requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+						requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 								.entity(error).build());
 						return;
 					}else {
@@ -109,7 +109,7 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 				if (service.rules().size() > ruleMatch.size()) {
 					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 					this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
-					requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+					requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 							.entity(error).build());
 					return;
 				}
@@ -117,12 +117,12 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 			}, () -> {
 				this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
 				this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
-				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(error).build());
+				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).entity(error).build());
 			});
 		} catch (ParseException e) {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
 			this.logger.error(authorizationHeader);
-			requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+			requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 					.entity(error).build());
 		}
 	}

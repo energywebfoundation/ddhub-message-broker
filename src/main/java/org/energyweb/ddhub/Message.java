@@ -459,13 +459,14 @@ public class Message {
         try {
             FileUtils.writeByteArrayToFile(tempFile, data.getFile().readAllBytes(), true);
         } catch (IOException e) {
+        	FileUtils.deleteQuietly(tempFile);
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         if (data.getCurrentChunkIndex() == (chunks - 1)) {
             try {
                 String checksum = DigestUtils.sha256Hex(FileUtils.openInputStream(tempFile));
-                data.setFile(FileUtils.openInputStream(tempFile));
+                data.setTempFile(tempFile);
                 if (checksum.compareTo(data.getFileChecksum()) != 0) {
                     ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(400);
@@ -479,9 +480,8 @@ public class Message {
                     return Response.ok().entity(messageResponse).build();
                 }
             } catch (IOException e) {
-                return Response.status(Response.Status.BAD_REQUEST).build();
-            } finally {
             	FileUtils.deleteQuietly(tempFile);
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
             return this.uploadFile(data, token);
         } else {

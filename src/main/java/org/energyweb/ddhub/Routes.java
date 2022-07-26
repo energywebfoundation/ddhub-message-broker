@@ -11,7 +11,9 @@ import javax.json.bind.JsonbBuilder;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.energyweb.ddhub.dto.FileUploadChunkDTOs;
 import org.energyweb.ddhub.dto.FileUploadDTO;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.MessageDTOs;
@@ -73,10 +75,13 @@ public class Routes extends RouteBuilder {
                                         e.setProperty("messageDTO", messageDTO);
 
                                         String key = multipartBody.getFileName();
-                                        byte[] bytes = multipartBody.getFile().readAllBytes();
                                         e.getIn().setHeader("CamelAzureStorageBlobBlobName",
                                                         messageDTO.storageName() + key);
-                                        e.getIn().setBody(bytes);
+                                        if(e.getIn().getBody() instanceof FileUploadChunkDTOs) {
+                                        	e.getIn().setBody(((FileUploadChunkDTOs) e.getIn().getBody()).getTempFile());
+                                        }else {
+                                        	e.getIn().setBody(multipartBody.getFile().readAllBytes());
+                                        }
                                 })
                                 .to("azure-storage-blob://{{BLOB_STORAGE_ACCOUNT_NAME}}/{{BLOB_CONTAINER_NAME}}?operation=uploadBlockBlob&serviceClient=#client")
                                 .process(e -> {
@@ -89,6 +94,10 @@ public class Routes extends RouteBuilder {
                                         messageDTO.setPayload(jsonObject.toString());
                                         e.getIn().setHeader("Authorization", e.getProperty("token"));
                                         e.getIn().setBody(JsonbBuilder.create().toJson(messageDTO));
+                                        
+                                        if(e.getProperty("multipartBody") instanceof FileUploadChunkDTOs) {
+                                        	FileUtils.deleteQuietly(((FileUploadChunkDTOs) e.getProperty("multipartBody")).getTempFile());
+                                        }
                                 })
                                 .setHeader(Exchange.HTTP_METHOD, simple("POST"))
                                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))

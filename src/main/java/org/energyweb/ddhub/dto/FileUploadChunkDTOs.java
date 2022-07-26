@@ -1,5 +1,7 @@
 package org.energyweb.ddhub.dto;
 
+import java.io.File;
+
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.FormParam;
 
@@ -27,5 +29,7 @@ public class FileUploadChunkDTOs extends FileUploadDTOs {
 	@NotNull
 	@FormParam("fileChecksum")
 	private String fileChecksum;
+	
+	private File tempFile;
 	
 }

@@ -18,6 +18,10 @@ import org.energyweb.ddhub.model.TopicVersion;
 
 import com.mongodb.MongoException;
 
+import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheResult;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -28,7 +32,8 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 	@Inject
 	TopicRepository topicRepository;
 
-	public TopicDTO findByIdAndVersion(String id, String versionNumber) {
+	@CacheResult(cacheName = "tversion")
+	public TopicDTO findByIdAndVersion(@CacheKey String id,@CacheKey String versionNumber) {
 		try {
 			TopicVersion topicVersion = find("topicId = ?1 and version = ?2", new ObjectId(id), versionNumber)
 					.firstResultOptional().orElseThrow(() -> new MongoException("id:" + id + " version not exists"));
@@ -56,7 +61,8 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		findByIdAndVersion(id, versionNumber);
 	}
 
-	public TopicDTOPage findListById(String id, int page, int size) {
+	@CacheResult(cacheName = "tversion")
+	public TopicDTOPage findListById(@CacheKey String id,@CacheKey int page,@CacheKey int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
 
@@ -85,7 +91,10 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		});
 		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
-
+	
+	
+	@CacheInvalidateAll(cacheName = "tversion")
+	@CacheInvalidateAll(cacheName = "topic")
 	public TopicDTO updateByIdAndVersion(String id, String versionNumber, String schema, String did) {
 		TopicDTO topicDTO = new TopicDTO();
 		topicDTO.setSchema(schema);

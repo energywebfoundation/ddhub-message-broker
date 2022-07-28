@@ -22,6 +22,9 @@ import org.jboss.logging.Logger;
 
 import com.mongodb.MongoException;
 
+import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheResult;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -34,6 +37,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	@Inject
 	Logger logger;
 
+	@CacheInvalidateAll(cacheName = "topic")
+	@CacheInvalidateAll(cacheName = "tversion")
 	public void save(TopicDTO topicDTO) {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
@@ -59,6 +64,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		topicDTO.setDid(null);
 	}
 
+	@CacheInvalidateAll(cacheName = "topic")
+	@CacheInvalidateAll(cacheName = "tversion")
 	public void updateTopic(TopicDTO topicDTO) {
 		Topic topic = new Topic();
 		try {
@@ -89,12 +96,18 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		update(topic);
 	}
 
-	public void validateTopicIds(List<String> topicIds) {
+	@CacheResult(cacheName = "topic")
+	public List<String> validateTopicIds(@CacheKey List<String> topicIds) {
+		
 		topicIds.forEach(id -> {
 			findByIdOptional(new ObjectId(id)).orElseThrow(() -> new MongoException("id:" + id + " not exists"));
 		});
+
+		return topicIds;
 	}
 
+	@CacheInvalidateAll(cacheName = "topic")
+	@CacheInvalidateAll(cacheName = "tversion")
 	public void deleteTopic(String id) {
 		try {
 			deleteById(new ObjectId(id));
@@ -104,7 +117,9 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 	}
 
-	public TopicDTOPage queryByOwnerNameTags(String owner, String name, int page, int size, String... tags) {
+	@CacheResult(cacheName = "topic")
+	public TopicDTOPage queryByOwnerNameTags(@CacheKey String owner, @CacheKey String name, @CacheKey int page,
+			@CacheKey int size, @CacheKey String... tags) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		StringBuffer buffer = new StringBuffer("owner = ?1");
 		Optional.ofNullable(name).ifPresent(value -> {
@@ -145,7 +160,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
 
-	public HashMap<String, Integer> countByOwner(String[] owner) {
+	@CacheResult(cacheName = "topic")
+	public HashMap<String, Integer> countByOwner(@CacheKey String[] owner) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		PanacheQuery<Topic> topics = find("owner in ?1", List.of(owner));
 
@@ -160,7 +176,9 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicOwner;
 	}
 
-	public TopicDTOPage queryByOwnerOrName(String keyword, String owner, int page, int size) {
+	@CacheResult(cacheName = "topic")
+	public TopicDTOPage queryByOwnerOrName(@CacheKey String keyword, @CacheKey String owner, @CacheKey int page,
+			@CacheKey int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		StringBuffer buffer = new StringBuffer("name like ?1");
 		Optional.ofNullable(owner).ifPresent(value -> {
@@ -195,7 +213,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
 
-	public TopicDTO findTopicBy(String id, String versionNumber) {
+	@CacheResult(cacheName = "topic")
+	public TopicDTO findTopicBy(@CacheKey String id,@CacheKey String versionNumber) {
 		TopicDTO topicDTO = new TopicDTO();
 		try {
 			Topic entity = findById(new ObjectId(id));
@@ -218,6 +237,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicDTO;
 	}
 
+	@CacheInvalidateAll(cacheName = "topic")
+	@CacheInvalidateAll(cacheName = "tversion")
 	public void deleteTopic(String id, String version) {
 		long totaltopic = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).count();
 		if (totaltopic == 1) {
@@ -227,11 +248,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 	}
 
-	public TopicVersion findLatestVersion(String id) {
-		List<TopicVersion> topics = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).list();
-		return topics.get(topics.size() - 1);
-	}
-
+	@CacheInvalidateAll(cacheName = "topic")
+	@CacheInvalidateAll(cacheName = "tversion")
 	public TopicDTO updateByIdAndVersion(String id,
 			String versionNumber,
 			String schema, String did) {

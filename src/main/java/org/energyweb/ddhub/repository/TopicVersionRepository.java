@@ -32,7 +32,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 	@Inject
 	TopicRepository topicRepository;
 
-	@CacheResult(cacheName = "tversion")
+//	@CacheResult(cacheName = "tversion")
 	public TopicDTO findByIdAndVersion(@CacheKey String id,@CacheKey String versionNumber) {
 		try {
 			TopicVersion topicVersion = find("topicId = ?1 and version = ?2", new ObjectId(id), versionNumber)
@@ -61,7 +61,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		findByIdAndVersion(id, versionNumber);
 	}
 
-	@CacheResult(cacheName = "tversion")
+//	@CacheResult(cacheName = "tversion")
 	public TopicDTOPage findListById(@CacheKey String id,@CacheKey int page,@CacheKey int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
@@ -93,8 +93,8 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 	}
 	
 	
-	@CacheInvalidateAll(cacheName = "tversion")
-	@CacheInvalidateAll(cacheName = "topic")
+//	@CacheInvalidateAll(cacheName = "tversion")
+//	@CacheInvalidateAll(cacheName = "topic")
 	public TopicDTO updateByIdAndVersion(String id, String versionNumber, String schema, String did) {
 		TopicDTO topicDTO = new TopicDTO();
 		topicDTO.setSchema(schema);

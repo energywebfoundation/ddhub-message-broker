@@ -347,11 +347,11 @@ public class Message {
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+            builder.maxAckPending(Duration.ofSeconds(15).toMillis());
             // builder.durable(messageDTO.getClientId()); // required
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(1));
+            nc.flush(Duration.ofSeconds(10));
 
             while (messageDTOs.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));

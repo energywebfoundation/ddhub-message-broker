@@ -37,8 +37,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	@Inject
 	Logger logger;
 
-	@CacheInvalidateAll(cacheName = "topic")
-	@CacheInvalidateAll(cacheName = "tversion")
+//	@CacheInvalidateAll(cacheName = "topic")
+//	@CacheInvalidateAll(cacheName = "tversion")
 	public void save(TopicDTO topicDTO) {
 		Topic topic = new Topic();
 		TopicVersion topicVersion = new TopicVersion();
@@ -64,8 +64,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		topicDTO.setDid(null);
 	}
 
-	@CacheInvalidateAll(cacheName = "topic")
-	@CacheInvalidateAll(cacheName = "tversion")
+//	@CacheInvalidateAll(cacheName = "topic")
+//	@CacheInvalidateAll(cacheName = "tversion")
 	public void updateTopic(TopicDTO topicDTO) {
 		Topic topic = new Topic();
 		try {
@@ -96,7 +96,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		update(topic);
 	}
 
-	@CacheResult(cacheName = "topic")
+//	@CacheResult(cacheName = "topic")
 	public List<String> validateTopicIds(@CacheKey List<String> topicIds) {
 		
 		topicIds.forEach(id -> {
@@ -106,8 +106,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicIds;
 	}
 
-	@CacheInvalidateAll(cacheName = "topic")
-	@CacheInvalidateAll(cacheName = "tversion")
+//	@CacheInvalidateAll(cacheName = "topic")
+//	@CacheInvalidateAll(cacheName = "tversion")
 	public void deleteTopic(String id) {
 		try {
 			deleteById(new ObjectId(id));
@@ -117,7 +117,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 	}
 
-	@CacheResult(cacheName = "topic")
+//	@CacheResult(cacheName = "topic")
 	public TopicDTOPage queryByOwnerNameTags(@CacheKey String owner, @CacheKey String name, @CacheKey int page,
 			@CacheKey int size, @CacheKey String... tags) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
@@ -160,7 +160,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
 
-	@CacheResult(cacheName = "topic")
+//	@CacheResult(cacheName = "topic")
 	public HashMap<String, Integer> countByOwner(@CacheKey String[] owner) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		PanacheQuery<Topic> topics = find("owner in ?1", List.of(owner));
@@ -176,7 +176,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicOwner;
 	}
 
-	@CacheResult(cacheName = "topic")
+//	@CacheResult(cacheName = "topic")
 	public TopicDTOPage queryByOwnerOrName(@CacheKey String keyword, @CacheKey String owner, @CacheKey int page,
 			@CacheKey int size) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
@@ -213,7 +213,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return new TopicDTOPage(totalRecord, size == 0 ? totalRecord : size, page, topicDTOs);
 	}
 
-	@CacheResult(cacheName = "topic")
+//	@CacheResult(cacheName = "topic")
 	public TopicDTO findTopicBy(@CacheKey String id,@CacheKey String versionNumber) {
 		TopicDTO topicDTO = new TopicDTO();
 		try {
@@ -237,8 +237,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		return topicDTO;
 	}
 
-	@CacheInvalidateAll(cacheName = "topic")
-	@CacheInvalidateAll(cacheName = "tversion")
+//	@CacheInvalidateAll(cacheName = "topic")
+//	@CacheInvalidateAll(cacheName = "tversion")
 	public void deleteTopic(String id, String version) {
 		long totaltopic = topicVersionRepository.find("topicId = ?1", new ObjectId(id)).count();
 		if (totaltopic == 1) {
@@ -248,8 +248,8 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 		}
 	}
 
-	@CacheInvalidateAll(cacheName = "topic")
-	@CacheInvalidateAll(cacheName = "tversion")
+//	@CacheInvalidateAll(cacheName = "topic")
+//	@CacheInvalidateAll(cacheName = "tversion")
 	public TopicDTO updateByIdAndVersion(String id,
 			String versionNumber,
 			String schema, String did) {

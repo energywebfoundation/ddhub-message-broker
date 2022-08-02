@@ -323,7 +323,7 @@ public class Message {
             // sub.unsubscribe();
             nc.close();
         } catch (IllegalArgumentException ex) {
-            this.logger.warn("[" + DID + "]" + ex.getMessage());
+            this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "]" + ex.getMessage());
         }
         return Response.ok().entity(messageDTOs).build();
     }
@@ -412,9 +412,9 @@ public class Message {
             nc.close();
 
         } catch (IllegalArgumentException ex) {
-            this.logger.warn("[" + DID + "]" + ex.getMessage());
+            this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "]" + ex.getMessage());
         }
-        this.logger.info("[" + DID + "] result size " + messageDTOs.size());
+        this.logger.info("[SearchMessage][" + DID + "] result size " + messageDTOs.size());
         return Response.ok().entity(messageDTOs).build();
     }
 

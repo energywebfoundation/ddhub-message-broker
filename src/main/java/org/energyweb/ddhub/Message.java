@@ -399,12 +399,12 @@ public class Message {
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
                     message.setFromUpload((boolean) natPayload.get("isFile"));
                     message.setTransactionId((String) natPayload.get("transactionId"));
-                    
-                    if(messageDTOs.size() < messageDTO.getAmount()) {
-                    	messageDTOs.add(message);
-                    	m.ack();
-                    }else {
-                    	break;
+
+                    if (messageDTOs.size() < messageDTO.getAmount()) {
+                        messageDTOs.add(message);
+                        m.ack();
+                    } else {
+                        break;
                     }
                 }
             }
@@ -481,7 +481,7 @@ public class Message {
             } catch (IOException e) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             } finally {
-            	FileUtils.deleteQuietly(tempFile);
+                FileUtils.deleteQuietly(tempFile);
             }
             return this.uploadFile(data, token);
         } else {

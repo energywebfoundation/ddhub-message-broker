@@ -170,7 +170,7 @@ public class Message {
                 builder.add("sender", DID);
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-                builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+                builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
                 builder.add("isFile", messageDTO.getIsFile());
 
@@ -509,6 +509,7 @@ public class Message {
                 .header("payloadEncryption", messageDTO.isPayloadEncryption())
                 .header("ownerDid", messageDTO.getSenderDid())
                 .header("signature", messageDTO.getSignature())
+                .header("timestampNanos", messageDTO.getTimestampNanos())
                 .build();
 
     }

@@ -13,12 +13,16 @@ import org.energyweb.ddhub.model.Channel;
 
 import com.mongodb.MongoException;
 
+import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheResult;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 
 @ApplicationScoped
 public class ChannelRepository implements PanacheMongoRepository<Channel> {
 
-	public ChannelDTO findByFqcn(String fqcn) {
+	@CacheResult(cacheName = "channel")
+	public ChannelDTO findByFqcn(@CacheKey String fqcn) {
 		try {
 			ChannelDTO channelDTO = new ChannelDTO();
 			Channel channel = find("fqcn", fqcn).firstResultOptional()
@@ -30,6 +34,7 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		}
 	}
 
+	@CacheInvalidateAll(cacheName = "channel")
 	public void deleteByFqcn(String fqcn) {
 		delete("fqcn", fqcn);
 	}
@@ -47,18 +52,7 @@ public class ChannelRepository implements PanacheMongoRepository<Channel> {
 		return errorMessage;
 	}
 
-	public void updateChannel(ChannelDTO channelDTO) {
-		try {
-			Channel channel = find("fqcn", channelDTO.getFqcn()).firstResultOptional()
-					.orElseThrow(() -> new MongoException("fqcn:" + channelDTO.getFqcn() + " not exists"));
-			BeanUtils.copyProperties(channel, channelDTO);
-			channel.setUpdatedDate(LocalDateTime.now());
-			update(channel);
-		} catch (IllegalAccessException | InvocationTargetException e) {
-			throw new MongoException("Unable to update");
-		}
-	}
-
+	@CacheInvalidateAll(cacheName = "channel")
 	public void save(ChannelDTO channelDTO) {
 		try {
 			Channel channel = new Channel();

@@ -42,7 +42,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
-import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.dto.TopicDTOCreate;
 import org.energyweb.ddhub.dto.TopicDTOGetPage;
@@ -127,18 +126,25 @@ public class SchemaTopic {
     @Authenticated
     public Response createSchemaIndex() {
         Document index = new Document("name", 1);
-        index.append("owner", 1);
+        index.append("owner", 2);
+        index.append("deleted", 3);
+        index.append("deletedDate", 4);
+        mongoClient.getDatabase("ddhub").getCollection("schema").dropIndexes();
         mongoClient.getDatabase("ddhub").getCollection("schema").createIndex(index, new IndexOptions().unique(true));
 
         Document version = new Document("topicId", 1);
-        version.append("version", 1);
-        mongoClient.getDatabase("ddhub").getCollection("schema_version").createIndex(version,
-                new IndexOptions().unique(true));
+        version.append("version", 2);
+        version.append("deleted", 3);
+        version.append("deletedDate", 4);
+        mongoClient.getDatabase("ddhub").getCollection("schema_version").dropIndexes();
+        mongoClient.getDatabase("ddhub").getCollection("schema_version").createIndex(version,new IndexOptions().unique(true));
 
         Document fqcn = new Document("fqcn", 1);
+        mongoClient.getDatabase("ddhub").getCollection("channel").dropIndexes();
         mongoClient.getDatabase("ddhub").getCollection("channel").createIndex(fqcn, new IndexOptions().unique(true));
 
         Document did = new Document("did", 1);
+        mongoClient.getDatabase("ddhub").getCollection("role_owner").dropIndexes();
         mongoClient.getDatabase("ddhub").getCollection("role_owner").createIndex(did, new IndexOptions().unique(true));
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
@@ -151,13 +157,13 @@ public class SchemaTopic {
     @Authenticated
     public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,
             @QueryParam("name") String name, @DefaultValue("1") @QueryParam("page") int page,
-            @DefaultValue("0") @QueryParam("limit") int size, @QueryParam("tags") String... tags)
+            @DefaultValue("0") @QueryParam("limit") int size,@DefaultValue("false") @QueryParam("includeDeleted") boolean includeDeleted, @QueryParam("tags") String... tags)
             throws ValidationException {
         if (page > 1 && size == 0)
             return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();
         
         
-        return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, tags)).build();
+        return Response.ok().entity(topicRepository.queryByOwnerNameTags(owner, name, page, size, includeDeleted, tags)).build();
     }
 
     @Counted(name = "search_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
@@ -196,12 +202,12 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOPage.class)))
     @Authenticated
     public Response listOfVersionById(@NotNull @PathParam("id") String id,
-            @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size) {
+            @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size, @DefaultValue("false") @QueryParam("includeDeleted") boolean includeDeleted) {
         if (page > 1 && size == 0) {
             return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();
         }
-        topicRepository.validateTopicIds(Arrays.asList(id));
-        return Response.ok().entity(topicVersionRepository.findListById(id, page, size)).build();
+        topicRepository.validateTopicIds(Arrays.asList(id),includeDeleted);
+        return Response.ok().entity(topicVersionRepository.findListById(id, page, size, includeDeleted)).build();
     }
 
     @Counted(name = "id-versions-number_get_count", description = "", tags = {"ddhub=topics"}, absolute = true)
@@ -292,8 +298,7 @@ public class SchemaTopic {
     public Response deleteSchemaVersion(@NotNull @PathParam("id") String id,
             @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String version) {
         topicRepository.validateTopicIds(Arrays.asList(id));
-        topicVersionRepository.findByIdAndVersion(id, version);
-        TopicDTO topic = topicRepository.findTopicBy(id, version);
+        TopicDTO topic = topicVersionRepository.findByIdAndVersion(id, version);
         topic.validateOwner(roles);
         if (!topic.validOwner()) {
             ErrorResponse error = new ErrorResponse("12", "Owner : " + topic.getOwner() + " validation failed");

@@ -2,6 +2,7 @@ package org.energyweb.ddhub;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.OptionalInt;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -16,7 +17,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.eclipse.microprofile.metrics.annotation.Metric;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -66,9 +66,10 @@ public class Channel {
     @ConfigProperty(name = "NATS_MAX_SIZE")
     long natsMaxSize;
 
+	
     @ConfigProperty(name = "DUPLICATE_WINDOW")
-    int duplicateWindow;
-
+    OptionalInt duplicateWindow;
+    
     @Inject
     ChannelRepository channelRepository;
 
@@ -106,7 +107,7 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
-                    .duplicateWindow(duplicateWindow * 1000000000)
+                    .duplicateWindow(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW) * 1000000000)
                     .build();
             StreamInfo streamInfo = jsm.addStream(streamConfig);
             nc.close();

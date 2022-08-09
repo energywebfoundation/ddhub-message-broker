@@ -34,7 +34,7 @@ public class MessageRepository implements PanacheMongoRepository<Message> {
 					messageDTO.getTopicVersion());
 			if(_message.firstResultOptional().isPresent()) {
 				Message __message = _message.firstResultOptional().get();
-				if(!__message.getCreatedDate().isAfter(LocalDateTime.now().minusSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)))) {
+				if(__message.getCreatedDate() != null && !__message.getCreatedDate().isAfter(LocalDateTime.now().minusSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)))) {
 					saveMessage(messageDTO, message);
 				}else {
 					message = __message;

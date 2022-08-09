@@ -22,9 +22,7 @@ import org.jboss.logging.Logger;
 
 import com.mongodb.MongoException;
 
-import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
-import io.quarkus.cache.CacheResult;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;

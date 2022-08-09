@@ -3,7 +3,7 @@ package org.energyweb.ddhub.repository;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -21,7 +21,7 @@ import io.quarkus.panache.common.Sort;
 public class MessageRepository implements PanacheMongoRepository<Message> {
 	
     @ConfigProperty(name = "DUPLICATE_WINDOW")
-    OptionalInt duplicateWindow;
+    OptionalLong duplicateWindow;
 
 	public String save(MessageDTO messageDTO, String did) {
 		Message message = new Message();
@@ -34,7 +34,7 @@ public class MessageRepository implements PanacheMongoRepository<Message> {
 					messageDTO.getTopicVersion());
 			if(_message.firstResultOptional().isPresent()) {
 				Message __message = _message.firstResultOptional().get();
-				if(!__message.getCreatedDate().isAfter(LocalDateTime.now().minusSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)))) {
+				if(__message.getCreatedDate() != null && !__message.getCreatedDate().isAfter(LocalDateTime.now().minusSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)))) {
 					saveMessage(messageDTO, message);
 				}else {
 					message = __message;

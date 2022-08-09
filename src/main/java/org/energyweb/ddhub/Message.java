@@ -152,14 +152,14 @@ public class Message {
             Connection nc = Nats.connect(natsJetstreamUrl);
 
             JetStream js = nc.jetStream();
-            PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                    .messageId(messageDTOs.getTransactionId());
 
             fqcns.forEach(fqcn -> {
 
                 MessageDTO messageDTO = messageDTOs;
                 messageDTO.setFqcn(fqcn);
                 String id = messageRepository.save(messageDTO, DID);
+                PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+                		.messageId(id).stream(messageDTO.streamName());
 
                 JsonObjectBuilder builder = Json.createObjectBuilder();
                 builder.add("messageId", id);
@@ -178,11 +178,20 @@ public class Message {
                     PublishAck pa = js.publish(messageDTO.subjectName(),
                             builder.build().toString().getBytes(StandardCharsets.UTF_8),
                             (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
-                    ReturnMessage successMessage = new ReturnMessage();
-                    successMessage.setDid(fqcn);
-                    successMessage.setStatusCode(200);
-                    successMessage.setMessageId(id);
-                    success.add(successMessage);
+                    if(!pa.isDuplicate()) {
+                    	ReturnMessage successMessage = new ReturnMessage();
+                    	successMessage.setDid(fqcn);
+                    	successMessage.setStatusCode(200);
+                    	successMessage.setMessageId(id);
+                    	success.add(successMessage);
+                    }else {
+                    	ReturnMessage errorMessage = new ReturnMessage();
+                        errorMessage.setStatusCode(500);
+                        errorMessage.setDid(fqcn);
+                        errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
+                        failed.add(errorMessage);
+                        this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+                    }
                 } catch (IOException | JetStreamApiException ex) {
                     ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(500);

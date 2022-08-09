@@ -2,7 +2,7 @@ package org.energyweb.ddhub;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -68,7 +68,7 @@ public class Channel {
 
 	
     @ConfigProperty(name = "DUPLICATE_WINDOW")
-    OptionalInt duplicateWindow;
+    OptionalLong duplicateWindow;
     
     @Inject
     ChannelRepository channelRepository;
@@ -99,7 +99,6 @@ public class Channel {
             channelRepository.findByFqcn(DID);
         } catch (MongoException ex) {
             logger.info("Channel not exist. creating channel:" + DID);
-
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStreamManagement jsm = nc.jetStreamManagement();
             StreamConfiguration streamConfig = StreamConfiguration.builder()
@@ -107,7 +106,7 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
-                    .duplicateWindow(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW) * 1000000000)
+                    .duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
             StreamInfo streamInfo = jsm.addStream(streamConfig);
             nc.close();

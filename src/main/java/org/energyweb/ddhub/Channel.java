@@ -2,6 +2,7 @@ package org.energyweb.ddhub;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.OptionalLong;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -16,7 +17,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.eclipse.microprofile.metrics.annotation.Metric;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -66,9 +66,10 @@ public class Channel {
     @ConfigProperty(name = "NATS_MAX_SIZE")
     long natsMaxSize;
 
+	
     @ConfigProperty(name = "DUPLICATE_WINDOW")
-    int duplicateWindow;
-
+    OptionalLong duplicateWindow;
+    
     @Inject
     ChannelRepository channelRepository;
 
@@ -98,7 +99,6 @@ public class Channel {
             channelRepository.findByFqcn(DID);
         } catch (MongoException ex) {
             logger.info("Channel not exist. creating channel:" + DID);
-
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStreamManagement jsm = nc.jetStreamManagement();
             StreamConfiguration streamConfig = StreamConfiguration.builder()
@@ -106,7 +106,7 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
-                    .duplicateWindow(duplicateWindow * 1000000000)
+                    .duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
             StreamInfo streamInfo = jsm.addStream(streamConfig);
             nc.close();

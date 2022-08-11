@@ -20,7 +20,8 @@ public class Topic {
 	private Set<String> tags;
 	private String createdBy;
 	private String updatedBy;
+	private boolean deleted;
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
-	
+	private LocalDateTime deletedDate;
 }

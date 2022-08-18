@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -35,9 +36,9 @@ import javax.ws.rs.core.Response;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.bson.types.ObjectId;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -61,7 +62,6 @@ import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
-import org.energyweb.ddhub.repository.MessageRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
@@ -112,9 +112,6 @@ public class Message {
     FileUploadRepository fileUploadRepository;
 
     @Inject
-    MessageRepository messageRepository;
-
-    @Inject
     @Claim(value = "did")
     String DID;
 
@@ -157,10 +154,12 @@ public class Message {
 
                 MessageDTO messageDTO = messageDTOs;
                 messageDTO.setFqcn(fqcn);
-                String id = messageRepository.save(messageDTO, DID);
+                messageDTO.setSenderDid(DID);
+                String id = new ObjectId().toHexString();
+                
                 PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                		.messageId(id).stream(messageDTO.streamName());
-
+                		.messageId(messageDTO.createNatsTransactionId()).stream(messageDTO.streamName());
+                
                 JsonObjectBuilder builder = Json.createObjectBuilder();
                 builder.add("messageId", id);
                 builder.add("payloadEncryption", messageDTO.isPayloadEncryption());
@@ -170,7 +169,7 @@ public class Message {
                 builder.add("sender", DID);
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-                builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+                builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
                 builder.add("isFile", messageDTO.getIsFile());
 
@@ -220,7 +219,7 @@ public class Message {
 
     }
 
-    @Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+	@Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "internal_post_timed", description = "", tags = {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
@@ -239,10 +238,8 @@ public class Message {
         Connection nc = Nats.connect(natsJetstreamUrl);
 
         JetStream js = nc.jetStream();
-        PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                .messageId(messageDTO.getTransactionId());
 
-        String id = messageRepository.save(messageDTO, DID);
+        String id = UUID.randomUUID().toString();
 
         JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add("messageId", id);
@@ -250,11 +247,10 @@ public class Message {
         builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
         builder.add("sender", DID);
         builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+        builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
         PublishAck pa = js.publish(messageDTO.subjectName(),
-                builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+                builder.build().toString().getBytes(StandardCharsets.UTF_8));
 
         nc.flush(Duration.ZERO);
         nc.close();

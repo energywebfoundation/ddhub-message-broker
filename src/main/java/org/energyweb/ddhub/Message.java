@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -271,14 +272,13 @@ public class Message {
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         messageDTO.setFqcn(DID);
 
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         try {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
             builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-            // builder.durable(messageDTO.getClientId()); // required
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
                     builder.buildPullSubscribeOptions());
@@ -321,8 +321,13 @@ public class Message {
                     message.setSenderDid(sender);
                     message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-                    messageDTOs.add(message);
-                    m.ack();
+                    
+                    if (messageDTOs.size() < messageDTO.getAmount()) {
+                        messageDTOs.add(message);
+                        m.ack();
+                    } else {
+                        break;
+                    }
                 }
             }
             // sub.unsubscribe();
@@ -342,11 +347,10 @@ public class Message {
     @Authenticated
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        topicRepository.validateTopicIds(messageDTO.getTopicId());
-        // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
+        topicRepository.validateTopicIds(messageDTO.getTopicId(),true);
         messageDTO.setFqcn(DID);
 
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         try {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();

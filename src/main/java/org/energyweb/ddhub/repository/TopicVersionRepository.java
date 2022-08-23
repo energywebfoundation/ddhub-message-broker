@@ -66,7 +66,7 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 	}
 
 //	@CacheResult(cacheName = "tversion")
-	public TopicDTOPage findListById(@CacheKey String id,@CacheKey int page,@CacheKey int size,@CacheKey boolean includeDeleted) {
+	public TopicDTOPage findListById(@CacheKey String id,@CacheKey int page,@CacheKey int size,@CacheKey boolean includeDeleted,@CacheKey LocalDateTime from) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
 
@@ -78,8 +78,12 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 				buffer.append(" and deleted is null or deleted = ?2");
 			}
 		});
+		
+		Optional.ofNullable(from).ifPresent(value -> {
+			buffer.append(" and updatedDate > ?3");
+		});
 
-		PanacheQuery<TopicVersion> topics = find(buffer.toString(), new ObjectId(id),includeDeleted);
+		PanacheQuery<TopicVersion> topics = find(buffer.toString(), new ObjectId(id),includeDeleted,from);
 		if (size > 0) {
 			topics.page(Page.of(page - 1, size));
 		}

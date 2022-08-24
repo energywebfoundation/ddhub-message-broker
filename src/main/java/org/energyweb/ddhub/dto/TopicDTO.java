@@ -94,6 +94,8 @@ public class TopicDTO {
 	private boolean isOwnerValid;
 	
 	private boolean deleted;
+	@JsonIgnore
+	private String createdBy;
 	
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;

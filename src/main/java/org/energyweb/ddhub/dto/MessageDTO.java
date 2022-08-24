@@ -1,5 +1,8 @@
 package org.energyweb.ddhub.dto;
 
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 import javax.json.bind.annotation.JsonbProperty;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -92,6 +95,10 @@ public class MessageDTO extends DDHub {
 
 	public String storageName() {
 		return super.streamName() + "/" + subjectName() + "/";
+	}
+
+	public String createNatsTransactionId() {
+		return UUID.nameUUIDFromBytes((getTransactionId() + getSenderDid() + getFqcn() + getTopicId()).getBytes(StandardCharsets.UTF_8)).toString();
 	}
     
 }

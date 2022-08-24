@@ -9,8 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -35,9 +37,9 @@ import javax.ws.rs.core.Response;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.bson.types.ObjectId;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -61,7 +63,6 @@ import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
-import org.energyweb.ddhub.repository.MessageRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
@@ -112,9 +113,6 @@ public class Message {
     FileUploadRepository fileUploadRepository;
 
     @Inject
-    MessageRepository messageRepository;
-
-    @Inject
     @Claim(value = "did")
     String DID;
 
@@ -157,10 +155,12 @@ public class Message {
 
                 MessageDTO messageDTO = messageDTOs;
                 messageDTO.setFqcn(fqcn);
-                String id = messageRepository.save(messageDTO, DID);
+                messageDTO.setSenderDid(DID);
+                String id = new ObjectId().toHexString();
+                
                 PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                		.messageId(id).stream(messageDTO.streamName());
-
+                		.messageId(messageDTO.createNatsTransactionId()).stream(messageDTO.streamName());
+                
                 JsonObjectBuilder builder = Json.createObjectBuilder();
                 builder.add("messageId", id);
                 builder.add("payloadEncryption", messageDTO.isPayloadEncryption());
@@ -170,7 +170,7 @@ public class Message {
                 builder.add("sender", DID);
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-                builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+                builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
                 builder.add("isFile", messageDTO.getIsFile());
 
@@ -220,7 +220,7 @@ public class Message {
 
     }
 
-    @Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+	@Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "internal_post_timed", description = "", tags = {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
@@ -239,10 +239,8 @@ public class Message {
         Connection nc = Nats.connect(natsJetstreamUrl);
 
         JetStream js = nc.jetStream();
-        PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                .messageId(messageDTO.getTransactionId());
 
-        String id = messageRepository.save(messageDTO, DID);
+        String id = UUID.randomUUID().toString();
 
         JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add("messageId", id);
@@ -250,11 +248,10 @@ public class Message {
         builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
         builder.add("sender", DID);
         builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+        builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
         PublishAck pa = js.publish(messageDTO.subjectName(),
-                builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+                builder.build().toString().getBytes(StandardCharsets.UTF_8));
 
         nc.flush(Duration.ZERO);
         nc.close();
@@ -275,14 +272,13 @@ public class Message {
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         messageDTO.setFqcn(DID);
 
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         try {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
             builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-            // builder.durable(messageDTO.getClientId()); // required
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
                     builder.buildPullSubscribeOptions());
@@ -325,8 +321,13 @@ public class Message {
                     message.setSenderDid(sender);
                     message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-                    messageDTOs.add(message);
-                    m.ack();
+                    
+                    if (messageDTOs.size() < messageDTO.getAmount()) {
+                        messageDTOs.add(message);
+                        m.ack();
+                    } else {
+                        break;
+                    }
                 }
             }
             // sub.unsubscribe();
@@ -346,11 +347,10 @@ public class Message {
     @Authenticated
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        topicRepository.validateTopicIds(messageDTO.getTopicId());
-        // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
+        topicRepository.validateTopicIds(messageDTO.getTopicId(),true);
         messageDTO.setFqcn(DID);
 
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         try {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();

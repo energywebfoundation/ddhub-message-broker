@@ -67,31 +67,15 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	// @CacheInvalidateAll(cacheName = "tversion")
 	public void updateTopic(TopicDTO topicDTO) {
 		Topic topic = new Topic();
-		try {
-			Topic _topic = findById(new ObjectId(topicDTO.getId()));
-			Map map = BeanUtils.describe(topicDTO);
-			map.remove("id");
-			map.remove("name");
-			map.remove("owner");
-			map.remove("schemaType");
-			map.remove("tags");
-			map.remove("createdDate");
-			map.remove("updatedDate");
-			topic.setUpdatedBy(topicDTO.did());
-			topic.setUpdatedDate(LocalDateTime.now());
-			BeanUtils.copyProperties(topic, map);
-			topic.setId(_topic.getId());
-			topic.setName(_topic.getName());
-			topic.setOwner(_topic.getOwner());
-			topic.setSchemaType(_topic.getSchemaType());
-			topic.setTags(topicDTO.getTags());
-			topic.setCreatedBy(_topic.getCreatedBy());
-			topic.setCreatedDate(_topic.getCreatedDate());
-		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-			throw new MongoException("Unable to update");
-		}
-
+		topic.setUpdatedBy(topicDTO.did());
 		topic.setUpdatedDate(LocalDateTime.now());
+		topic.setId(new ObjectId(topicDTO.getId()));
+		topic.setName(topicDTO.getName());
+		topic.setOwner(topicDTO.getOwner());
+		topic.setSchemaType(topicDTO.getSchemaType());
+		topic.setTags(topicDTO.getTags());
+		topic.setCreatedBy(topicDTO.getCreatedBy());
+		topic.setCreatedDate(topicDTO.getCreatedDate());
 		update(topic);
 	}
 
@@ -101,8 +85,14 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	
 	// @CacheResult(cacheName = "topic")
 	public List<String> validateTopicIds(@CacheKey List<String> topicIds,@CacheKey boolean includeDeleted) {
-
-		List<Topic> result = find("_id in ?1 and deleted is null or deleted = ?2",
+		StringBuffer buffer = new StringBuffer("_id in ?1");
+		Optional.ofNullable(includeDeleted).ifPresent(value -> {
+			if(!value) {
+				buffer.append(" and deleted is null or deleted = ?2");
+			}
+		});
+		
+		List<Topic> result = find(buffer.toString(),
 				topicIds.stream().map(id -> new ObjectId(id)).collect(Collectors.toList()),includeDeleted).list();
 		if (result.size() != topicIds.size()) {
 			List<String> _topicIds = result.stream().map(topic -> topic.getId().toHexString())
@@ -128,7 +118,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 	// @CacheResult(cacheName = "topic")
 	public TopicDTOPage queryByOwnerNameTags(@CacheKey String owner, @CacheKey String name, @CacheKey int page,
-			@CacheKey int size, @CacheKey boolean includeDeleted, @CacheKey String... tags) {
+			@CacheKey int size, @CacheKey boolean includeDeleted,@CacheKey LocalDateTime from, @CacheKey String... tags) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
 		StringBuffer buffer = new StringBuffer("owner = ?1");
 		Optional.ofNullable(name).ifPresent(value -> {
@@ -148,10 +138,15 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 				buffer.append(" and deleted is null or deleted = ?4");
 			}
 		});
+		
+		Optional.ofNullable(from).ifPresent(value -> {
+			buffer.append(" and updatedDate > ?5");
+		});
 
-		long totalRecord = find(buffer.toString(), owner, name, tags,includeDeleted).count();
 
-		PanacheQuery<Topic> topics = find(buffer.toString(), owner, name, tags, includeDeleted);
+		long totalRecord = find(buffer.toString(), owner, name, tags,includeDeleted,from).count();
+
+		PanacheQuery<Topic> topics = find(buffer.toString(), owner, name, tags, includeDeleted,from);
 		if (size > 0) {
 			topics.page(Page.of(page - 1, size));
 		}
@@ -233,14 +228,10 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	}
 
 	// @CacheResult(cacheName = "topic")
-	public TopicDTO findTopicBy(@CacheKey String id, @CacheKey String versionNumber) {
+	public TopicDTO findTopicBy(@CacheKey String id) {
 		TopicDTO topicDTO = new TopicDTO();
 		try {
 			Topic entity = findById(new ObjectId(id));
-			// if(entity.getVersion().equalsIgnoreCase(versionNumber)) {
-			// throw new MongoException("id:" + id + " version " + versionNumber + "
-			// exists");
-			// }
 			Map map = BeanUtils.describe(entity);
 			map.remove("schemaType");
 			map.remove("tags");
@@ -275,7 +266,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 	public TopicDTO updateByIdAndVersion(String id,
 			String versionNumber,
 			String schema, String did) {
-		TopicDTO topicDTO = findTopicBy(id, versionNumber);
+		TopicDTO topicDTO = findTopicBy(id);
 		TopicDTO _topicDTO = topicVersionRepository.updateByIdAndVersion(id, versionNumber, schema, did);
 		topicDTO.setUpdatedDate(_topicDTO.getUpdatedDate());
 		topicDTO.setSchema(schema);

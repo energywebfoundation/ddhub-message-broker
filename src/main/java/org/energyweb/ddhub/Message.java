@@ -53,6 +53,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.energyweb.ddhub.dto.FileUploadChunkDTOs;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
+import org.energyweb.ddhub.dto.MessageAckDTOs;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MessageDTOs;
 import org.energyweb.ddhub.dto.SearchInternalMessageDTO;
@@ -74,8 +75,10 @@ import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
 import io.nats.client.PublishOptions;
+import io.nats.client.api.AckPolicy;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
+import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.PublishAck;
 import io.quarkus.security.Authenticated;
 
@@ -355,12 +358,10 @@ public class Message {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(15).toMillis());
-            // builder.durable(messageDTO.getClientId()); // required
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable()).ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(10));
+            nc.flush(Duration.ofSeconds(5));
 
             while (messageDTOs.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
@@ -368,14 +369,12 @@ public class Message {
                     break;
                 }
                 for (io.nats.client.Message m : messages) {
-                    m.inProgress();
                     if (m.isStatusMessage()) {
                         m.nak();
                         continue;
                     }
 
-                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
-                            HashMap.class);
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),HashMap.class);
 
                     String sender = (String) natPayload.get("sender");
 
@@ -410,21 +409,86 @@ public class Message {
                     message.setTransactionId((String) natPayload.get("transactionId"));
 
                     if (messageDTOs.size() < messageDTO.getAmount()) {
+                        if(messageDTO.isAck()) {
+                        	m.ack();
+                        }else {
+                        	m.inProgress();
+                        }
                         messageDTOs.add(message);
-                        m.ack();
                     } else {
                         break;
                     }
                 }
             }
-            // sub.unsubscribe();
             nc.close();
 
         } catch (IllegalArgumentException ex) {
-            this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "]" + ex.getMessage());
+            this.logger.error("[SearchMessage][IllegalArgument][" + DID + "]" + ex.getMessage());
         }
         this.logger.info("[SearchMessage][" + DID + "] result size " + messageDTOs.size());
         return Response.ok().entity(messageDTOs).build();
+    }
+    
+    @Counted(name = "ack_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "ack_post_timed", description = "", tags = {"ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @POST
+    @Path("ack")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
+    @Authenticated
+    public Response natsAck(@Valid @NotNull MessageAckDTOs ackDTOs)
+            throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
+    	SearchMessageDTO messageDTO = new SearchMessageDTO();
+    	messageDTO.setFqcn(DID);
+    	messageDTO.setClientId(ackDTOs.getClientId());
+    	messageDTO.setAmount(ackDTOs.getMessageIds().size());
+        HashSet<String> messageIds = new HashSet<String>();
+        try {
+            Connection nc = Nats.connect(natsJetstreamUrl);
+            JetStream js = nc.jetStream();
+
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+
+            JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
+            nc.flush(Duration.ofSeconds(1));
+
+            while (messageIds.size() < messageDTO.getAmount()) {
+            	List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount() * 10, Duration.ofSeconds(3));
+                if (messages.isEmpty()) {
+                    break;
+                }
+                for (io.nats.client.Message m : messages) {
+                    if (m.isStatusMessage()) {
+                        m.nak();
+                        continue;
+                    }
+
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),HashMap.class);
+
+                    String messageId = (String) natPayload.get("messageId");
+                    
+                    if(!ackDTOs.getMessageIds().contains(messageId)) {
+                    	continue;
+                    }
+
+                    if (messageIds.size() < messageDTO.getAmount()) {
+                    	m.ack();
+                    	messageIds.add(messageId);
+                    } else {
+                        break;
+                    }
+                }
+                if (messageIds.size() == messageDTO.getAmount()) {
+                	break;
+                }
+			}
+            
+            nc.close();
+
+        } catch (IllegalArgumentException ex) {
+            this.logger.error("[NatsAck][IllegalArgument][" + DID + "]" + ex.getMessage());
+        }
+        this.logger.info("[NatsAck][" + DID + "] result size " + messageIds.size());
+        return Response.ok().entity(messageIds).build();
     }
 
     @Counted(name = "upload_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)

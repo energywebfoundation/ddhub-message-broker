@@ -35,10 +35,11 @@ public class SearchMessageDTO {
 	private List<@NotNull @NotNull String> senderId;
 
 	@Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
-
 	private String clientId = "mb-default";
 
 	private int amount = 1;
+	
+	private boolean ack = false;
 
 	@JsonbDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
 	private LocalDateTime from;

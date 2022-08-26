@@ -13,11 +13,11 @@ import org.jboss.logging.Logger;
 public class IllegalStateExceptionMapper extends DDHubHeaderMapper implements ExceptionMapper<IllegalStateException> {
 	@Inject
 	Logger logger;
-
+	
 	@Override
 	public Response toResponse(IllegalStateException exception) {
 		ErrorResponse error = new ErrorResponse("22", exception.getMessage());
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}
 

@@ -14,11 +14,11 @@ import org.jboss.logging.Logger;
 public class CamelExceptionMapper extends DDHubHeaderMapper implements ExceptionMapper<CamelExecutionException> {
 	@Inject
 	Logger logger;
-
+	
 	@Override
 	public Response toResponse(CamelExecutionException exception) {
 		ErrorResponse error = new ErrorResponse("30", exception.getCause().getLocalizedMessage());
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}
 }

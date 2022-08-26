@@ -32,6 +32,7 @@ public class DDHubLogging implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext requestContext) throws IOException {
 		String authorizationHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
+		String requestId = requestContext.getHeaderString("X-Request-Id");
 		String json = new String(Base64.getUrlDecoder().decode(authorizationHeader.split("\\.")[1]),
 				StandardCharsets.UTF_8);
 		JSONParser parser = new JSONParser();
@@ -48,6 +49,7 @@ public class DDHubLogging implements ContainerRequestFilter {
 			HashMap<String, String> data = new HashMap<>();
 			data.put("method", requestContext.getMethod());
 			data.put("path", requestContext.getUriInfo().getPath());
+			data.put("X-Request-Id", requestId);
 
 			try {
 				HashMap parametersObject = (JSONObject) parser.parse(parameters);
@@ -68,7 +70,7 @@ public class DDHubLogging implements ContainerRequestFilter {
 
 			}
 
-			this.logger.info("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(data));
+			this.logger.info("[" + jsonObject.get("did") + "][" + requestId + "]" + JsonbBuilder.create().toJson(data));
 
 			requestContext.getEntityStream().reset();
 		} catch (ParseException e) {

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.json.bind.JsonbBuilder;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -38,11 +39,13 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 
 	@Inject
 	DDHubServiceRulesConfig rulesConfig;
+	
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void filter(ContainerRequestContext requestContext) throws IOException {
 		String authorizationHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
+		String requestId = requestContext.getHeaderString("X-Request-Id");
 		String json = new String(Base64.getUrlDecoder().decode(authorizationHeader.split("\\.")[1]),
 				StandardCharsets.UTF_8);
 		JSONParser parser = new JSONParser();
@@ -51,15 +54,15 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 			JSONObject jsonObject = (JSONObject) parser.parse(json);
 			JSONArray jsonArray = (JSONArray) jsonObject.get("roles");
 			if (Optional.ofNullable(jsonObject.get("did")).isEmpty()) {
-				this.logger.error("missing did -> "
+				this.logger.error("[" + requestId + "]missing did -> "
 						+ authorizationHeader);
 				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 						.entity(error).build());
 				return;
 			}
-			
+
 			if (Optional.ofNullable(jsonArray).isEmpty()) {
-				this.logger.error("[" + jsonObject.get("did") + "]" + " missing roles -> "
+				this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]" + " missing roles -> "
 						+ authorizationHeader);
 				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 						.entity(error).build());
@@ -75,53 +78,65 @@ public class DDHubServiceRules implements ContainerRequestFilter {
 					.findFirst();
 			hubService.ifPresentOrElse(service -> {
 				Set<String> ruleMatch = new HashSet<String>();
-				
-				List<String> result = service.rules().stream().filter(str -> !str.contains("*")).collect(Collectors.toList());
-				result.forEach(rule->{
-					if (jsonArray.stream().filter(str->str.toString().contains(rule)).findFirst().isEmpty()) {
-						this.logger.error("[" + jsonObject.get("did") + "]" + "exact match rule " + rule + " not match " + jsonArray.toString());
-						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
-						this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
+
+				List<String> result = service.rules().stream().filter(str -> !str.contains("*"))
+						.collect(Collectors.toList());
+				result.forEach(rule -> {
+					if (jsonArray.stream().filter(str -> str.toString().contains(rule)).findFirst().isEmpty()) {
+						this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]" + "exact match rule "
+								+ rule + " not match "
+								+ jsonArray.toString());
+						this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]"
+								+ JsonbBuilder.create().toJson(error));
+						this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]" + authorizationHeader);
 						requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 								.entity(error).build());
 						return;
-					}else {
+					} else {
 						ruleMatch.add(rule);
 					}
 				});
-				
+
 				result = service.rules().stream().filter(str -> str.contains("*")).collect(Collectors.toList());
-				result.forEach(rule->{
-					Optional<String> ruleToken = jsonArray.stream().filter(str -> !ruleMatch.contains(str.toString()) && str.toString().matches(rule.replace("*", "(\\w*.*)"))).findFirst();
+				result.forEach(rule -> {
+					Optional<String> ruleToken = jsonArray.stream().filter(str -> !ruleMatch.contains(str.toString())
+							&& str.toString().matches(rule.replace("*", "(\\w*.*)"))).findFirst();
 					if (ruleToken.isEmpty()) {
-						this.logger.error("[" + jsonObject.get("did") + "]" + "current rule match " + ruleMatch.toString());
-						this.logger.error("[" + jsonObject.get("did") + "]" + "rule " + rule + " not match " + jsonArray.toString());
-						this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
-						this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
+						this.logger.error(
+								"[" + jsonObject.get("did") + "][" + requestId + "]" + "current rule match "
+										+ ruleMatch.toString());
+						this.logger.error(
+								"[" + jsonObject.get("did") + "][" + requestId + "]" + "rule " + rule + " not match "
+										+ jsonArray.toString());
+						this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]"
+								+ JsonbBuilder.create().toJson(error));
+						this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]" + authorizationHeader);
 						requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 								.entity(error).build());
 						return;
-					}else {
+					} else {
 						ruleMatch.add(ruleToken.get());
 					}
 				});
-				
+
 				if (service.rules().size() > ruleMatch.size()) {
-					this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
-					this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
+					this.logger.error(
+							"[" + jsonObject.get("did") + "][" + requestId + "]" + JsonbBuilder.create().toJson(error));
+					this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]" + authorizationHeader);
 					requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 							.entity(error).build());
 					return;
 				}
 
 			}, () -> {
-				this.logger.error("[" + jsonObject.get("did") + "]" + JsonbBuilder.create().toJson(error));
-				this.logger.error("[" + jsonObject.get("did") + "]" + authorizationHeader);
+				this.logger.error(
+						"[" + jsonObject.get("did") + "][" + requestId + "]" + JsonbBuilder.create().toJson(error));
+				this.logger.error("[" + jsonObject.get("did") + "][" + requestId + "]" + authorizationHeader);
 				requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).entity(error).build());
 			});
 		} catch (ParseException e) {
-			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));
-			this.logger.error(authorizationHeader);
+			this.logger.error("[" + requestId + "]" + JsonbBuilder.create().toJson(e.getMessage()));
+			this.logger.error("[" + requestId + "]" + authorizationHeader);
 			requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
 					.entity(error).build());
 		}

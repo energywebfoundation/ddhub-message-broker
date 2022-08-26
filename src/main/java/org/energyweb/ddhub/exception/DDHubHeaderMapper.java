@@ -5,9 +5,7 @@ import java.util.Base64;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.ext.ExceptionMapper;
 
-import org.jboss.resteasy.api.validation.ResteasyViolationException;
 import org.jose4j.json.internal.json_simple.JSONObject;
 import org.jose4j.json.internal.json_simple.parser.JSONParser;
 import org.jose4j.json.internal.json_simple.parser.ParseException;
@@ -27,6 +25,10 @@ public class DDHubHeaderMapper {
 		} catch (ParseException e) {
 			return null;
 		}
+	}
+	
+	protected String requestId() {
+		return httpHeaders.getHeaderString("X-Request-Id");
 	}
 
 }

@@ -75,10 +75,8 @@ import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
 import io.nats.client.PublishOptions;
-import io.nats.client.api.AckPolicy;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
-import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.PublishAck;
 import io.quarkus.security.Authenticated;
 
@@ -129,6 +127,9 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID", defaultValue = "20220510")
     String clientIdPostfix;
 
+    @HeaderParam("X-Request-Id")
+    String requestId;
+
     @Counted(name = "messages_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "messages_post_timed", description = "", tags = {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
@@ -143,7 +144,7 @@ public class Message {
         messageDTOs.getFqcns().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
                 failed.add(item);
-                this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(item));
+                this.logger.error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(item));
             }, () -> {
                 fqcns.add(fqcn);
             });
@@ -160,10 +161,10 @@ public class Message {
                 messageDTO.setFqcn(fqcn);
                 messageDTO.setSenderDid(DID);
                 String id = new ObjectId().toHexString();
-                
+
                 PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                		.messageId(messageDTO.createNatsTransactionId()).stream(messageDTO.streamName());
-                
+                        .messageId(messageDTO.createNatsTransactionId()).stream(messageDTO.streamName());
+
                 JsonObjectBuilder builder = Json.createObjectBuilder();
                 builder.add("messageId", id);
                 builder.add("payloadEncryption", messageDTO.isPayloadEncryption());
@@ -181,19 +182,20 @@ public class Message {
                     PublishAck pa = js.publish(messageDTO.subjectName(),
                             builder.build().toString().getBytes(StandardCharsets.UTF_8),
                             (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
-                    if(!pa.isDuplicate()) {
-                    	ReturnMessage successMessage = new ReturnMessage();
-                    	successMessage.setDid(fqcn);
-                    	successMessage.setStatusCode(200);
-                    	successMessage.setMessageId(id);
-                    	success.add(successMessage);
-                    }else {
-                    	ReturnMessage errorMessage = new ReturnMessage();
+                    if (!pa.isDuplicate()) {
+                        ReturnMessage successMessage = new ReturnMessage();
+                        successMessage.setDid(fqcn);
+                        successMessage.setStatusCode(200);
+                        successMessage.setMessageId(id);
+                        success.add(successMessage);
+                    } else {
+                        ReturnMessage errorMessage = new ReturnMessage();
                         errorMessage.setStatusCode(500);
                         errorMessage.setDid(fqcn);
                         errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
                         failed.add(errorMessage);
-                        this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+                        this.logger
+                                .error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
                     }
                 } catch (IOException | JetStreamApiException ex) {
                     ReturnMessage errorMessage = new ReturnMessage();
@@ -201,7 +203,7 @@ public class Message {
                     errorMessage.setDid(fqcn);
                     errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
                     failed.add(errorMessage);
-                    this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+                    this.logger.error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
                 }
             });
 
@@ -213,7 +215,7 @@ public class Message {
             errorMessage.setStatusCode(500);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
             failed.add(errorMessage);
-            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+            this.logger.error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
         }
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
@@ -223,7 +225,7 @@ public class Message {
 
     }
 
-	@Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "internal_post_timed", description = "", tags = {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
@@ -324,7 +326,7 @@ public class Message {
                     message.setSenderDid(sender);
                     message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-                    
+
                     if (messageDTOs.size() < messageDTO.getAmount()) {
                         messageDTOs.add(message);
                         m.ack();
@@ -336,7 +338,7 @@ public class Message {
             // sub.unsubscribe();
             nc.close();
         } catch (IllegalArgumentException ex) {
-            this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "]" + ex.getMessage());
+            this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         }
         return Response.ok().entity(messageDTOs).build();
     }
@@ -350,7 +352,7 @@ public class Message {
     @Authenticated
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        topicRepository.validateTopicIds(messageDTO.getTopicId(),true);
+        topicRepository.validateTopicIds(messageDTO.getTopicId(), true);
         messageDTO.setFqcn(DID);
 
         HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
@@ -358,7 +360,8 @@ public class Message {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable()).ackWait(Duration.ofSeconds(5));
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
+                    .ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(5));
@@ -374,7 +377,8 @@ public class Message {
                         continue;
                     }
 
-                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),HashMap.class);
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                            HashMap.class);
 
                     String sender = (String) natPayload.get("sender");
 
@@ -409,10 +413,10 @@ public class Message {
                     message.setTransactionId((String) natPayload.get("transactionId"));
 
                     if (messageDTOs.size() < messageDTO.getAmount()) {
-                        if(messageDTO.isAck()) {
-                        	m.ack();
-                        }else {
-                        	m.inProgress();
+                        if (messageDTO.isAck()) {
+                            m.ack();
+                        } else {
+                            m.inProgress();
                         }
                         messageDTOs.add(message);
                     } else {
@@ -423,36 +427,39 @@ public class Message {
             nc.close();
 
         } catch (IllegalArgumentException ex) {
-            this.logger.error("[SearchMessage][IllegalArgument][" + DID + "]" + ex.getMessage());
+            this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         }
-        this.logger.info("[SearchMessage][" + DID + "] result size " + messageDTOs.size());
+        this.logger.info(
+                "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
         return Response.ok().entity(messageDTOs).build();
     }
-    
+
     @Counted(name = "ack_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
-    @Timed(name = "ack_post_timed", description = "", tags = {"ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Timed(name = "ack_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("ack")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
     public Response natsAck(@Valid @NotNull MessageAckDTOs ackDTOs)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-    	SearchMessageDTO messageDTO = new SearchMessageDTO();
-    	messageDTO.setFqcn(DID);
-    	messageDTO.setClientId(ackDTOs.getClientId());
-    	messageDTO.setAmount(ackDTOs.getMessageIds().size());
+        SearchMessageDTO messageDTO = new SearchMessageDTO();
+        messageDTO.setFqcn(DID);
+        messageDTO.setClientId(ackDTOs.getClientId());
+        messageDTO.setAmount(ackDTOs.getMessageIds().size());
         HashSet<String> messageIds = new HashSet<String>();
         try {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
+                    .ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(1));
+            nc.flush(Duration.ofSeconds(5));
 
             while (messageIds.size() < messageDTO.getAmount()) {
-            	List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount() * 10, Duration.ofSeconds(3));
+                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
@@ -462,32 +469,34 @@ public class Message {
                         continue;
                     }
 
-                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),HashMap.class);
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                            HashMap.class);
 
                     String messageId = (String) natPayload.get("messageId");
-                    
-                    if(!ackDTOs.getMessageIds().contains(messageId)) {
-                    	continue;
+
+                    if (!ackDTOs.getMessageIds().contains(messageId)) {
+                        continue;
                     }
 
                     if (messageIds.size() < messageDTO.getAmount()) {
-                    	m.ack();
-                    	messageIds.add(messageId);
+                        m.ack();
+                        this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck for " + messageId);
+                        messageIds.add(messageId);
                     } else {
                         break;
                     }
                 }
                 if (messageIds.size() == messageDTO.getAmount()) {
-                	break;
+                    break;
                 }
-			}
-            
+            }
+
             nc.close();
 
         } catch (IllegalArgumentException ex) {
-            this.logger.error("[NatsAck][IllegalArgument][" + DID + "]" + ex.getMessage());
+            this.logger.error("[NatsAck][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         }
-        this.logger.info("[NatsAck][" + DID + "] result size " + messageIds.size());
+        this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
         return Response.ok().entity(messageIds).build();
     }
 

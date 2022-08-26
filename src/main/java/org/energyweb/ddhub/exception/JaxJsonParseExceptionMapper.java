@@ -18,7 +18,7 @@ public class JaxJsonParseExceptionMapper extends DDHubHeaderMapper implements Ex
 	@Override
 	public Response toResponse(final ProcessingException exception) {
 		ErrorResponse error = new ErrorResponse("15", "Cannot parse JSON");
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}
 }

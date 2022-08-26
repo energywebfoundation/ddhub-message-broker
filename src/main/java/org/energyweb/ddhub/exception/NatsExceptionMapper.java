@@ -19,7 +19,7 @@ public class NatsExceptionMapper extends DDHubHeaderMapper implements ExceptionM
 	@Override
 	public Response toResponse(final JetStreamApiException exception) {
 		ErrorResponse error = new ErrorResponse("20", exception.getErrorDescription());
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}
 }

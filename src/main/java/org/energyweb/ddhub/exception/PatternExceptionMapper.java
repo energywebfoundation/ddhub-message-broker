@@ -46,7 +46,7 @@ public class PatternExceptionMapper extends DDHubHeaderMapper implements Excepti
 		}
 
 		ErrorResponse error = new ErrorResponse("17", messages);
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}
 

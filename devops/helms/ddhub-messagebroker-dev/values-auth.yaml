@@ -57,6 +57,7 @@ did-auth-proxy-helm:
     ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
     JWT_ACCESS_TTL: 3600
     JWT_REFRESH_TTL: 86400
+    ENS_RESOLVER_ADDRESS: 0xcf72f16Ab886776232bea2fcf3689761a0b74EfE
 
   opsValues:
     CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1

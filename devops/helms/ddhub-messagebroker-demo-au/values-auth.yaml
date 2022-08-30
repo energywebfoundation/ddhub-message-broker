@@ -10,7 +10,7 @@ did-auth-proxy-helm:
     repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "canary"
+    tag: "9480e18c-ebb4-4f55-b762-fc01962e982e" # 31 Aug 2022 latest
 
   imagePullSecrets: 
     - name: regcred
@@ -57,6 +57,7 @@ did-auth-proxy-helm:
     ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
     JWT_ACCESS_TTL: 3600
     JWT_REFRESH_TTL: 86400
+    ENS_RESOLVER_ADDRESS: 0xcf72f16Ab886776232bea2fcf3689761a0b74EfE
 
   opsValues:
     RPC_URL: https://volta-rpc-vkn5r5zx4ke71f9hcu0c.energyweb.org/

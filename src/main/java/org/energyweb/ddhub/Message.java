@@ -356,6 +356,7 @@ public class Message {
         messageDTO.setFqcn(DID);
 
         HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
+        HashSet<String> messageIds = new HashSet<String>();
         try {
             Connection nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
@@ -418,7 +419,13 @@ public class Message {
                         } else {
                             m.inProgress();
                         }
-                        messageDTOs.add(message);
+                        
+                        if(!messageIds.contains(message.getId())){
+                        	messageDTOs.add(message);
+                        	messageIds.add(message.getId());
+                        }else {
+                        	this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                        }
                     } else {
                         break;
                     }

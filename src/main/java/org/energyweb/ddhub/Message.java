@@ -358,8 +358,9 @@ public class Message {
         HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
         HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         HashSet<String> messageIds = new HashSet<String>();
+        Connection nc = null;
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
+        	nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
@@ -442,15 +443,18 @@ public class Message {
             	}
             }
             
-            messageNats.forEach(m -> m.nak());
-            
-            nc.close();
-
         } catch (IllegalArgumentException ex) {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
-        }
+        }finally {
+        	if(nc != null) {
+        		messageNats.forEach(m -> m.nak());
+        		nc.close();
+        	}
+		}
+        
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
+        
         return Response.ok().entity(messageDTOs).build();
     }
 

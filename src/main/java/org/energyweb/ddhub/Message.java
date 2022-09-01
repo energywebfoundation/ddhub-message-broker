@@ -362,17 +362,18 @@ public class Message {
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            		.ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(5));
+            nc.flush(Duration.ofSeconds(1));
 
+            boolean isDuplicate = false;
             while (messageDTOs.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
-                for (io.nats.client.Message m : messages) {
+				for (io.nats.client.Message m : messages) {
                     if (m.isStatusMessage()) {
                         m.nak();
                         continue;
@@ -424,12 +425,19 @@ public class Message {
                         	messageDTOs.add(message);
                         	messageIds.add(message.getId());
                         }else {
-                        	this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                        	this.logger.warn("[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                        	isDuplicate  = true;
+                        	if(isDuplicate) {
+                        		break; 
+                        	}
                         }
                     } else {
                         break;
                     }
                 }
+                if(isDuplicate) {
+            		break; 
+            	}
             }
             nc.close();
 
@@ -460,10 +468,10 @@ public class Message {
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            		.ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(5));
+            nc.flush(Duration.ofSeconds(1));
 
             while (messageIds.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));

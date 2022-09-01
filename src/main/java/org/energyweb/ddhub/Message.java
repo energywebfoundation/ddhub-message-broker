@@ -355,24 +355,27 @@ public class Message {
         topicRepository.validateTopicIds(messageDTO.getTopicId(), true);
         messageDTO.setFqcn(DID);
 
+        HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
         HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         HashSet<String> messageIds = new HashSet<String>();
+        Connection nc = null;
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
+        	nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            		.ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(5));
+            nc.flush(Duration.ofSeconds(1));
 
+            boolean isDuplicate = false;
             while (messageDTOs.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
-                for (io.nats.client.Message m : messages) {
+				for (io.nats.client.Message m : messages) {
                     if (m.isStatusMessage()) {
                         m.nak();
                         continue;
@@ -423,21 +426,35 @@ public class Message {
                         if(!messageIds.contains(message.getId())){
                         	messageDTOs.add(message);
                         	messageIds.add(message.getId());
+                        	messageNats.add(m);
                         }else {
-                        	this.logger.warn("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                        	this.logger.warn("[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                        	isDuplicate  = true;
+                        	if(isDuplicate) {
+                        		break; 
+                        	}
                         }
                     } else {
                         break;
                     }
                 }
+                if(isDuplicate) {
+            		break; 
+            	}
             }
-            nc.close();
-
+            
         } catch (IllegalArgumentException ex) {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
-        }
+        }finally {
+        	if(nc != null) {
+        		messageNats.forEach(m -> m.nak());
+        		nc.close();
+        	}
+		}
+        
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
+        
         return Response.ok().entity(messageDTOs).build();
     }
 
@@ -460,10 +477,10 @@ public class Message {
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            		.ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(5));
+            nc.flush(Duration.ofSeconds(1));
 
             while (messageIds.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));

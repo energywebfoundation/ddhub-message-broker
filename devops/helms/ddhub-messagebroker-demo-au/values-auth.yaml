@@ -7,10 +7,10 @@ did-auth-proxy-helm:
   replicaCount: 1
 
   image:
-    repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
+    repository: aemocontainerregistry.azurecr.io/did-auth-proxy
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "04ed00a1-7949-45b7-8810-a9f155ffa3f7"
+    tag: "canary"
 
   imagePullSecrets: 
     - name: regcred

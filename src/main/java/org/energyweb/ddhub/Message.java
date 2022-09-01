@@ -355,6 +355,7 @@ public class Message {
         topicRepository.validateTopicIds(messageDTO.getTopicId(), true);
         messageDTO.setFqcn(DID);
 
+        HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
         HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         HashSet<String> messageIds = new HashSet<String>();
         try {
@@ -424,6 +425,7 @@ public class Message {
                         if(!messageIds.contains(message.getId())){
                         	messageDTOs.add(message);
                         	messageIds.add(message.getId());
+                        	messageNats.add(m);
                         }else {
                         	this.logger.warn("[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
                         	isDuplicate  = true;
@@ -439,6 +441,9 @@ public class Message {
             		break; 
             	}
             }
+            
+            messageNats.forEach(m -> m.nak());
+            
             nc.close();
 
         } catch (IllegalArgumentException ex) {

@@ -2,11 +2,18 @@ package org.energyweb.ddhub;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.OptionalLong;
+import java.util.Set;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -19,6 +26,7 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -29,6 +37,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecuritySchemes;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
+import org.energyweb.ddhub.dto.ClientDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.RoleOwnerRepository;
@@ -121,6 +130,52 @@ public class Channel {
         ownerRepository.save(DID, verifiedRoles);
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
+    }
+    
+    @GET
+    @Counted(name = "clientdIds_get_count", description = "", tags = { "ddhub=channel" }, absolute = true)
+    @Timed(name = "clientdIds_get_timed", description = "", tags = {
+            "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("clientdIds")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @Authenticated
+    public Response clientdIds() throws IOException, JetStreamApiException, InterruptedException, ParseException {
+        ChannelDTO channelDTO = new ChannelDTO();
+        channelDTO.setFqcn(DID);
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        List<String> result = jsm.getConsumerNames(channelDTO.streamName());
+        nc.close();
+
+        return Response.ok().entity(result).build();
+
+    }
+    
+    @DELETE
+    @Counted(name = "clientdIds_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
+    @Timed(name = "clientdIds_delete_timed", description = "", tags = {
+            "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("clientdIds")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @Authenticated
+    public Response removeClientdIds(@NotNull @Valid ClientDTO clientDTO) throws IOException, InterruptedException {
+        ChannelDTO channelDTO = new ChannelDTO();
+        channelDTO.setFqcn(DID);
+        Connection nc = Nats.connect(natsJetstreamUrl);
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        Set<String> result = new HashSet<String>();
+        clientDTO.getClientIds().forEach(id ->{
+        	try {
+				if(jsm.deleteConsumer(channelDTO.streamName(),id)) {
+					result.add(id);
+				}
+			} catch (IOException | JetStreamApiException e) {
+			}
+        });
+        nc.close();
+
+		return Response.ok().entity(result).build();
 
     }
 

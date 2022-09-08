@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
@@ -76,6 +77,9 @@ public class Channel {
     @ConfigProperty(name = "NATS_MAX_SIZE")
     long natsMaxSize;
 
+    @ConfigProperty(name = "NATS_MAX_CLIENT_ID")
+    OptionalLong natsMaxClientId;
+    
     @ConfigProperty(name = "DUPLICATE_WINDOW")
     OptionalLong duplicateWindow;
 
@@ -119,6 +123,7 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
+                    .maxConsumers(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE))
                     .duplicateWindow(
                             Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
@@ -202,6 +207,7 @@ public class Channel {
                         .addSubjects(channelDTO.subjectNameAll())
                         .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                         .maxMsgSize(channelDTO.getMaxMsgSize())
+                        .maxConsumers(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE))
                         .duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
                                 .toMillis())
                         .build();

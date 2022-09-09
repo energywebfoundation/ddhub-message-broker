@@ -49,6 +49,8 @@ did-auth-proxy-helm:
   # Redis
 
   redis:
+    global:
+      storageClass: azurefile
     architecture: standalone
     auth:
       existingSecret: did-auth-proxy-shared-dev-sealedsecret

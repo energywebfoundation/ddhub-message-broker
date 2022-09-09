@@ -3,6 +3,7 @@ package org.energyweb.ddhub;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 import javax.enterprise.context.RequestScoped;
@@ -28,6 +29,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.annotations.security.SecuritySchemes;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
+import org.energyweb.ddhub.dto.ChannelDTO;
 import org.jboss.logging.Logger;
 import org.jose4j.json.internal.json_simple.parser.ParseException;
 
@@ -55,6 +57,9 @@ public class Config {
     
     @ConfigProperty(name = "quarkus.http.limits.max-body-size")
     String fileMaxSize;
+    
+    @ConfigProperty(name = "NATS_MAX_CLIENT_ID")
+    OptionalLong natsMaxClientId;
 
     
     @GET
@@ -68,6 +73,7 @@ public class Config {
         config.put("msg-expired", natsMaxAge);
         config.put("msg-max-size", natsMaxSize);
         config.put("file-max-size", convertKtoByte().longValue());
+        config.put("nats-max-clientid-size", natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE));
         return Response.ok().entity(config).build();
 
     }

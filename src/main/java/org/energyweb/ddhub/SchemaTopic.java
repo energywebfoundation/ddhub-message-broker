@@ -12,6 +12,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.bind.JsonbBuilder;
 import javax.validation.Valid;
 import javax.validation.ValidationException;
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -101,7 +102,7 @@ public class SchemaTopic {
     @Inject
     @Claim(value = "roles")
     String roles;
-    
+
     @HeaderParam("X-Request-Id")
     String requestId;
 
@@ -298,7 +299,7 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTOGetPage.class)))
     @Authenticated
     public Response queryByOwnerNameTags(@NotNull @NotEmpty @QueryParam("owner") String owner,
-            @QueryParam("name") String name, @DefaultValue("1") @QueryParam("page") int page,
+            @QueryParam("name") String name, @DefaultValue("1") @DecimalMin(value = "1") @QueryParam("page") int page,
             @QueryParam("updatedDateFrom") LocalDateTime from,
             @DefaultValue("0") @QueryParam("limit") int size,
             @DefaultValue("false") @QueryParam("includeDeleted") boolean includeDeleted,
@@ -321,7 +322,8 @@ public class SchemaTopic {
     @Authenticated
     public Response queryByOwnerOrName(@NotNull @NotEmpty @QueryParam("keyword") String keyword,
             @QueryParam("owner") String owner,
-            @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size)
+            @DefaultValue("1") @DecimalMin(value = "1") @QueryParam("page") int page,
+            @DefaultValue("0") @QueryParam("limit") int size)
             throws ValidationException {
         return Response.ok().entity(topicRepository.queryByOwnerOrName(keyword, owner, page, size)).build();
     }
@@ -353,7 +355,8 @@ public class SchemaTopic {
     @Authenticated
     public Response listOfVersionById(@NotNull @PathParam("id") String id,
             @QueryParam("updatedDateFrom") LocalDateTime from,
-            @DefaultValue("1") @QueryParam("page") int page, @DefaultValue("0") @QueryParam("limit") int size,
+            @DefaultValue("1") @DecimalMin(value = "1") @QueryParam("page") int page,
+            @DefaultValue("0") @QueryParam("limit") int size,
             @DefaultValue("false") @QueryParam("includeDeleted") boolean includeDeleted) {
         if (page > 1 && size == 0) {
             return Response.status(400).entity(new ErrorResponse("14", "Required to set limit with page > 1")).build();

@@ -455,6 +455,9 @@ public class Message {
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
         
+        this.logger.info(
+                "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
+        
         return Response.ok().entity(messageDTOs).build();
     }
 

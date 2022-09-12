@@ -1,0 +1,103 @@
+
+# Default values for did-auth-proxy-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+did-auth-proxy-helm:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: aemocontainerregistry.azurecr.io/did-auth-proxy
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "canary"
+
+  imagePullSecrets: 
+    - name: regcred
+  nameOverride: "did-auth-proxy-shared-dev"
+  fullnameOverride: "did-auth-proxy-shared-dev"
+
+  #for now dummy configs
+  appValues:
+    PORT: 80
+    ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
+    JWT_ACCESS_TTL: 3600
+    JWT_REFRESH_TTL: 86400
+
+  opsValues:
+    CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
+    REDIS_HOST: ddhub-messagebroker-shared-dev-redis-master.ddhub-shared.svc
+    REDIS_PORT: 6379
+    IPFS_HOST: ipfs.infura.io
+    IPFS_PORT: 5001
+
+  sealedSecret:
+    enabled: true
+    annotations: {}
+    encryptedData: 
+      CACHE_SERVER_LOGIN_PRVKEY: AgANjP6v07Fc99SQWMdrsejnOsUld5uKSJHTPs7cvvRdIzFJnitYydA2vnHTuJ+jFgc1drY7H0k2RBdyvcGHflxKXf089zPWNi8wL6iqjpPI+1UVgvb53Z9nAYEmPpSlcx2t+uPRyzNEnFn+KTwLsGbCWeB4/2zbvZlHXZsBfE7ipFuDHoA1n8CGbj+qfB4O7DQdtEPm8sDwch1yhNk9AX8Odl8vQqfwblLC2EuF7vpRtnZYv4SX9WGXXXa/bOGrDPoVvVLix+6+arUWDT50U636FYNoKxJ/961GsEtOFJ+LQ7LAzSbvxZ/EJCVsPd+4UUCqlx/3MhOBal6JmJoLQwh0tCwuYwwpzjpzVkRRTbdbcsmWIG5ZVydlX00Ca34U+X50RjR0fHas1IoUkMG/OV4m1+TvtGqvyFErxQ0xGIqLyPLvjlNEO5zWTXezQmhJU2tO1XKRbZEiKxF+8sL/11yTpQMTN2mC7+JPgytFeI8/aaB3eyOphLcOOr4OppkRYq4Kn+BuYtL1HqCFN+7+367ByDsiufb87PqEqg50GyY73Iz5plkuIAlZS8VIgs7DX8cKvM8VxCTQnmXR3SJV/xGDAT+DglXqBaBcp0OC6PRgUF1c/RRsq1yMwxcj5GXhHWM9R2Eo8zKcKKBqQjJkYEFo00/OfDyw4kjUovaEa7PHc3HsAHiiXtvLqlZZBM/2rMrxZEmBnlkhWhTyBe9vOaDU9w9cIo9e3gUqGhinE7lA8IZ+/Zo6zKd2U+kDfGtQorRrNNwih2vuxUX+eiaEkR19
+      JWT_SECRET: AgAy/+25t1ciX3mjYpGJZyQzOKw8KV2iLftX0kDDkkTkSy2ftkaSmqZMygh0wCcETq25WpmvExL7Z0FqmISb8Zq88CXtP32n5sUr/5E+4IE266MFPz3gFkGm7xv9E4E6dfk0LdCRz/7aYWGFUcpIswWK/AyoPjLBKGLaQfaRTzcTPaND03J2bOEA5aEucmkmtu0SOa5YAtwwMuE+7103LxtLa4KyFVNVEe0MPejpcOvxjqMr4ezKnL/+UNaV0yfrfC+IDtF8516iDwoc/aAcfbTBosMBYBTrJYKpp5q0jyJQiEpjJFhc5OBkf7QeQoV26NRM/dt+gp7J5u9GQm8fspZYGQTzG+1rufFJFw9O4jWuBYJW0nD9565sLO8iLAD+1679DTp+HSGbMgS/EgGjw1uYi5t79tpIlBVBrkFpblX/itGcsLKQ3O0T+YhHmI8IdRr2/X2x5ei/kgmPlhFZ9sj9DgfOFi1yFqg8NlZCKL8rUWxVNa7Me9KpCYxOrXOoVQKwYCQV4YwJN/IWfqTsb0KNZhNjJ9N/qkaFYLqm1qwDrlG6pfXjnUIXLE1IbUUnwGx0EAu/CHvfotI0BH9zCJJHHUSHdvCuRULNOl1DndbZ0lyuQXTv7iQv/LwZxJchwdC4WF9KTq6VYemUD0oDuTZ1e84f9lHBmUWeiE8Efq6JgliAHy84VONATMjII/FnHURRnKywNU7TF0apIjtuO4zzug==
+      REDIS_PASSWORD: AgBVyflRmv59rA+j0T7plDtFxiifZZMHu+Rw+O4fKmbRVxq6cknKawbHQTzwPpYkbYgJPVEQX/OaJ77mYD2stqz3JhnXhpvuz5ScqPfVnqZeirlbkEdxt8+vKRcO4SFA6o1CFvMzkrwMjA9wG//VDEzFL4CvJDPZfqPGBQTjutsn5lixyysb2uUeJWLWpGdHWtwziUSi3uz0ALXo++/J5drolV+mA8XrMFNX8hqSY9htycuUvKYw0oH/NyDbPznTIAd7cpYRwjGdArjEyLOj9ol57wLiVyavjLPTWGq6+G+EMJPsnrCdp2jYQsSZji59uZVZa1FBF+dZ/uteaEMsJReICsmP8I8MZPP4TxeKstRzzzwLca7avLmQccZCi6LxScZURZTgm5XGLLbNGaT8quDvWdv8FYf5g1elCUYnh992/NtEtfHRnvRD8j9hdWf3kg6VRsJZaCEzlEgCNETBIUforOjG1NMlwiLlFKabldSU4Xpb8yOY1LWPK7UZCMf6Uzv3iEB+AuRuFgazdw7h9VWNG2LTdOLX5c9V1WubfAPmLVyWktmMkkHK6v5l/Ru9z15pGfaWyHuCQB+EGYYtvNPeolCgZttrKvj+ECMfNTXKvQmUWtm0TO87koGS64NftwmebMnSAJh8JnnEGkDFCSCnjrnu+88lI6rbmFW6FBOQ4BpwExGWGm43mMp0t2+gRCdXcqqZJq1mfoLjqy3xIyZnYy1tRmgEINSr
+      DID_REGISTRY_ADDRESS: AgBbZGT0azgjveZebJdE+zJXzVqaybpPxLPfqVaqs20mQhJvUCrS5mRuaGeavpo8iQMXSRrIgdPMIwRvE4TgckGMJReOfGEs3wv62Mmktm+DotE/Mp+wmlOYfJptyfU0VFsmBJqkWF62xv0r4QTJD/gF1c9INXpE9lprPUIjYd2xVfralVWHcnDFJB4/lpYl7BRsf5qqZxwxPiXzFKnCr9gFnLnPrdL4Eo/RYzoRnDY37fi7swtpuMa4vjnOr1owz6AwtF1Q62jUmJTLxKAU0Kb3pt5y03IGDetJ/ILbT/Sd0o1LL6ZZBHeY8KpjDCGlluAWPu7Sx8loNzXF9qtkiDwl0YKrQMa0FPuyElUeVm1CSBMQ9Qr86D9ZjskptgepSLzE5z/lKt2CyyJ22J6mfMiLDSBQThDiT01CY9aezLuEeBD1/GQxMLBLBx2OoN/vSfuFBEO3NDJ0ZXKrUg+aPhdBLU0tI/phS+S2V9h7wWiXEXTsOO4Fr6MSM+mnLJ5oOQeMnaw5h3bs5wSbnv0c6BVnpwKxUSOoct2jYdF9b77U/2lxgY3apdbD6dTLG8m0ct/l74PXN1DcqNMj2fK//z0Ja5SuhYsG6rx/CYrEukEHmrMg6fnQZ+1t5u7SkYvrRlAEy6EjoSGtCVq2QYjUTdlQNjw7jTJxAZvrRR5GL3dEhbXZjPBKqlTjDlI3pH8G5Zl39nmn3pj3UPRRZirBFMBlhAQvyFki5ms62NnuBdYKeB7nwuQkt4D6Q6Y=
+      ENS_REGISTRY_ADDRESS: AgBkRQ4C5w+6r5SBiOPbUT2G1/TJKi4tYDMlolP0qQFj9gQ9tUkbB5fAECYiH2FDleC1V0aT+awRjS7up3gYf+TiDTN/HBj7lRR/3eRBtUytOE813W2DEtcWjrG5/BcIcvIWss8J5QQ5aCAFws3I1mcv2ymqOBu0+snnl9faJzsLxl3E85fg58/pMNGVghBDo9Q2kT+CXcBMASiNiLkfCqSyW+hznri1hEJUev09+jide7fOLSaN7P1BOVRwIvZE/Ih1tpIkzeejxwExeXkurdJm8ibGE6qFypKoxApqU3UQdzApIgtj/uELj7vqORw9h25qFM0kK72r1IvEZqXZuTGNJx/kYCJa065rL9h83erK1XwU3FvvLGNyvMxs5nXGtNQeon9ZRauY9msPfAueUtlNb+ojLancHK0vUfJueqiTX/k1IW6DiYaD7bs8dxNXRtbFF+ENBWhYjeJ/gcLx35VHI09b9sjFVVMIw1A+eksnImBA5SZAClNL5+C93p5lye02aDL0nm9DB0WD1AGvBZt39uOGUfCzAcqYD6hOrhu99jLU/Ksi89bB4V6O3IjNx4CFfVtrb1+DHx9lWVX0oB/IHpj/43A8Zr7w6r+OVDk7scGXwx0TDwUc2ZhwoXchl5wbUWztzGRbMnF5aKhh/kdZDdkqT8oeQibZGHtH0ZKylsQ7VqRyktV/rtJ6ZqR2SmqE3Q3owb74IWQRy797RvAJJNrqGx7/aR+a/9yg9bgfUq2H6aGHUMe6q8E=
+      RPC_URL: AgBj3qxBcWH49JPcpplyfUjPBSwcmo4/K9heU85bvvApoJ3vlIWQdUjLIzBfKjbxliJYVJvcIWBDGEaAAtaiv2fAUCuybutZTZhJdcIlxL/MBS+cY47FsDJ6gMXDLnVODErRTVbNMkjTTptYh5kkqMn7krQYOdNrSdGuzKrLtJdK76Xx2fdFAD66SECD5AhBhqgZbw0kIo3l2VBPX05DIFJcsGIJ3UOKTn/k5vNkHXH5Gz2BrXJlkCnUsJUmMA6ijues4zEOC4BslVz9zrpbtn7v0u/qOMvSAdz32AzG8KacpIC1MHrAdOIxU/auv2Uyt4HCt5v3iUkQo03dvteKqw5iqjWCiAwWUWIXdp0g9YLc3UnX30bzKeaxcT4cj8Oe22bKiOGJE3l4auiYPEK1bIYyhP4vffBNVFYhias3oQyc3AaxPtm7VB8qW5orSwCg2Xpe+J4eYRFGMp0O0AgboBqPYXw8UbgkTc3rBY5JQl8LauwEWyDcJOAeKALcpuIv8LTf7VEuOJMtPa9+xn6krhJ1i3Pn3LcP7yr5vF+HLy94cruAYnQlZss8+eSgbVTj1XSISWNnO8gTWn33sTwPvvHepeKdzMZqElG/hLy8gwb3L2iaeqI7qSTD3OrslNXx5vSuC9R0IL4Ik5X8FFmDGrRynsudGV80lhxKHJiMpZ/n+Y7vc93HB6/z+K2dklImrVTcyS9v/xAycunMMNlDv1nGqZRr7uDpDV8CAT5UbSmBeZprKXUzM7bxOcq9+zNNoXS8qwgvhA==
+      IPFS_PROJECTID: AgCPGfjjkHtorwhuZT2W5odcmznr8Zge9kUhpzZaJmgezNinIDDTOB1tq+qhH7JcgN0x28VkF638U8EauwDX5ZaEgpAonhmNbzbxsA2U8xJv8p4HmB9fbovbpIwkdQ/QbwnPKPp5YCAsf9Bh7WCPusIczFBuYbWx4SQL8dGcApUOXCw8kiv+9LV3HMF9YFjUZSsEmBAv/5Auke/EPwF8neZnsbdnmgLk5X9NRxGGfMV8sAFuaQiklb1HYYhOsvuHqlMi2Qd0djGCrHrLU5VWwr5MpYWHU1hzKP6nUiXRJIUknj2NxE8XoTP5PI3wvahC2DC3KE09ynwx6OstGFVVwPN6jlMRElB5QWlTPCgyvx28S5cEJosYiiSaW7aLupJGf2qEeWJfDMWVhcRQ/YnnbURGPLSfy2F9JBKWTzhjLwjRK1KLgY41BqNJoWoccu6UteF0tFUfJPQEwqCtl8l4bYYZ1P8TPSwnd/U8gLxz/btOoBYR32Kze4NLfp98DGWvjOIEXfspD0rzvrVr3kBi94khaizCI+jF2qjjbzD2jCo0S7uUpvNugKrspQjFhJyiniNzrG3gZKZC5uS0c6NoyY4Yu9AM2PCZVaJGPyFmR56OkRp9W8AGe4Q6xqml5w5DIrMaZMcIeIR3fD9B8NE8RDqvbHKvkrwrzlMXs7ni8PX57bT/AZJ6b9jwsJbp45ru07cdRz68WOoqZB+quRCSKdznT7DFpiTUBlnyx3I=
+      IPFS_PROJECTSECRET: AgBEb8KHdAbUCxN3V2IKyD9vQOva2ZqpIetuxqM94OSgb4tryjyyYTguakiBV/t+dNH8P+ZHjKW/PmxIh0MzEvdgWt4xDSKJieQ94ot84QJ3SsaVdOGSgETyxBcPb+tp4NjG55cV5QSJTXHXEPeGLa44i+2TuzKf4NpyRCZoqd5A9W24AXUvXyuW5DY27sj3/Uxx0ZcxrMNnmZwtGb26pqo4QoqTzpY5g3xVPudNOUM8l+KkwpgHbKz/xwVLlE4BJcfOnS58/xIiFgwKqF+TqGcR/9r3NqVaVeqsqAUkzpQ59v9sf+DR2ECLnF/Guf2Fyc8973GeeqlIyVtqJptgRiJ+Rgr7Oo13cVddqsLGKQ7RBq9EK0EqQydzF8hs7ozy3jZI2cvjDbFyMtw1TyRTkM6t6+MMRL0uuSJrXwy6pWa+wLolpmFd7dx/rntM/d/cIneV9KoXmy12yE2plpyffIC2d4D35SZkqX4v6CRXVc2OYip33vjD9IhK+pgU/o7eLTvoPqXo+gBHfG46+d7GuTN6YNeGLd1MjpKYjpG/BYoMsPPbA+XNJQFUefb0Zupe/tnM+8wmH2fdDqhbuTVLSUQppdeKC5zRVg/MsZ46OBIMHgm1DDr6Z2dzTWVmIGuBxYRRnl1326M1+wqImKJ+TGX8+uFa/VpCuKMHE8K4l375KpU0+M1OmaNI+/2SdziZTEtFVKwE6e3JxQLL5AX/cdiqE+Hnrkm3+r2stjlKWQYPUg==
+      ENS_RESOLVER_ADDRESS: AgAlKHSQPxZLL7u3bFZINCKC+vRviKqLzantFzvlGLfexmRGGAGw2vzmd4fLtJlUZo6Tbq9h/esKecTKdBjbd6CGvZpob6H8u5EwwE/vU6VkoqAn7qd7WXIxyIlwyH4F+Ti4htMEdT1N3kZYiIEtNiLxpmwIjaBWYaEijT+hTmBWI7Y12VPTi25AHJdOiyoQKN4U3FSj0mS8J4i0kIWUBBIJ2icR+QTp4ve3A2YVAxj2zoxDnY23e0XXn8cvRmxUayNjCISTh1v/zn/an1nvykLt5VyrnrqlbpXCPTbJtzBS9zFfHu1t8EqUJYVsPyNnXZkFX7tcST+Zl/P7jXn54blLTi+Lu0gJKqpqApGrKfRlTTv8uHgJIG/zYuNaOQkUJosPKhlbHB+BnLSbBJo4iY6J/yd1V5yBEIRDuQcjyipN77tLlHUqVBCL43NJ5hyQaEU9p0JT/C8voPXgdXdGU+mCmGtxsz8QkEvJmoP0IewSfcQOiNCkDp14Bqu/jhw0N7LFOJE70zWWuMtyczpN5q/EhY/+xhtfNaLO5xRCapzYQuPvi6DFD6F4rQU1AgTO9nEEcfayFRuYvWpXv+XNWi3yq5nz2VpZbWVKx/gUwUp8u6fWweQRWNPeph/Jqxq7lVxepKPNkoXx91CkSpC3Slsmo8fNT4RWvJ0lHRWHAN9zNi6l9uoE4JShrNelbX2ZnQflHrs2tIfk13/JFxYQV3WtvWvNWIIFmAzeVAK0dUkOTnbwhiXBn8Uzhlg=
+
+  ########
+  # Redis
+
+  redis:
+    global:
+      storageClass: azurefile
+    architecture: standalone
+    auth:
+      existingSecret: did-auth-proxy-shared-dev-sealedsecret
+      existingSecretPasswordKey: REDIS_PASSWORD
+      
+  ########
+  # nginx
+  nginx:
+    fullnameOverride: "ddhub-messagebroker-proxy-shared-dev"
+
+    serverBlock: |-
+      server {
+        listen 0.0.0.0:8080;
+        server_name  _;
+        location ~ ^/(swagger-ui|q/openapi|health) {
+            proxy_pass http://ddhub-messagebroker-shared.ddhub-shared.svc.cluster.local;
+        }
+        location ~ ^/auth {
+            proxy_pass http://did-auth-proxy-shared-dev.ddhub-shared.svc.cluster.local;
+        }
+        location ~ / {
+            auth_request /token_introspection;
+            proxy_pass http://ddhub-messagebroker-shared.ddhub-shared.svc.cluster.local;
+        }
+        location = /token_introspection {
+              internal;
+              proxy_method      GET;
+              proxy_set_header  Authorization "$http_authorization";
+              proxy_set_header  Content-Length "";
+              proxy_pass        http://did-auth-proxy-shared-dev.ddhub-shared.svc.cluster.local/auth/token-introspection;
+        }
+      }
+
+    ingress:
+      enabled: true
+      annotations: 
+        kubernetes.io/ingress.class: azure/application-gateway
+        appgw.ingress.kubernetes.io/ssl-redirect: "true"
+        external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+        cert-manager.io/issuer: prod-issuer
+        cert-manager.io/issuer-kind: OriginIssuer
+        cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
+      hostname: ddhub-shared-dev.energyweb.org
+      pathType: Prefix
+      path: /
+      tls: false
+      extraTls:
+        - hosts:
+          - ddhub-shared-dev.energyweb.org
+          secretName: ddhub-shared-dev-tls-secret

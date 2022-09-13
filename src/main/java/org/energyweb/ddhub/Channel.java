@@ -40,8 +40,11 @@ import io.nats.client.Connection;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
 import io.nats.client.Nats;
+import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.StreamConfiguration;
 import io.nats.client.api.StreamInfo;
+import io.nats.client.api.ConsumerConfiguration.Builder;
+import io.nats.client.api.ConsumerInfo;
 import io.quarkus.security.Authenticated;
 
 @Path("/channel")
@@ -114,6 +117,39 @@ public class Channel {
             channelRepository.save(channelDTO);
         }
         ownerRepository.save(DID, verifiedRoles);
+
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
+    }
+    
+    @POST
+    @Counted(name = "updateConsumer_post_count", description = "", tags = {"ddhub=channel"}, absolute = true)
+    @Timed(name = "updateConsumer_post_timed", description = "", tags = {"ddhub=channel"}, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("updateConsumer")
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
+    @Authenticated
+    public Response updateConsumer() throws IOException, JetStreamApiException, InterruptedException, ParseException {
+    	Connection nc = Nats.connect(natsJetstreamUrl);
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        
+        jsm.getStreams().forEach(channel->{
+        	try {
+				jsm.getConsumers(channel.getConfiguration().getName()).forEach(clientId->{
+					this.logger.info(channel.getConfiguration().getName() + ":" + clientId.getName());
+					Builder builder = ConsumerConfiguration.builder(clientId.getConsumerConfiguration());
+		            builder.maxAckPending(50000);
+		            try {
+		            	ConsumerInfo consumer = jsm.addOrUpdateConsumer(channel.getConfiguration().getName(),builder.build());
+		            	this.logger.info(consumer);
+					} catch (IOException | JetStreamApiException e) {
+						this.logger.error(e.getMessage());
+					}
+				});
+			} catch (IOException | JetStreamApiException e) {
+				this.logger.error(e.getMessage());
+			}
+        });
+        nc.close();
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 

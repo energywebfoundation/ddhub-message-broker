@@ -347,7 +347,7 @@ public class Message {
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+            builder.maxAckPending(50000);
             // builder.durable(messageDTO.getClientId()); // required
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());

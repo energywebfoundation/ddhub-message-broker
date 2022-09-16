@@ -30,6 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecuritySchemes;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
+import org.energyweb.ddhub.dto.ConfigDTO;
 import org.jboss.logging.Logger;
 import org.jose4j.json.internal.json_simple.parser.ParseException;
 
@@ -66,14 +67,15 @@ public class Config {
     @Counted(name = "configuration_get_count", description = "", tags = {"ddhub=config"}, absolute = true)
     @Timed(name = "configuration_get_timed", description = "", tags = {"ddhub=config"}, unit = MetricUnits.MILLISECONDS, absolute = true)
     @Path("")
-    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = Map.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = ConfigDTO.class)))
     @Authenticated
     public Response configuration() throws IOException, JetStreamApiException, InterruptedException, ParseException {
-        Map config = new HashMap<>();
-        config.put("msg-expired", natsMaxAge);
-        config.put("msg-max-size", natsMaxSize);
-        config.put("file-max-size", convertKtoByte().longValue());
-        config.put("nats-max-clientid-size", natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE));
+        ConfigDTO config = new ConfigDTO();
+        config.setMsgExpired(natsMaxAge);
+        config.setMsgMaxSize(natsMaxSize);
+        config.setFileMaxSize(convertKtoByte().longValue());
+        config.setNatsMaxClientidSize(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE));
+        
         return Response.ok().entity(config).build();
 
     }

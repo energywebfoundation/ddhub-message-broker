@@ -74,6 +74,7 @@ import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
+import io.nats.client.Options;
 import io.nats.client.PublishOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
@@ -136,7 +137,7 @@ public class Message {
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
-    public Response publish(@Valid @NotNull MessageDTOs messageDTOs) {
+    public Response publish(@Valid @NotNull MessageDTOs messageDTOs) throws InterruptedException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
         List<String> fqcns = new ArrayList<String>();
         List<ReturnMessage> success = new ArrayList<ReturnMessage>();
@@ -144,14 +145,14 @@ public class Message {
         messageDTOs.getFqcns().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
                 failed.add(item);
-                this.logger.error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(item));
+                this.logger.error("[PUBLISH][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(item));
             }, () -> {
                 fqcns.add(fqcn);
             });
         });
-
+        Connection nc = null;
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
+        	nc = Nats.connect(natsJetstreamUrl);
 
             JetStream js = nc.jetStream();
 
@@ -190,20 +191,20 @@ public class Message {
                         success.add(successMessage);
                     } else {
                         ReturnMessage errorMessage = new ReturnMessage();
-                        errorMessage.setStatusCode(500);
+                        errorMessage.setStatusCode(400);
                         errorMessage.setDid(fqcn);
                         errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
                         failed.add(errorMessage);
                         this.logger
-                                .error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+                                .error("[PUBLISH][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
                     }
                 } catch (IOException | JetStreamApiException ex) {
                     ReturnMessage errorMessage = new ReturnMessage();
-                    errorMessage.setStatusCode(500);
+                    errorMessage.setStatusCode(400);
                     errorMessage.setDid(fqcn);
                     errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
                     failed.add(errorMessage);
-                    this.logger.error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+                    this.logger.error("[PUBLISH][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
                 }
             });
 
@@ -212,11 +213,16 @@ public class Message {
 
         } catch (IOException | TimeoutException | InterruptedException ex) {
             ReturnMessage errorMessage = new ReturnMessage();
-            errorMessage.setStatusCode(500);
+            errorMessage.setStatusCode(400);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
             failed.add(errorMessage);
-            this.logger.error("[" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
-        }
+            this.logger.error("[PUBLISH][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+        }finally {
+        	if(nc != null) {
+        		nc.close();
+        	}
+    	}
+        
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
         messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(), success.size(), failed.size()));
@@ -442,7 +448,10 @@ public class Message {
             		break; 
             	}
             }
-            
+        } catch (IOException ex) {
+        	this.logger.error("[SearchMessage][IOException][" + DID + "][" + requestId + "]" + ex.getMessage());
+        } catch (TimeoutException ex) {
+        	this.logger.error("[SearchMessage][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
         } catch (IllegalArgumentException ex) {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         }finally {
@@ -473,10 +482,11 @@ public class Message {
         SearchMessageDTO messageDTO = new SearchMessageDTO();
         messageDTO.setFqcn(DID);
         messageDTO.setClientId(ackDTOs.getClientId());
-        messageDTO.setAmount(ackDTOs.getMessageIds().size());
+        messageDTO.setAmount(ackDTOs.getMessageIds().size()<SearchMessageDTO.MIN_FETCH_AMOUNT?SearchMessageDTO.MIN_FETCH_AMOUNT:ackDTOs.getMessageIds().size());
         HashSet<String> messageIds = new HashSet<String>();
+        Connection nc = null;
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
+        	nc = Nats.connect(natsJetstreamUrl);
             JetStream js = nc.jetStream();
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
@@ -520,12 +530,28 @@ public class Message {
 
             nc.close();
 
+        } catch (IOException ex) {
+        	this.logger.error("[SearchMessage][IOException][" + DID + "][" + requestId + "]" + ex.getMessage());
+        } catch (TimeoutException ex) {
+        	this.logger.error("[SearchMessage][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
         } catch (IllegalArgumentException ex) {
             this.logger.error("[NatsAck][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
-        }
+        }finally {
+        	if(nc != null) {
+        		nc.close();
+        	}
+    	}
         this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
         return Response.ok().entity(messageIds).build();
     }
+
+	private Options natsConnectionOption() {
+		return new Options.Builder().
+		        server(natsJetstreamUrl).
+		        maxReconnects(0).
+		        connectionTimeout(Duration.ofSeconds(3)). // Set timeout
+		        build();
+	}
 
     @Counted(name = "upload_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "upload_post_timed", description = "", tags = {

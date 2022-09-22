@@ -22,9 +22,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class MessageDTO extends DDHub {
-   
+    public static final long TIMEOUT = 100;
+	public static final int MAX_RECONNECTS = 3;
 
-    @Size(max = 200, message = "The maximum length is 200 characters")
+	@Size(max = 200, message = "The maximum length is 200 characters")
     private String transactionId;
     
     @NotNull
@@ -100,5 +101,4 @@ public class MessageDTO extends DDHub {
 	public String createNatsTransactionId() {
 		return UUID.nameUUIDFromBytes((getTransactionId() + getSenderDid() + getFqcn() + getTopicId()).getBytes(StandardCharsets.UTF_8)).toString();
 	}
-    
 }

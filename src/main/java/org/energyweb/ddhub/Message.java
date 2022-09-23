@@ -482,7 +482,7 @@ public class Message {
         SearchMessageDTO messageDTO = new SearchMessageDTO();
         messageDTO.setFqcn(DID);
         messageDTO.setClientId(ackDTOs.getClientId());
-        messageDTO.setAmount(ackDTOs.getMessageIds().size()<SearchMessageDTO.MIN_FETCH_AMOUNT?SearchMessageDTO.MIN_FETCH_AMOUNT:ackDTOs.getMessageIds().size());
+        messageDTO.setAmount(ackDTOs.getMessageIds().size());
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
         try {
@@ -496,7 +496,7 @@ public class Message {
             nc.flush(Duration.ofSeconds(1));
 
             while (messageIds.size() < messageDTO.getAmount()) {
-                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+                List<io.nats.client.Message> messages = sub.fetch(ackDTOs.getMessageIds().size()<SearchMessageDTO.MIN_FETCH_AMOUNT?SearchMessageDTO.MIN_FETCH_AMOUNT:ackDTOs.getMessageIds().size(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }

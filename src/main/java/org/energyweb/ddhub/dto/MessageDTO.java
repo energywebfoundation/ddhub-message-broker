@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,9 +22,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class MessageDTO extends DDHub {
-    public static final long TIMEOUT = 100;
 	public static final int MAX_RECONNECTS = 3;
+	public static final long REQUEST_TIMEOUT = 2;
+	public static final long CONNECTION_TIMEOUT = 5;
 
 	@Size(max = 200, message = "The maximum length is 200 characters")
     private String transactionId;

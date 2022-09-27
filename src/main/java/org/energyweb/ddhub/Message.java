@@ -550,12 +550,12 @@ public class Message {
     }
 
     private JetStreamOptions natsJetStreamOption() {
-        return JetStreamOptions.builder().requestTimeout(Duration.ofSeconds(MessageDTO.TIMEOUT)).build();
+        return JetStreamOptions.builder().requestTimeout(Duration.ofSeconds(MessageDTO.REQUEST_TIMEOUT)).build();
     }
 
     private Options natsConnectionOption() {
         return new Options.Builder().server(natsJetstreamUrl).maxReconnects(MessageDTO.MAX_RECONNECTS)
-                .connectionTimeout(Duration.ofSeconds(MessageDTO.TIMEOUT)). // Set timeout
+                .connectionTimeout(Duration.ofSeconds(MessageDTO.CONNECTION_TIMEOUT)). // Set timeout
                 build();
     }
 

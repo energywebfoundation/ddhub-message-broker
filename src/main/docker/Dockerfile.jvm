@@ -37,5 +37,5 @@ COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 EXPOSE 8080
 USER 185
 
-ENTRYPOINT [ "java","-XX:MinRAMPercentage=60.0","-XX:MaxRAMPercentage=90.0","-Xss6m","-XshowSettings:vm", "-jar", "/deployments/quarkus-run.jar" ]
+ENTRYPOINT [ "java","-XX:+UseG1GC","-Xms650m","-Xmx650m","-Xss6m","-XshowSettings:vm", "-jar", "/deployments/quarkus-run.jar" ]
 

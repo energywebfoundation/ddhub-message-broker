@@ -71,7 +71,8 @@ public class DDHubLogging implements ContainerRequestFilter {
 			}
 
 			this.logger.info("[" + jsonObject.get("did") + "][" + requestId + "]" + JsonbBuilder.create().toJson(data));
-
+			data.clear();
+			arrayInputStream.close();
 			requestContext.getEntityStream().reset();
 		} catch (ParseException e) {
 			this.logger.error(JsonbBuilder.create().toJson(e.getMessage()));

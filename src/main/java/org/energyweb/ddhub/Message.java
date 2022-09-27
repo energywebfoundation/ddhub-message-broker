@@ -457,6 +457,8 @@ public class Message {
                     break;
                 }
             }
+        } catch (TimeoutException ex) {
+            this.logger.error("[SearchMessage][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
         } catch (IllegalArgumentException ex) {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {
@@ -538,6 +540,8 @@ public class Message {
                 }
             }
 
+        } catch (TimeoutException ex) {
+        	this.logger.error("[NatsAck][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
         } catch (IllegalArgumentException ex) {
             this.logger.error("[NatsAck][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {

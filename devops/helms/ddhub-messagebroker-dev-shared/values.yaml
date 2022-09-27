@@ -20,8 +20,8 @@ ddhub-messagebroker:
     repository: aemocontainerregistry.azurecr.io/ddhub-messagebroker
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    # This is just an innitial tag -> every time there is a merge to master it is overwritten by Github actions in ArgoCD.
-    tag: "0.1.0"
+    # version 0.1.0 with forming mongo connection string change
+    tag: "f3614bb1-ae5b-467b-b896-564c2aa15716"
 
   imagePullSecrets: []
   nameOverride: "ddhub-messagebroker-shared"

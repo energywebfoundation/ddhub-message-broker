@@ -139,7 +139,8 @@ public class Message {
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
-    public Response publish(@Valid @NotNull MessageDTOs messageDTOs) throws InterruptedException, TimeoutException, IOException {
+    public Response publish(@Valid @NotNull MessageDTOs messageDTOs)
+            throws InterruptedException, TimeoutException, IOException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
         List<String> fqcns = new ArrayList<String>();
         List<ReturnMessage> success = new ArrayList<ReturnMessage>();
@@ -155,11 +156,11 @@ public class Message {
         Connection nc = null;
         HashSet<String> messageIds = new HashSet<String>();
         try {
-        	nc = Nats.connect(natsConnectionOption());
+            nc = Nats.connect(natsConnectionOption());
 
             JetStream js = nc.jetStream(natsJetStreamOption());
             fqcns.forEach(fqcn -> {
-            	
+
                 MessageDTO messageDTO = messageDTOs;
                 messageDTO.setFqcn(fqcn);
                 messageDTO.setSenderDid(DID);
@@ -199,7 +200,8 @@ public class Message {
                         errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
                         failed.add(errorMessage);
                         this.logger
-                                .error("[PUBLISH][1][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+                                .error("[PUBLISH][1][" + DID + "][" + requestId + "]"
+                                        + JsonbBuilder.create().toJson(errorMessage));
                     }
                 } catch (InterruptedException | ExecutionException ex) {
                     ReturnMessage errorMessage = new ReturnMessage();
@@ -207,32 +209,32 @@ public class Message {
                     errorMessage.setDid(fqcn);
                     errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
                     failed.add(errorMessage);
-                    this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
-				}
+                    this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]"
+                            + JsonbBuilder.create().toJson(errorMessage));
+                }
             });
-
-            
 
         } catch (InterruptedException ex) {
             ReturnMessage errorMessage = new ReturnMessage();
             errorMessage.setStatusCode(400);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
             failed.add(errorMessage);
-            this.logger.error("[PUBLISH][3][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
-        }finally {
-        	if(nc != null) {
-        		nc.flush(Duration.ZERO);
-        		nc.close();
-        	}
-    	}
-        
+            this.logger
+                    .error("[PUBLISH][3][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+        } finally {
+            if (nc != null) {
+                nc.flush(Duration.ZERO);
+                nc.close();
+            }
+        }
+
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
         messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(), success.size(), failed.size()));
         messageResponse.add(success, failed);
-        
+
         this.logger.info("[PUBLISH][" + DID + "][" + requestId + "] result success messageIds : " + messageIds);
-        
+
         return Response.ok().entity(messageResponse).build();
 
     }
@@ -363,7 +365,7 @@ public class Message {
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
-            throws  InterruptedException, TimeoutException, IOException, JetStreamApiException {
+            throws InterruptedException, TimeoutException, IOException, JetStreamApiException {
         topicRepository.validateTopicIds(messageDTO.getTopicId(), true);
         messageDTO.setFqcn(DID);
 
@@ -372,22 +374,22 @@ public class Message {
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
         try {
-        	nc = Nats.connect(natsConnectionOption());
+            nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-            		.ackWait(Duration.ofSeconds(5));
+                    .ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
-            
+
             boolean isDuplicate = false;
             while (messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
-				for (io.nats.client.Message m : messages) {
+                for (io.nats.client.Message m : messages) {
                     if (m.isStatusMessage()) {
                         m.nak();
                         continue;
@@ -434,41 +436,42 @@ public class Message {
                         } else {
                             m.inProgress();
                         }
-                        
-                        if(!messageIds.contains(message.getId())){
-                        	messageDTOs.add(message);
-                        	messageIds.add(message.getId());
-                        	messageNats.add(m);
-                        }else {
-                        	this.logger.warn("[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
-                        	isDuplicate  = true;
-                        	if(isDuplicate) {
-                        		break; 
-                        	}
+
+                        if (!messageIds.contains(message.getId())) {
+                            messageDTOs.add(message);
+                            messageIds.add(message.getId());
+                            messageNats.add(m);
+                        } else {
+                            this.logger.warn(
+                                    "[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                            isDuplicate = true;
+                            if (isDuplicate) {
+                                break;
+                            }
                         }
                     } else {
                         break;
                     }
                 }
-                if(isDuplicate) {
-            		break; 
-            	}
+                if (isDuplicate) {
+                    break;
+                }
             }
         } catch (IllegalArgumentException ex) {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
-        }finally {
-        	if(nc != null) {
-        		messageNats.forEach(m -> m.nak());
-        		nc.close();
-        	}
-		}
-        
+        } finally {
+            if (nc != null) {
+                messageNats.forEach(m -> m.nak());
+                nc.close();
+            }
+        }
+
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
-        
+
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
-        
+
         return Response.ok().entity(messageDTOs).build();
     }
 
@@ -484,31 +487,35 @@ public class Message {
         SearchMessageDTO messageDTO = new SearchMessageDTO();
         messageDTO.setFqcn(DID);
         messageDTO.setClientId(ackDTOs.getClientId());
-        messageDTO.setAmount(ackDTOs.getMessageIds().size()<SearchMessageDTO.MIN_FETCH_AMOUNT?SearchMessageDTO.MIN_FETCH_AMOUNT:ackDTOs.getMessageIds().size());
+        messageDTO.setAmount(ackDTOs.getMessageIds().size());
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
         try {
-        	nc = Nats.connect(natsConnectionOption());
+            nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-            		.ackWait(Duration.ofSeconds(5));
+                    .ackWait(Duration.ofSeconds(5));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-			nc.flush(Duration.ofSeconds(1));
-            
-            while (messageIds.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
-                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+
+            nc.flush(Duration.ofSeconds(1));
+
+            while (messageIds.size() < messageDTO.getAmount()) {
+                List<io.nats.client.Message> messages = sub
+                        .fetch(ackDTOs.getMessageIds().size() < SearchMessageDTO.MIN_FETCH_AMOUNT
+                                ? SearchMessageDTO.MIN_FETCH_AMOUNT
+                                : ackDTOs.getMessageIds().size(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
                 for (io.nats.client.Message m : messages) {
-                	
+
                     if (m.isStatusMessage()) {
                         m.nak();
                         continue;
                     }
-                    
+
                     HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
                             HashMap.class);
 
@@ -531,29 +538,26 @@ public class Message {
                 }
             }
 
-
         } catch (IllegalArgumentException ex) {
             this.logger.error("[NatsAck][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
-        }finally {
-        	if(nc != null) {
-        		nc.close();
-        	}
-    	}
+        } finally {
+            if (nc != null) {
+                nc.close();
+            }
+        }
         this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
         return Response.ok().entity(messageIds).build();
     }
 
     private JetStreamOptions natsJetStreamOption() {
-		return JetStreamOptions.builder().requestTimeout(Duration.ofSeconds(MessageDTO.TIMEOUT)).build();
-	}
-    
-	private Options natsConnectionOption() {
-		return new Options.Builder().
-		        server(natsJetstreamUrl).
-		        maxReconnects(MessageDTO.MAX_RECONNECTS).
-		        connectionTimeout(Duration.ofSeconds(MessageDTO.TIMEOUT)). // Set timeout
-		        build();
-	}
+        return JetStreamOptions.builder().requestTimeout(Duration.ofSeconds(MessageDTO.TIMEOUT)).build();
+    }
+
+    private Options natsConnectionOption() {
+        return new Options.Builder().server(natsJetstreamUrl).maxReconnects(MessageDTO.MAX_RECONNECTS)
+                .connectionTimeout(Duration.ofSeconds(MessageDTO.TIMEOUT)). // Set timeout
+                build();
+    }
 
     @Counted(name = "upload_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "upload_post_timed", description = "", tags = {

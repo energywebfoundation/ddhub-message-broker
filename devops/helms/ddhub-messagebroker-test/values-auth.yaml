@@ -1,0 +1,89 @@
+
+# Default values for did-auth-proxy-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+did-auth-proxy-helm:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: aemocontainerregistry.azurecr.io/did-auth-proxy
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "canary"
+
+  imagePullSecrets: 
+    - name: regcred
+  nameOverride: "did-auth-proxy-test"
+  fullnameOverride: "did-auth-proxy-test"
+
+  #for now dummy configs
+  appValues:
+    PORT: 80
+    ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
+    JWT_ACCESS_TTL: 3600
+    JWT_REFRESH_TTL: 86400
+
+  opsValues:
+    CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
+    REDIS_HOST: ddhub-messagebroker-test-dev-redis-master.ddhub-test.svc
+    REDIS_PORT: 6379
+    IPFS_HOST: ipfs.infura.io
+    IPFS_PORT: 5001
+
+  ########
+  # Redis
+
+  redis:
+    global:
+      storageClass: azurefile
+    architecture: standalone
+    auth:
+      existingSecret: did-auth-proxy-test-sealedsecret
+      existingSecretPasswordKey: REDIS_PASSWORD
+      
+  ########
+  # nginx
+  nginx:
+    fullnameOverride: "ddhub-messagebroker-proxy-test"
+
+    serverBlock: |-
+      server {
+        listen 0.0.0.0:8080;
+        server_name  _;
+        location ~ ^/(swagger-ui|q/openapi|health) {
+            proxy_pass http://ddhub-messagebroker-test.ddhub-test.svc.cluster.local;
+        }
+        location ~ ^/auth {
+            proxy_pass http://did-auth-proxy-test.ddhub-test.svc.cluster.local;
+        }
+        location ~ / {
+            auth_request /token_introspection;
+            proxy_pass http://ddhub-messagebroker-test.ddhub-test.svc.cluster.local;
+        }
+        location = /token_introspection {
+              internal;
+              proxy_method      GET;
+              proxy_set_header  Authorization "$http_authorization";
+              proxy_set_header  Content-Length "";
+              proxy_pass        http://did-auth-proxy-test.ddhub-test.svc.cluster.local/auth/token-introspection;
+        }
+      }
+
+    ingress:
+      enabled: true
+      annotations: 
+        kubernetes.io/ingress.class: nginx
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+        cert-manager.io/issuer: prod-issuer
+        cert-manager.io/issuer-kind: OriginIssuer
+        cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
+      hostname: ddhub-test.energyweb.org
+      pathType: Prefix
+      path: /
+      tls: false
+      extraTls:
+        - hosts:
+          - ddhub-test.energyweb.org
+          secretName: ddhub-test-tls-secret

@@ -1,0 +1,27 @@
+# Default values for messagebroker.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+ddhub-messagebroker:
+  replicaCount: 1
+
+  messagebroker:
+    config:
+      port: 9000
+      natsClusterUrl: nats://ddhub-test-nats-dsb-nats.ddhub-test.svc:4222
+      withSwagger: "true"
+      webUrl: https://volta-rpc.energyweb.org/
+      cacheServerUrl: https://identitycache-dev.energyweb.org/v1
+      jwt_issuer: "ddhub-test.energyweb.org"
+      context_url: "ddhub-test.energyweb.org"
+
+  image:
+    # repository: 098061033856.dkr.ecr.us-east-1.amazonaws.com/ew-dos-dsb-ecr
+    repository: aemocontainerregistry.azurecr.io/ddhub-messagebroker
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    # version 0.1.0 with forming mongo connection string change
+    tag: "f3614bb1-ae5b-467b-b896-564c2aa15716"
+
+  imagePullSecrets: []
+  nameOverride: "ddhub-messagebroker-test"
+  fullnameOverride: "ddhub-messagebroker-test"

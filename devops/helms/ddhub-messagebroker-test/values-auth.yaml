@@ -31,6 +31,11 @@ did-auth-proxy-helm:
     IPFS_HOST: ipfs.infura.io
     IPFS_PORT: 5001
 
+  config:
+    configRefName: did-auth-proxy-test-configmap
+    enabled: true
+    secretRefName: did-auth-proxy-test-sealedsecret
+
   ########
   # Redis
 

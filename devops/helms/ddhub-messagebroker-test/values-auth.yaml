@@ -26,7 +26,7 @@ did-auth-proxy-helm:
 
   opsValues:
     CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
-    REDIS_HOST: ddhub-messagebroker-test-dev-redis-master.ddhub-test.svc
+    REDIS_HOST: ddhub-messagebroker-test-redis-master.ddhub-test.svc
     REDIS_PORT: 6379
     IPFS_HOST: ipfs.infura.io
     IPFS_PORT: 5001

@@ -39,6 +39,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.dto.ClientDTO;
+import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.RoleOwnerRepository;
@@ -50,7 +51,9 @@ import com.mongodb.MongoException;
 import io.nats.client.Connection;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
+import io.nats.client.JetStreamOptions;
 import io.nats.client.Nats;
+import io.nats.client.Options;
 import io.nats.client.api.StreamConfiguration;
 import io.nats.client.api.StreamInfo;
 import io.quarkus.security.Authenticated;
@@ -116,7 +119,7 @@ public class Channel {
             channelRepository.findByFqcn(DID);
         } catch (MongoException ex) {
             logger.info("[" + requestId + "] Channel not exist. creating channel:" + DID);
-            Connection nc = Nats.connect(natsJetstreamUrl);
+            Connection nc = Nats.connect(natsConnectionOption());
             JetStreamManagement jsm = nc.jetStreamManagement();
             StreamConfiguration streamConfig = StreamConfiguration.builder()
                     .name(channelDTO.streamName())
@@ -148,7 +151,7 @@ public class Channel {
     public Response clientdIds() throws IOException, JetStreamApiException, InterruptedException, ParseException {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(DID);
-        Connection nc = Nats.connect(natsJetstreamUrl);
+        Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
         List<String> result = jsm.getConsumerNames(channelDTO.streamName());
         nc.close();
@@ -167,7 +170,7 @@ public class Channel {
     public Response removeClientdIds(@NotNull @Valid ClientDTO clientDTO) throws IOException, InterruptedException {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(DID);
-        Connection nc = Nats.connect(natsJetstreamUrl);
+        Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
         Set<String> result = new HashSet<String>();
         clientDTO.getClientIds().forEach(id ->{
@@ -200,7 +203,7 @@ public class Channel {
             channelDTO.setMaxMsgSize(natsMaxSize);
             logger.info("[" + requestId + "] re-creating channel:" + entity.getFqcn());
             try {
-                Connection nc = Nats.connect(natsJetstreamUrl);
+                Connection nc = Nats.connect(natsConnectionOption());
                 JetStreamManagement jsm = nc.jetStreamManagement();
                 StreamConfiguration streamConfig = StreamConfiguration.builder()
                         .name(channelDTO.streamName())
@@ -221,4 +224,12 @@ public class Channel {
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
+    
+	private Options natsConnectionOption() {
+		return new Options.Builder().
+		        server(natsJetstreamUrl).
+		        maxReconnects(ChannelDTO.MAX_RECONNECTS).
+		        connectionTimeout(Duration.ofSeconds(ChannelDTO.TIMEOUT)). // Set timeout
+		        build();
+	}
 }

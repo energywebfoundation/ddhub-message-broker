@@ -9,7 +9,7 @@ ddhub-messagebroker:
       port: 9000
       natsClusterUrl: nats://ddhub-test-nats-dsb-nats.ddhub-test.svc:4222
       withSwagger: "true"
-      webUrl: https://volta-rpc.energyweb.org/
+      webUrl: https://volta-rpc-vkn5r5zx4ke71f9hcu0c.energyweb.org/
       cacheServerUrl: https://identitycache-dev.energyweb.org/v1
       jwt_issuer: "ddhub-test.energyweb.org"
       context_url: "ddhub-test.energyweb.org"

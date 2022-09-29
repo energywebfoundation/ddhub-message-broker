@@ -183,9 +183,9 @@ public class Message {
                 builder.add("isFile", messageDTO.getIsFile());
 
                 try {
-                    PublishAck pa = js.publishAsync(messageDTO.subjectName(),
+                    PublishAck pa = js.publish(messageDTO.subjectName(),
                             builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                            (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null).get();
+                            (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
                     if (!pa.isDuplicate()) {
                         ReturnMessage successMessage = new ReturnMessage();
                         successMessage.setDid(fqcn);
@@ -203,7 +203,8 @@ public class Message {
                                 .error("[PUBLISH][1][" + DID + "][" + requestId + "]"
                                         + JsonbBuilder.create().toJson(errorMessage));
                     }
-                } catch (InterruptedException | ExecutionException ex) {
+                   
+                } catch (IOException | JetStreamApiException ex) {
                     ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(400);
                     errorMessage.setDid(fqcn);
@@ -453,8 +454,11 @@ public class Message {
                         break;
                     }
                 }
-                if (isDuplicate) {
+                if (messageDTOs.size() == messageDTO.getAmount()) {
                     break;
+                }
+                if (isDuplicate) {
+                	break;
                 }
             }
         } catch (TimeoutException ex) {
@@ -502,7 +506,7 @@ public class Message {
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
 
             nc.flush(Duration.ofSeconds(1));
-
+            boolean isDuplicate = false;
             while (messageIds.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub
                         .fetch(ackDTOs.getMessageIds().size() < SearchMessageDTO.MIN_FETCH_AMOUNT
@@ -530,7 +534,16 @@ public class Message {
                     if (messageIds.size() < messageDTO.getAmount()) {
                         m.ack();
                         this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck for " + messageId);
-                        messageIds.add(messageId);
+                        if (!messageIds.contains(messageId)) {
+                            messageIds.add(messageId);
+                        } else {
+                            this.logger.warn(
+                                    "[NatsAck][" + DID + "][" + requestId + "] Duplicate " + messageId);
+                            isDuplicate = true;
+                            if (isDuplicate) {
+                                break;
+                            }
+                        }
                     } else {
                         break;
                     }
@@ -538,7 +551,13 @@ public class Message {
                 if (messageIds.size() == messageDTO.getAmount()) {
                     break;
                 }
+                
+                if (isDuplicate) {
+                    break;
+                }
             }
+            
+            
 
         } catch (TimeoutException ex) {
         	this.logger.error("[NatsAck][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());

@@ -21,10 +21,11 @@
 # docker run -i --rm -p 9000:9000 energyweb/ddhub-messagebroker
 #
 ###
-FROM openjdk:11-jre
+# FROM openjdk:11-jre
+FROM amazoncorretto:11-alpine
 
-ARG worker_gid=1000
-ARG worker_uid=1000
+ARG worker_gid=1001
+ARG worker_uid=1001
 ARG worker_gname=worker
 ARG worker_uname=worker
 
@@ -34,13 +35,18 @@ ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 ENV JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 -Xss6m -XshowSettings:vm -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 
 # Installing system tools
-RUN apt update && \
-    apt upgrade -y && \
-    apt install dnsutils iputils-ping -y
+# RUN apt update && \
+#     apt upgrade -y && \
+#     apt install dnsutils iputils-ping -y
+RUN apk update &&\ 
+    apk upgrade &&\
+    apk add bind-tools curl
 
 # Add worker user/group
-RUN groupadd -g ${worker_gid} ${worker_gname} && \
-    useradd -M -u ${worker_uid} -g ${worker_gid} -s /bin/bash ${worker_uname}
+# RUN groupadd -g ${worker_gid} ${worker_gname} && \
+#     useradd -M -u ${worker_uid} -g ${worker_gid} -s /bin/bash ${worker_uname}
+RUN addgroup -g ${worker_gid} ${worker_gname} && \
+    adduser -h /deployments -u ${worker_uid} -s /bin/sh -D -G ${worker_gname} ${worker_uname}
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=${worker_uid} target/quarkus-app/lib/ /deployments/lib/

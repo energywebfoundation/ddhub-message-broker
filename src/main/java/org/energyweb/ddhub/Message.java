@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -155,9 +156,11 @@ public class Message {
         });
         Connection nc = null;
         HashSet<String> messageIds = new HashSet<String>();
+        List<CompletableFuture<PublishAck>> futures = new ArrayList<>();
+        HashMap<CompletableFuture<PublishAck>,MessageDTO> futuresMap = new HashMap<>();
         try {
             nc = Nats.connect(natsConnectionOption());
-
+            
             JetStream js = nc.jetStream(natsJetStreamOption());
             fqcns.forEach(fqcn -> {
 
@@ -165,7 +168,7 @@ public class Message {
                 messageDTO.setFqcn(fqcn);
                 messageDTO.setSenderDid(DID);
                 String id = new ObjectId().toHexString();
-
+                
                 PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
                         .messageId(messageDTO.createNatsTransactionId()).stream(messageDTO.streamName());
 
@@ -182,38 +185,56 @@ public class Message {
 
                 builder.add("isFile", messageDTO.getIsFile());
 
-                try {
-                    PublishAck pa = js.publish(messageDTO.subjectName(),
-                            builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                            (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
-                    if (!pa.isDuplicate()) {
-                        ReturnMessage successMessage = new ReturnMessage();
-                        successMessage.setDid(fqcn);
-                        successMessage.setStatusCode(200);
-                        successMessage.setMessageId(id);
-                        success.add(successMessage);
-                        messageIds.add(id);
-                    } else {
-                        ReturnMessage errorMessage = new ReturnMessage();
-                        errorMessage.setStatusCode(400);
-                        errorMessage.setDid(fqcn);
-                        errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
-                        failed.add(errorMessage);
-                        this.logger
-                                .error("[PUBLISH][1][" + DID + "][" + requestId + "]"
-                                        + JsonbBuilder.create().toJson(errorMessage));
-                    }
-                   
-                } catch (IOException | JetStreamApiException ex) {
-                    ReturnMessage errorMessage = new ReturnMessage();
-                    errorMessage.setStatusCode(400);
-                    errorMessage.setDid(fqcn);
-                    errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
-                    failed.add(errorMessage);
-                    this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]"
-                            + JsonbBuilder.create().toJson(errorMessage));
-                }
+                CompletableFuture<PublishAck> pa = js.publishAsync(messageDTO.subjectName(),
+                		builder.build().toString().getBytes(StandardCharsets.UTF_8),
+                		(messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+                futures.add(pa);
+                MessageDTO _messageDTO = new MessageDTO();
+                _messageDTO.setFqcn(fqcn);
+                _messageDTO.setId(id);
+                futuresMap.put(pa, _messageDTO);
+                
             });
+            
+            while (futures.size() > 0) {
+            	CompletableFuture<PublishAck> f = futures.remove(0);
+                if (f.isDone()) {
+                    try {
+                        PublishAck pa = f.get();
+                        MessageDTO messageDTO = futuresMap.get(f);
+                        if (!pa.isDuplicate()) {
+                            ReturnMessage successMessage = new ReturnMessage();
+                            successMessage.setDid(messageDTO.getFqcn());
+                            successMessage.setStatusCode(200);
+                            successMessage.setMessageId(messageDTO.getId());
+                            success.add(successMessage);
+                            messageIds.add(messageDTO.getId());
+                        } else {
+                            ReturnMessage errorMessage = new ReturnMessage();
+                            errorMessage.setStatusCode(400);
+                            errorMessage.setDid(messageDTO.getFqcn());
+                            errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
+                            failed.add(errorMessage);
+                            this.logger
+                                    .error("[PUBLISH][1][" + DID + "][" + requestId + "]"
+                                            + JsonbBuilder.create().toJson(errorMessage));
+                        }
+                    }
+                    catch (ExecutionException ex) {
+                    	ReturnMessage errorMessage = new ReturnMessage();
+                        errorMessage.setStatusCode(400);
+                        errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
+                        failed.add(errorMessage);
+                        this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]"
+                                + JsonbBuilder.create().toJson(errorMessage));
+                    }
+                }
+                else {
+                    futures.add(f);
+                }
+            }
+            
+            futuresMap.clear();
 
         } catch (InterruptedException ex) {
             ReturnMessage errorMessage = new ReturnMessage();
@@ -507,7 +528,7 @@ public class Message {
 
             nc.flush(Duration.ofSeconds(1));
             boolean isDuplicate = false;
-            while (messageIds.size() < messageDTO.getAmount()) {
+            while (messageIds.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
                 List<io.nats.client.Message> messages = sub
                         .fetch(ackDTOs.getMessageIds().size() < SearchMessageDTO.MIN_FETCH_AMOUNT
                                 ? SearchMessageDTO.MIN_FETCH_AMOUNT

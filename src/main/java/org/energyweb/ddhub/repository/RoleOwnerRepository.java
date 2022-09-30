@@ -48,7 +48,6 @@ public class RoleOwnerRepository implements PanacheMongoRepository<RoleOwner> {
 	}
 
 	public List<String> queryDidsByRoles(TYPE searchType, String[] roles) {
-		StringBuffer buffer = new StringBuffer();
 		List<RoleOwner> role = find("claimType in ?1", List.of(roles)).list();
 
 		List<String> dids = new ArrayList<String>();

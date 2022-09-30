@@ -21,21 +21,41 @@
 # docker run -i --rm -p 8080:8080 quarkus/ddhub-message-broker-jvm
 #
 ###
-FROM registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10
+FROM amazoncorretto:11-alpine
+
+ARG worker_gid=1001
+ARG worker_uid=1001
+ARG worker_gname=worker
+ARG worker_uname=worker
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
-ENV JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 -Xss6m -XshowSettings:vm -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_OPTIONS="-Xms650m -Xms650m -Xss6m -XshowSettings:vm -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+
+# Installing system tools
+# RUN apt update && \
+#     apt upgrade -y && \
+#     apt install dnsutils iputils-ping -y
+RUN apk update &&\ 
+    apk upgrade &&\
+    apk add bind-tools curl
+
+# Add worker user/group
+# RUN groupadd -g ${worker_gid} ${worker_gname} && \
+#     useradd -M -u ${worker_uid} -g ${worker_gid} -s /bin/bash ${worker_uname}
+RUN addgroup -g ${worker_gid} ${worker_gname} && \
+    adduser -h /deployments -u ${worker_uid} -s /bin/sh -D -G ${worker_gname} ${worker_uname}
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --chown=${worker_uid} target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=${worker_uid} target/quarkus-app/*.jar /deployments/
+COPY --chown=${worker_uid} target/quarkus-app/app/ /deployments/app/
+COPY --chown=${worker_uid} target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
-USER 185
+USER ${worker_uid}
+WORKDIR /deployments
 
-ENTRYPOINT [ "java","-XX:MinRAMPercentage=60.0","-XX:MaxRAMPercentage=90.0","-Xss6m","-XshowSettings:vm", "-jar", "/deployments/quarkus-run.jar" ]
+ENTRYPOINT [ "java","-XX:+UseG1GC","-Xms650m","-Xmx650m","-Xss6m","-XshowSettings:vm", "-jar", "/deployments/quarkus-run.jar" ]
 

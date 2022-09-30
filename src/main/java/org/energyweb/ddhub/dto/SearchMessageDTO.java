@@ -23,6 +23,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class SearchMessageDTO {
 
+	public static final int MIN_FETCH_AMOUNT = 10;
+
 	@JsonIgnore
 	private String fqcn;
 

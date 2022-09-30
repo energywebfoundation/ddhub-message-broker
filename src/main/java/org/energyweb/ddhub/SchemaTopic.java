@@ -152,6 +152,11 @@ public class SchemaTopic {
         mongoClient.getDatabase(databaseName).getCollection("schema").dropIndexes();
         mongoClient.getDatabase(databaseName).getCollection("schema").createIndex(index,
                 new IndexOptions().unique(true));
+        
+        Document indexsort = new Document("createdDate", 1);
+        index.append("updatedDate", 1);
+        index.append("deletedDate", 1);
+        mongoClient.getDatabase(databaseName).getCollection("schema").createIndex(indexsort);
 
         Document version = new Document("topicId", 1);
         version.append("version", 1);

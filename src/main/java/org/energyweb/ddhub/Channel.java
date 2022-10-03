@@ -145,7 +145,7 @@ public class Channel {
     @Counted(name = "clientdIds_get_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "clientdIds_get_timed", description = "", tags = {
             "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
-    @Path("clientdIds")
+    @Path("clientIds")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
     @Authenticated
     public Response clientdIds() throws IOException, JetStreamApiException, InterruptedException, ParseException {
@@ -164,7 +164,7 @@ public class Channel {
     @Counted(name = "clientdIds_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "clientdIds_delete_timed", description = "", tags = {
             "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
-    @Path("clientdIds")
+    @Path("clientIds")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
     @Authenticated
     public Response removeClientdIds(@NotNull @Valid ClientDTO clientDTO) throws IOException, InterruptedException {

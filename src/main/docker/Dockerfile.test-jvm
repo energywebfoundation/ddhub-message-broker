@@ -1,0 +1,62 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
+#
+# Before building the container image run:
+#
+# ./mvnw package
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.test-jvm -t energyweb/ddhub-messagebroker .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 9000:9000 energyweb/ddhub-messagebroker
+#
+# If you want to include the debug port into your docker image
+# you will have to expose the debug port (default 5005) like this :  EXPOSE 9000 5005
+#
+# Then run the container using :
+#
+# docker run -i --rm -p 9000:9000 energyweb/ddhub-messagebroker
+#
+###
+# FROM openjdk:11-jre
+FROM amazoncorretto:11-alpine
+
+ARG worker_gid=1001
+ARG worker_uid=1001
+ARG worker_gname=worker
+ARG worker_uname=worker
+
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
+
+# Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
+ENV JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 -Xss6m -XshowSettings:vm -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+
+# Installing system tools
+# RUN apt update && \
+#     apt upgrade -y && \
+#     apt install dnsutils iputils-ping -y
+RUN apk update &&\ 
+    apk upgrade &&\
+    apk add bind-tools curl
+
+# Add worker user/group
+# RUN groupadd -g ${worker_gid} ${worker_gname} && \
+#     useradd -M -u ${worker_uid} -g ${worker_gid} -s /bin/bash ${worker_uname}
+RUN addgroup -g ${worker_gid} ${worker_gname} && \
+    adduser -h /deployments -u ${worker_uid} -s /bin/sh -D -G ${worker_gname} ${worker_uname}
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --chown=${worker_uid} target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=${worker_uid} target/quarkus-app/*.jar /deployments/
+COPY --chown=${worker_uid} target/quarkus-app/app/ /deployments/app/
+COPY --chown=${worker_uid} target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 9000
+USER ${worker_uid}
+WORKDIR /deployments
+
+ENTRYPOINT [ "java","-XX:MinRAMPercentage=60.0","-XX:MaxRAMPercentage=90.0","-Xss6m","-XshowSettings:vm", "-jar", "/deployments/quarkus-run.jar" ]
+

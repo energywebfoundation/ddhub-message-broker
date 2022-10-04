@@ -1,10 +1,7 @@
 package org.energyweb.ddhub;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.OptionalLong;
-import java.util.regex.Pattern;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;

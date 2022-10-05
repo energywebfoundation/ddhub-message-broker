@@ -24,9 +24,9 @@ appVersion: "1.0"
 
 dependencies:
   - name: ddhub-messagebroker
-    version: 1.4.0
+    version: 1.4.1
     repository: https://aemocontainerregistry.azurecr.io/helm/v1/repo
   - name: did-auth-proxy-helm
     condition: did-auth-proxy-helm.enabled
-    version: 0.1.0
+    version: 0.1.6
     repository: https://aemoprivatecontainerregistry.azurecr.io/helm/v1/repo

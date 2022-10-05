@@ -63,6 +63,9 @@ did-auth-proxy-helm:
             proxy_pass http://did-auth-proxy-test.ddhub-test.svc.cluster.local;
         }
         location ~ / {
+            proxy_read_timeout 300;
+            proxy_connect_timeout 300;
+            proxy_send_timeout 300;
             auth_request /token_introspection;
             proxy_pass http://ddhub-messagebroker-test.ddhub-test.svc.cluster.local;
         }

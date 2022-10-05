@@ -508,10 +508,14 @@ public class Message {
 
                     if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst()
                             .isEmpty()) {
-                        continue;
+                        if(messageDTO.getTopicId().size() > 1) {
+                        	m.ack();
+                        }
+                    	continue;
                     }
 
                     if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+                    	m.ack();
                         continue;
                     }
 

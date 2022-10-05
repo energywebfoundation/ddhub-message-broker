@@ -54,6 +54,6 @@ public class SearchInternalMessageDTO  {
 		if(Optional.ofNullable(from).isPresent()) {
 			return clientId.concat(Long.toString(from.toEpochSecond(ZoneOffset.UTC))).concat("internal-ddhub").concat(streamName());
 		}
-		return clientId.concat("internal-ddhub").concat(streamName());
+		return clientId.concat("internal-ddhub");
 	}
 }

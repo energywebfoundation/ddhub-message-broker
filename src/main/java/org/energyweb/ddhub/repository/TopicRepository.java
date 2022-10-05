@@ -27,6 +27,7 @@ import io.quarkus.cache.CacheKey;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 
 @ApplicationScoped
 public class TopicRepository implements PanacheMongoRepository<Topic> {
@@ -146,7 +147,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 		long totalRecord = find(buffer.toString(), owner, name, tags,includeDeleted,from).count();
 
-		PanacheQuery<Topic> topics = find(buffer.toString(), owner, name, tags, includeDeleted,from);
+		PanacheQuery<Topic> topics = find(buffer.toString(),Sort.by("createdDate").and("updatedDate").and("deletedDate"), owner, name, tags, includeDeleted,from);
 		if (size > 0) {
 			topics.page(Page.of(page - 1, size));
 		}
@@ -202,7 +203,7 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 
 		long totalRecord = find(buffer.toString(), keyword, owner, false).count();
 
-		PanacheQuery<Topic> topics = find(buffer.toString(), keyword, owner, false);
+		PanacheQuery<Topic> topics = find(buffer.toString(),Sort.by("createdDate").and("updatedDate").and("deletedDate"), keyword, owner, false);
 		if (size > 0) {
 			topics.page(Page.of(page - 1, size));
 		}

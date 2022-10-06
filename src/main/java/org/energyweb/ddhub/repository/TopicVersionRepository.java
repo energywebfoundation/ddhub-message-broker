@@ -68,7 +68,6 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 //	@CacheResult(cacheName = "tversion")
 	public TopicDTOPage findListById(@CacheKey String id,@CacheKey int page,@CacheKey int size,@CacheKey boolean includeDeleted,@CacheKey LocalDateTime from) {
 		List<TopicDTO> topicDTOs = new ArrayList<>();
-		long totalRecord = find("topicId = ?1", new ObjectId(id)).count();
 
 		Topic topic = topicRepository.findById(new ObjectId(id));
 		
@@ -82,6 +81,8 @@ public class TopicVersionRepository implements PanacheMongoRepository<TopicVersi
 		Optional.ofNullable(from).ifPresent(value -> {
 			buffer.append(" and updatedDate > ?3");
 		});
+		
+		long totalRecord = find(buffer.toString(), new ObjectId(id),includeDeleted,from).count();
 
 		PanacheQuery<TopicVersion> topics = find(buffer.toString(), new ObjectId(id),includeDeleted,from);
 		if (size > 0) {

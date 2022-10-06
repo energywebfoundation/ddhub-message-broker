@@ -256,6 +256,7 @@ public class Message {
         messageResponse.add(success, failed);
 
         this.logger.info("[PUBLISH][" + DID + "][" + requestId + "] result success messageIds : " + messageIds);
+        messageIds.clear();
 
         return Response.ok().entity(messageResponse).build();
 
@@ -431,6 +432,9 @@ public class Message {
                     } else {
                         break;
                     }
+                    
+                    natPayload.clear();
+                    natPayload = null;
                 }
                 if (messageDTOs.size() == messageDTO.getAmount()) {
                     break;
@@ -447,6 +451,8 @@ public class Message {
             if (nc != null) {
             	messageNats.forEach(m -> m.ack());
                 nc.close();
+                messageNats.clear();
+                messageIds.clear();
             }
         }
         
@@ -555,6 +561,9 @@ public class Message {
                     } else {
                         break;
                     }
+                    
+                    natPayload.clear();
+                    natPayload = null;
                 }
                 if (messageDTOs.size() == messageDTO.getAmount()) {
                     break;
@@ -571,6 +580,7 @@ public class Message {
             if (nc != null) {
                 messageNats.forEach(m -> m.nak());
                 nc.close();
+                messageNats.clear();
             }
         }
 
@@ -579,6 +589,7 @@ public class Message {
 
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
+        messageIds.clear();
 
         return Response.ok().entity(messageDTOs).build();
     }
@@ -649,6 +660,8 @@ public class Message {
                     } else {
                         break;
                     }
+                    natPayload.clear();
+                    natPayload = null;
                 }
                 if (messageIds.size() == messageDTO.getAmount()) {
                     break;
@@ -671,6 +684,7 @@ public class Message {
             }
         }
         this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
+        
         return Response.ok().entity(messageIds).build();
     }
 

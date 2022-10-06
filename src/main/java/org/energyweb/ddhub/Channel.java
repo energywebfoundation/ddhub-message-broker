@@ -170,7 +170,10 @@ public class Channel {
         channelDTO.setFqcn(DID);
         Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
-        List<String> result = jsm.getConsumerNames(channelDTO.streamName());
+        Set<String> result = new HashSet<String>();
+        jsm.getConsumerNames(channelDTO.streamName()).forEach(id ->{
+        	result.add(id);
+        });
         nc.close();
 
         return Response.ok().entity(result).build();

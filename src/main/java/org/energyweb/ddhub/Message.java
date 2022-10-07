@@ -482,8 +482,7 @@ public class Message {
             nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
             builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
@@ -614,8 +613,7 @@ public class Message {
             nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
             builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());

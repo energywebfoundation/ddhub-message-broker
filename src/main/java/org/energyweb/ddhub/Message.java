@@ -319,7 +319,7 @@ public class Message {
                     	ReturnMessage errorMessage = new ReturnMessage();
                         errorMessage.setStatusCode(400);
                         errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
-                        this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]"
+                        this.logger.error("[PUBLISH][KEYS][1][" + DID + "][" + requestId + "]"
                                 + JsonbBuilder.create().toJson(errorMessage));
                     }
                 }
@@ -335,7 +335,7 @@ public class Message {
             errorMessage.setStatusCode(400);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
             this.logger
-                    .error("[PUBLISH][3][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+                    .error("[PUBLISH][KEYS][2][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
         } finally {
             if (nc != null) {
                 nc.flush(Duration.ZERO);
@@ -368,7 +368,7 @@ public class Message {
             JetStream js = nc.jetStream(natsJetStreamOption());
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
                     builder.buildPullSubscribeOptions());
@@ -484,6 +484,7 @@ public class Message {
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
                     .ackWait(Duration.ofSeconds(5));
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
@@ -615,6 +616,7 @@ public class Message {
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
                     .ackWait(Duration.ofSeconds(5));
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
 

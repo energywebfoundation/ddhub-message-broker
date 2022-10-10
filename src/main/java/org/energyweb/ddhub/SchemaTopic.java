@@ -154,8 +154,8 @@ public class SchemaTopic {
                 new IndexOptions().unique(true));
         
         Document indexsort = new Document("createdDate", 1);
-        index.append("updatedDate", 1);
-        index.append("deletedDate", 1);
+        indexsort.append("updatedDate", 1);
+        indexsort.append("deletedDate", 1);
         mongoClient.getDatabase(databaseName).getCollection("schema").createIndex(indexsort);
 
         Document version = new Document("topicId", 1);
@@ -220,6 +220,12 @@ public class SchemaTopic {
             mongoClient.getDatabase(db).createCollection("schema");
             mongoClient.getDatabase(db).getCollection("schema").dropIndexes();
             mongoClient.getDatabase(db).getCollection("schema").createIndex(index, new IndexOptions().unique(true));
+            
+            Document indexsort = new Document("createdDate", 1);
+            indexsort.append("updatedDate", 1);
+            indexsort.append("deletedDate", 1);
+            mongoClient.getDatabase(db).getCollection("schema").createIndex(indexsort);
+            
             mongoClient.getDatabase(db).getCollection("schema-temp").find().forEach((entity) -> {
                 try {
                     entity.append("deleted", false);

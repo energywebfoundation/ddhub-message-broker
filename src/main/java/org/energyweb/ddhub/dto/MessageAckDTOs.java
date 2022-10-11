@@ -15,11 +15,19 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class MessageAckDTOs{
-    @Valid
+
+	@Valid
     @NotNull
 	private List<@NotEmpty String> messageIds;
     
     @Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
 	private String clientId = "mb-default";
 
+    public int fetchAmount(long totalAckPending) {
+    	int fetchAmount = messageIds.size();
+		if(totalAckPending > 0 && totalAckPending > messageIds.size()) {
+			fetchAmount = (int) totalAckPending;
+		}
+		return (fetchAmount > SearchMessageDTO.MAX_FETCH_AMOUNT)?SearchMessageDTO.MAX_FETCH_AMOUNT:fetchAmount;
+	}
 }

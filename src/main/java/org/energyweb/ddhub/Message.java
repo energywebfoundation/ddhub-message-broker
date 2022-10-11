@@ -377,11 +377,11 @@ public class Message {
             boolean isDuplicate = false;
             
             while (messageDTOs.size() < messageDTO.getAmount()) {
-                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
-                // messages.forEach(m -> m.inProgress());
+            	List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
+                messages.sort((a, b) -> (a.metaData().streamSequence() >= b.metaData().streamSequence())? 1:-1);
                 for (io.nats.client.Message m : messages) {
                     m.inProgress();
                     if (m.isStatusMessage()) {
@@ -449,6 +449,7 @@ public class Message {
             this.logger.error("[SearchMessage][KEYS][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {
             if (nc != null) {
+            	nc.flush(Duration.ofSeconds(0));
             	messageNats.forEach(m -> m.ack());
                 nc.close();
                 messageNats.clear();
@@ -461,7 +462,7 @@ public class Message {
 
         return Response.ok().entity(messageDTOs).build();
     }
-
+    
     @Counted(name = "search_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "search_post_timed", description = "", tags = {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
@@ -490,10 +491,11 @@ public class Message {
 
             boolean isDuplicate = false;
             while (messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
-                List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
+                List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
+                messages.sort((a, b) -> (a.metaData().streamSequence() >= b.metaData().streamSequence())? 1:-1);
                 for (io.nats.client.Message m : messages) {
                     if (m.isStatusMessage()) {
                         m.nak();
@@ -516,6 +518,8 @@ public class Message {
                             .isEmpty()) {
                         if(messageDTO.getTopicId().size() > 1) {
                         	m.ack();
+                        }else {
+                        	m.nak();
                         }
                     	continue;
                     }
@@ -565,6 +569,7 @@ public class Message {
                     natPayload.clear();
                     natPayload = null;
                 }
+                
                 if (messageDTOs.size() == messageDTO.getAmount()) {
                     break;
                 }
@@ -578,8 +583,12 @@ public class Message {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {
             if (nc != null) {
-                messageNats.forEach(m -> m.nak());
+            	nc.flush(Duration.ofSeconds(0));
+                messageNats.forEach(m -> {
+                	m.nak();
+                });
                 nc.close();
+                
                 messageNats.clear();
             }
         }
@@ -620,14 +629,14 @@ public class Message {
 
             nc.flush(Duration.ofSeconds(1));
             boolean isDuplicate = false;
+            long pendingCounter = sub.getConsumerInfo().getNumAckPending() > messageDTO.getAmount() ? sub.getConsumerInfo().getNumAckPending() : messageDTO.getAmount();
             while (messageIds.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
-                List<io.nats.client.Message> messages = sub
-                        .fetch(ackDTOs.getMessageIds().size() < SearchMessageDTO.MIN_FETCH_AMOUNT
-                                ? SearchMessageDTO.MIN_FETCH_AMOUNT
-                                : ackDTOs.getMessageIds().size(), Duration.ofSeconds(3));
+                List<io.nats.client.Message> messages = sub.fetch(ackDTOs.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
+                
+                messages.sort((a, b) -> (a.metaData().streamSequence() >= b.metaData().streamSequence())? 1:-1);
                 for (io.nats.client.Message m : messages) {
 
                     if (m.isStatusMessage()) {
@@ -641,6 +650,7 @@ public class Message {
                     String messageId = (String) natPayload.get("messageId");
 
                     if (!ackDTOs.getMessageIds().contains(messageId)) {
+                    	m.nak();
                         continue;
                     }
 
@@ -669,6 +679,11 @@ public class Message {
                 
                 if (isDuplicate) {
                     break;
+                }
+                
+                pendingCounter -= messages.size();
+                if(pendingCounter <= 0) {
+                	break;
                 }
             }
             

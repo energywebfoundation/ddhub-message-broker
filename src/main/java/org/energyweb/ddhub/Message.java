@@ -256,6 +256,7 @@ public class Message {
         messageResponse.add(success, failed);
 
         this.logger.info("[PUBLISH][" + DID + "][" + requestId + "] result success messageIds : " + messageIds);
+        messageIds.clear();
 
         return Response.ok().entity(messageResponse).build();
 
@@ -318,7 +319,7 @@ public class Message {
                     	ReturnMessage errorMessage = new ReturnMessage();
                         errorMessage.setStatusCode(400);
                         errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
-                        this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]"
+                        this.logger.error("[PUBLISH][KEYS][1][" + DID + "][" + requestId + "]"
                                 + JsonbBuilder.create().toJson(errorMessage));
                     }
                 }
@@ -334,7 +335,7 @@ public class Message {
             errorMessage.setStatusCode(400);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
             this.logger
-                    .error("[PUBLISH][3][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+                    .error("[PUBLISH][KEYS][2][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
         } finally {
             if (nc != null) {
                 nc.flush(Duration.ZERO);
@@ -367,7 +368,7 @@ public class Message {
             JetStream js = nc.jetStream(natsJetStreamOption());
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
                     builder.buildPullSubscribeOptions());
@@ -431,6 +432,9 @@ public class Message {
                     } else {
                         break;
                     }
+                    
+                    natPayload.clear();
+                    natPayload = null;
                 }
                 if (messageDTOs.size() == messageDTO.getAmount()) {
                     break;
@@ -447,6 +451,8 @@ public class Message {
             if (nc != null) {
             	messageNats.forEach(m -> m.ack());
                 nc.close();
+                messageNats.clear();
+                messageIds.clear();
             }
         }
         
@@ -476,8 +482,8 @@ public class Message {
             nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
@@ -508,10 +514,14 @@ public class Message {
 
                     if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst()
                             .isEmpty()) {
-                        continue;
+                        if(messageDTO.getTopicId().size() > 1) {
+                        	m.ack();
+                        }
+                    	continue;
                     }
 
                     if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+                    	m.ack();
                         continue;
                     }
 
@@ -551,6 +561,9 @@ public class Message {
                     } else {
                         break;
                     }
+                    
+                    natPayload.clear();
+                    natPayload = null;
                 }
                 if (messageDTOs.size() == messageDTO.getAmount()) {
                     break;
@@ -567,6 +580,7 @@ public class Message {
             if (nc != null) {
                 messageNats.forEach(m -> m.nak());
                 nc.close();
+                messageNats.clear();
             }
         }
 
@@ -575,6 +589,7 @@ public class Message {
 
         this.logger.info(
                 "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
+        messageIds.clear();
 
         return Response.ok().entity(messageDTOs).build();
     }
@@ -598,8 +613,8 @@ public class Message {
             nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
 
-            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable())
-                    .ackWait(Duration.ofSeconds(5));
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
 
@@ -645,6 +660,8 @@ public class Message {
                     } else {
                         break;
                     }
+                    natPayload.clear();
+                    natPayload = null;
                 }
                 if (messageIds.size() == messageDTO.getAmount()) {
                     break;
@@ -667,6 +684,7 @@ public class Message {
             }
         }
         this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
+        
         return Response.ok().entity(messageIds).build();
     }
 

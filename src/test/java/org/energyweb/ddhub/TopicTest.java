@@ -249,7 +249,7 @@ public class TopicTest {
 		String[] roles = new String[] { "topiccreator.roles.messagebroker.apps.energyweb.iam.ewc",
 				"topiccreator.roles.ddhub-1.apps.energyweb.iam.ewc",
 				"topiccreator.roles.ddhub-1.apps.energyweb1.iam.ewc", "topiccreator.roles.ddhub.apps.energyweb.iam.ewc",
-				"user.roles.ddhub.apps.energyweb.iam.ewc" };
+				"user.roles.ddhub.apps.energyweb.iam.ewc","admin.roles.ddhub.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
 				.claim("roles", new JSONArray(List.of(roles)))

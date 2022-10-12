@@ -7,35 +7,50 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.jvm -t quarkus/ddhub-message-broker-jvm .
+# docker build -f src/main/docker/Dockerfile.jvm -t energyweb/ddhub-messagebroker .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/ddhub-message-broker-jvm
+# docker run -i --rm -p 9000:9000 energyweb/ddhub-messagebroker
 #
 # If you want to include the debug port into your docker image
-# you will have to expose the debug port (default 5005) like this :  EXPOSE 8080 5005
+# you will have to expose the debug port (default 5005) like this :  EXPOSE 9000 5005
 #
 # Then run the container using :
 #
-# docker run -i --rm -p 8080:8080 quarkus/ddhub-message-broker-jvm
+# docker run -i --rm -p 9000:9000 -p 5005:5005 energyweb/ddhub-messagebroker
 #
 ###
-FROM registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10
+FROM amazoncorretto:11-alpine
+
+ARG worker_gid=1001
+ARG worker_uid=1001
+ARG worker_gname=worker
+ARG worker_uname=worker
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
-ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_OPTIONS="-Xms650m -Xms650m -Xss6m -XshowSettings:vm -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+
+# Installing system tools
+RUN apk update &&\ 
+    apk upgrade &&\
+    apk add bind-tools curl
+
+# Add worker user/group
+RUN addgroup -g ${worker_gid} ${worker_gname} && \
+    adduser -h /deployments -u ${worker_uid} -s /bin/sh -D -G ${worker_gname} ${worker_uname}
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --chown=${worker_uid} target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=${worker_uid} target/quarkus-app/*.jar /deployments/
+COPY --chown=${worker_uid} target/quarkus-app/app/ /deployments/app/
+COPY --chown=${worker_uid} target/quarkus-app/quarkus/ /deployments/quarkus/
 
-EXPOSE 8080
-USER 185
+EXPOSE 9000
+USER ${worker_uid}
+WORKDIR /deployments
 
-ENTRYPOINT [ "java", "-jar", "/deployments/quarkus-run.jar" ]
+ENTRYPOINT [ "java","-XX:+UseG1GC","-Xms650m","-Xmx650m","-Xss6m","-XshowSettings:vm", "-jar", "/deployments/quarkus-run.jar" ]
 

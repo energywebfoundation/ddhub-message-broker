@@ -24,6 +24,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class ChannelDTO extends DDHub {
+	public static final long DEFAULT_DUPLICATE_WINDOW = 120;
+	public static final int DEFAULT_CLIENT_ID_SIZE = 50;
+	public static final int MAX_RECONNECTS = 3;
+	public static final long TIMEOUT = 5;
 
     @NotNull
     @Max(value = 86400000)

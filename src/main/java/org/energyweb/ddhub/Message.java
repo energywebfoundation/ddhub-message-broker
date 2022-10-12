@@ -9,8 +9,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -35,9 +39,9 @@ import javax.ws.rs.core.Response;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.bson.types.ObjectId;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -51,6 +55,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.energyweb.ddhub.dto.FileUploadChunkDTOs;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
+import org.energyweb.ddhub.dto.MessageAckDTOs;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MessageDTOs;
 import org.energyweb.ddhub.dto.SearchInternalMessageDTO;
@@ -61,7 +66,6 @@ import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
-import org.energyweb.ddhub.repository.MessageRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
 import org.energyweb.ddhub.repository.TopicVersionRepository;
 import org.jboss.logging.Logger;
@@ -70,8 +74,10 @@ import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
+import io.nats.client.JetStreamOptions;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
+import io.nats.client.Options;
 import io.nats.client.PublishOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
@@ -112,9 +118,6 @@ public class Message {
     FileUploadRepository fileUploadRepository;
 
     @Inject
-    MessageRepository messageRepository;
-
-    @Inject
     @Claim(value = "did")
     String DID;
 
@@ -128,13 +131,17 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID", defaultValue = "20220510")
     String clientIdPostfix;
 
+    @HeaderParam("X-Request-Id")
+    String requestId;
+
     @Counted(name = "messages_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
     @Timed(name = "messages_post_timed", description = "", tags = {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
     @Authenticated
-    public Response publish(@Valid @NotNull MessageDTOs messageDTOs) {
+    public Response publish(@Valid @NotNull MessageDTOs messageDTOs)
+            throws InterruptedException, TimeoutException, IOException {
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
         List<String> fqcns = new ArrayList<String>();
         List<ReturnMessage> success = new ArrayList<ReturnMessage>();
@@ -142,24 +149,28 @@ public class Message {
         messageDTOs.getFqcns().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
                 failed.add(item);
-                this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(item));
+                this.logger.error("[PUBLISH][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(item));
             }, () -> {
                 fqcns.add(fqcn);
             });
         });
-
+        Connection nc = null;
+        HashSet<String> messageIds = new HashSet<String>();
+        List<CompletableFuture<PublishAck>> futures = new ArrayList<>();
+        HashMap<CompletableFuture<PublishAck>,MessageDTO> futuresMap = new HashMap<>();
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
-
-            JetStream js = nc.jetStream();
-            PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                    .messageId(messageDTOs.getTransactionId());
-
+            nc = Nats.connect(natsConnectionOption());
+            
+            JetStream js = nc.jetStream(natsJetStreamOption());
             fqcns.forEach(fqcn -> {
 
                 MessageDTO messageDTO = messageDTOs;
                 messageDTO.setFqcn(fqcn);
-                String id = messageRepository.save(messageDTO, DID);
+                messageDTO.setSenderDid(DID);
+                String id = new ObjectId().toHexString();
+                
+                PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
+                        .messageId(messageDTO.createNatsTransactionId()).stream(messageDTO.streamName());
 
                 JsonObjectBuilder builder = Json.createObjectBuilder();
                 builder.add("messageId", id);
@@ -170,43 +181,83 @@ public class Message {
                 builder.add("sender", DID);
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-                builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+                builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
                 builder.add("isFile", messageDTO.getIsFile());
 
-                try {
-                    PublishAck pa = js.publish(messageDTO.subjectName(),
-                            builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                            (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
-                    ReturnMessage successMessage = new ReturnMessage();
-                    successMessage.setDid(fqcn);
-                    successMessage.setStatusCode(200);
-                    successMessage.setMessageId(id);
-                    success.add(successMessage);
-                } catch (IOException | JetStreamApiException ex) {
-                    ReturnMessage errorMessage = new ReturnMessage();
-                    errorMessage.setStatusCode(500);
-                    errorMessage.setDid(fqcn);
-                    errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
-                    failed.add(errorMessage);
-                    this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
-                }
+                CompletableFuture<PublishAck> pa = js.publishAsync(messageDTO.subjectName(),
+                		builder.build().toString().getBytes(StandardCharsets.UTF_8),
+                		(messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+                futures.add(pa);
+                MessageDTO _messageDTO = new MessageDTO();
+                _messageDTO.setFqcn(fqcn);
+                _messageDTO.setId(id);
+                futuresMap.put(pa, _messageDTO);
+                
             });
+            
+            while (futures.size() > 0) {
+            	CompletableFuture<PublishAck> f = futures.remove(0);
+                if (f.isDone()) {
+                    try {
+                        PublishAck pa = f.get();
+                        MessageDTO messageDTO = futuresMap.get(f);
+                        if (!pa.isDuplicate()) {
+                            ReturnMessage successMessage = new ReturnMessage();
+                            successMessage.setDid(messageDTO.getFqcn());
+                            successMessage.setStatusCode(200);
+                            successMessage.setMessageId(messageDTO.getId());
+                            success.add(successMessage);
+                            messageIds.add(messageDTO.getId());
+                        } else {
+                            ReturnMessage errorMessage = new ReturnMessage();
+                            errorMessage.setStatusCode(400);
+                            errorMessage.setDid(messageDTO.getFqcn());
+                            errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Duplicate transaction id."));
+                            failed.add(errorMessage);
+                            this.logger
+                                    .error("[PUBLISH][1][" + DID + "][" + requestId + "]"
+                                            + JsonbBuilder.create().toJson(errorMessage));
+                        }
+                    }
+                    catch (ExecutionException ex) {
+                    	ReturnMessage errorMessage = new ReturnMessage();
+                        errorMessage.setStatusCode(400);
+                        errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
+                        failed.add(errorMessage);
+                        this.logger.error("[PUBLISH][2][" + DID + "][" + requestId + "]"
+                                + JsonbBuilder.create().toJson(errorMessage));
+                    }
+                }
+                else {
+                    futures.add(f);
+                }
+            }
+            
+            futuresMap.clear();
 
-            nc.flush(Duration.ZERO);
-            nc.close();
-
-        } catch (IOException | TimeoutException | InterruptedException ex) {
+        } catch (InterruptedException ex) {
             ReturnMessage errorMessage = new ReturnMessage();
-            errorMessage.setStatusCode(500);
+            errorMessage.setStatusCode(400);
             errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
             failed.add(errorMessage);
-            this.logger.error("[" + DID + "]" + JsonbBuilder.create().toJson(errorMessage));
+            this.logger
+                    .error("[PUBLISH][3][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+        } finally {
+            if (nc != null) {
+                nc.flush(Duration.ZERO);
+                nc.close();
+            }
         }
+
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
         messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(), success.size(), failed.size()));
         messageResponse.add(success, failed);
+
+        this.logger.info("[PUBLISH][" + DID + "][" + requestId + "] result success messageIds : " + messageIds);
+        messageIds.clear();
+
         return Response.ok().entity(messageResponse).build();
 
     }
@@ -221,37 +272,79 @@ public class Message {
     public Response publishInternal(@Valid @NotNull InternalMessageDTO internalMessageDTO)
             throws InterruptedException, JetStreamApiException, TimeoutException, IOException {
 
-        MessageDTO messageDTO = new MessageDTO();
-        messageDTO.setFqcn(internalMessageDTO.getFqcn());
-        messageDTO.setPayload(internalMessageDTO.getPayload());
-        messageDTO.setClientGatewayMessageId(internalMessageDTO.getClientGatewayMessageId());
-        messageDTO.setTopicId(internalTopicId);
+    	Connection nc = null;
+    	HashMap<String, String> map = new HashMap<>();
+    	List<CompletableFuture<PublishAck>> futures = new ArrayList<>();
+        HashMap<CompletableFuture<PublishAck>,MessageDTO> futuresMap = new HashMap<>();
+        
+        try {
+        	MessageDTO messageDTO = new MessageDTO();
+            messageDTO.setFqcn(internalMessageDTO.getFqcn() + ".keys");
+            messageDTO.setPayload(internalMessageDTO.getPayload());
+            messageDTO.setClientGatewayMessageId(internalMessageDTO.getClientGatewayMessageId());
+            messageDTO.setTopicId(internalTopicId);
 
-        Connection nc = Nats.connect(natsJetstreamUrl);
+            nc = Nats.connect(natsConnectionOption());
 
-        JetStream js = nc.jetStream();
-        PublishOptions.Builder pubOptsBuilder = PublishOptions.builder()
-                .messageId(messageDTO.getTransactionId());
+            JetStream js = nc.jetStream(natsJetStreamOption());
 
-        String id = messageRepository.save(messageDTO, DID);
+            String id = UUID.randomUUID().toString();
 
-        JsonObjectBuilder builder = Json.createObjectBuilder();
-        builder.add("messageId", id);
-        builder.add("payload", messageDTO.getPayload());
-        builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
-        builder.add("sender", DID);
-        builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
-        builder.add("timestampNanos", String.valueOf(TimeUnit.NANOSECONDS.toNanos(new Date().getTime())));
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("messageId", id);
+            builder.add("payload", messageDTO.getPayload());
+            builder.add("transactionId", Optional.ofNullable(messageDTO.getTransactionId()).orElse(""));
+            builder.add("sender", DID);
+            builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
+            builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
 
-        PublishAck pa = js.publish(messageDTO.subjectName(),
-                builder.build().toString().getBytes(StandardCharsets.UTF_8),
-                (messageDTO.getTransactionId() != null) ? pubOptsBuilder.build() : null);
+            
+            CompletableFuture<PublishAck> pa = js.publishAsync(messageDTO.subjectName(),
+            		builder.build().toString().getBytes(StandardCharsets.UTF_8));
+            futures.add(pa);
+            MessageDTO _messageDTO = new MessageDTO();
+            _messageDTO.setFqcn(messageDTO.getFqcn());
+            _messageDTO.setId(id);
+            futuresMap.put(pa, _messageDTO);
+            
+            
+            while (futures.size() > 0) {
+            	CompletableFuture<PublishAck> f = futures.remove(0);
+                if (f.isDone()) {
+                    try {
+                        PublishAck _pa = f.get();
+                        map.put("messageId", id);
+                    }
+                    catch (ExecutionException ex) {
+                    	ReturnMessage errorMessage = new ReturnMessage();
+                        errorMessage.setStatusCode(400);
+                        errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
+                        this.logger.error("[PUBLISH][KEYS][1][" + DID + "][" + requestId + "]"
+                                + JsonbBuilder.create().toJson(errorMessage));
+                    }
+                }
+                else {
+                    futures.add(f);
+                }
+            }
+            
+            futuresMap.clear();
 
-        nc.flush(Duration.ZERO);
-        nc.close();
-
-        HashMap<String, String> map = new HashMap<>();
-        map.put("messageId", id);
+        } catch (InterruptedException ex) {
+            ReturnMessage errorMessage = new ReturnMessage();
+            errorMessage.setStatusCode(400);
+            errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", ex.getMessage()));
+            this.logger
+                    .error("[PUBLISH][KEYS][2][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(errorMessage));
+        } finally {
+            if (nc != null) {
+                nc.flush(Duration.ZERO);
+                nc.close();
+            }
+        }
+        
+        this.logger.info("[PUBLISH][KEYS][" + DID + "][" + requestId + "] result success messageId : " + map.get("messageId"));
+        
         return Response.ok().entity(map).build();
     }
 
@@ -264,21 +357,25 @@ public class Message {
     @Authenticated
     public Response searchInternal(@Valid @NotNull SearchInternalMessageDTO messageDTO)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        messageDTO.setFqcn(DID);
+        messageDTO.setFqcn(DID + ".keys");
 
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
+        HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
+        HashSet<String> messageIds = new HashSet<String>();
+        Connection nc = null;
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
-            JetStream js = nc.jetStream();
+            nc = Nats.connect(natsConnectionOption());
+            JetStream js = nc.jetStream(natsJetStreamOption());
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-            // builder.durable(messageDTO.getClientId()); // required
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectName(internalTopicId),
                     builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
 
+            boolean isDuplicate = false;
+            
             while (messageDTOs.size() < messageDTO.getAmount()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
                 // messages.forEach(m -> m.inProgress());
@@ -311,20 +408,57 @@ public class Message {
 
                     MessageDTO message = new MessageDTO();
                     message.setPayload((String) natPayload.get("payload"));
-                    message.setFqcn(messageDTO.getFqcn());
+                    message.setFqcn(DID);
                     message.setId((String) natPayload.get("messageId"));
                     message.setSenderDid(sender);
                     message.setTimestampNanos(Long.valueOf((String) natPayload.get("timestampNanos")).longValue());
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
-                    messageDTOs.add(message);
-                    m.ack();
+
+                    if (messageDTOs.size() < messageDTO.getAmount()) {
+                    	m.inProgress();
+
+                        if (!messageIds.contains(message.getId())) {
+                            messageDTOs.add(message);
+                            messageIds.add(message.getId());
+                            messageNats.add(m);
+                        } else {
+                            this.logger.warn(
+                                    "[SearchMessage][KEYS][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                            isDuplicate = true;
+                            if (isDuplicate) {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                    
+                    natPayload.clear();
+                    natPayload = null;
+                }
+                if (messageDTOs.size() == messageDTO.getAmount()) {
+                    break;
+                }
+                if (isDuplicate) {
+                	break;
                 }
             }
-            // sub.unsubscribe();
-            nc.close();
+        } catch (TimeoutException ex) {
+            this.logger.error("[SearchMessage][KEYS][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
         } catch (IllegalArgumentException ex) {
-            this.logger.warn("[" + DID + "]" + ex.getMessage());
+            this.logger.error("[SearchMessage][KEYS][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
+        } finally {
+            if (nc != null) {
+            	messageNats.forEach(m -> m.ack());
+                nc.close();
+                messageNats.clear();
+                messageIds.clear();
+            }
         }
+        
+        this.logger.info(
+                "[SearchMessage][KEYS][" + DID + "][" + requestId + "] SearchMessage keys result size " + messageDTOs.size());
+
         return Response.ok().entity(messageDTOs).build();
     }
 
@@ -336,30 +470,31 @@ public class Message {
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
     @Authenticated
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
-            throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
-        topicRepository.validateTopicIds(messageDTO.getTopicId());
-        // channelRepository.validateChannel(messageDTO.getFqcn(),topicId,DID);
+            throws InterruptedException, TimeoutException, IOException, JetStreamApiException {
+        topicRepository.validateTopicIds(messageDTO.getTopicId(), true);
         messageDTO.setFqcn(DID);
 
-        List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+        HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
+        HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
+        HashSet<String> messageIds = new HashSet<String>();
+        Connection nc = null;
         try {
-            Connection nc = Nats.connect(natsJetstreamUrl);
-            JetStream js = nc.jetStream();
+            nc = Nats.connect(natsConnectionOption());
+            JetStream js = nc.jetStream(natsJetStreamOption());
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
-            builder.maxAckPending(Duration.ofSeconds(5).toMillis());
-            // builder.durable(messageDTO.getClientId()); // required
+            builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
 
-            while (messageDTOs.size() < messageDTO.getAmount()) {
+            boolean isDuplicate = false;
+            while (messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.getAmount(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }
                 for (io.nats.client.Message m : messages) {
-                    m.inProgress();
                     if (m.isStatusMessage()) {
                         m.nak();
                         continue;
@@ -379,10 +514,14 @@ public class Message {
 
                     if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst()
                             .isEmpty()) {
-                        continue;
+                        if(messageDTO.getTopicId().size() > 1) {
+                        	m.ack();
+                        }
+                    	continue;
                     }
 
                     if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
+                    	m.ack();
                         continue;
                     }
 
@@ -399,23 +538,164 @@ public class Message {
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
                     message.setFromUpload((boolean) natPayload.get("isFile"));
                     message.setTransactionId((String) natPayload.get("transactionId"));
-                    
-                    if(messageDTOs.size() < messageDTO.getAmount()) {
-                    	messageDTOs.add(message);
-                    	m.ack();
-                    }else {
-                    	break;
+
+                    if (messageDTOs.size() < messageDTO.getAmount()) {
+                        if (messageDTO.isAck()) {
+                            m.ack();
+                        } else {
+                            m.inProgress();
+                        }
+
+                        if (!messageIds.contains(message.getId())) {
+                            messageDTOs.add(message);
+                            messageIds.add(message.getId());
+                            messageNats.add(m);
+                        } else {
+                            this.logger.warn(
+                                    "[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
+                            isDuplicate = true;
+                            if (isDuplicate) {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
                     }
+                    
+                    natPayload.clear();
+                    natPayload = null;
+                }
+                if (messageDTOs.size() == messageDTO.getAmount()) {
+                    break;
+                }
+                if (isDuplicate) {
+                	break;
                 }
             }
-            // sub.unsubscribe();
-            nc.close();
-
+        } catch (TimeoutException ex) {
+            this.logger.error("[SearchMessage][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
         } catch (IllegalArgumentException ex) {
-            this.logger.warn("[" + DID + "]" + ex.getMessage());
+            this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
+        } finally {
+            if (nc != null) {
+                messageNats.forEach(m -> m.nak());
+                nc.close();
+                messageNats.clear();
+            }
         }
-        this.logger.info("[" + DID + "] result size " + messageDTOs.size());
+
+        this.logger.info(
+                "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
+
+        this.logger.info(
+                "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
+        messageIds.clear();
+
         return Response.ok().entity(messageDTOs).build();
+    }
+
+    @Counted(name = "ack_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
+    @Timed(name = "ack_post_timed", description = "", tags = {
+            "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @POST
+    @Path("ack")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
+    @Authenticated
+    public Response natsAck(@Valid @NotNull MessageAckDTOs ackDTOs)
+            throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
+        SearchMessageDTO messageDTO = new SearchMessageDTO();
+        messageDTO.setFqcn(DID);
+        messageDTO.setClientId(ackDTOs.getClientId());
+        messageDTO.setAmount(ackDTOs.getMessageIds().size());
+        HashSet<String> messageIds = new HashSet<String>();
+        Connection nc = null;
+        try {
+            nc = Nats.connect(natsConnectionOption());
+            JetStream js = nc.jetStream(natsJetStreamOption());
+
+            Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
+            builder.maxAckPending(50000);
+
+            JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
+
+            nc.flush(Duration.ofSeconds(1));
+            boolean isDuplicate = false;
+            while (messageIds.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
+                List<io.nats.client.Message> messages = sub
+                        .fetch(ackDTOs.getMessageIds().size() < SearchMessageDTO.MIN_FETCH_AMOUNT
+                                ? SearchMessageDTO.MIN_FETCH_AMOUNT
+                                : ackDTOs.getMessageIds().size(), Duration.ofSeconds(3));
+                if (messages.isEmpty()) {
+                    break;
+                }
+                for (io.nats.client.Message m : messages) {
+
+                    if (m.isStatusMessage()) {
+                        m.nak();
+                        continue;
+                    }
+
+                    HashMap<String, Object> natPayload = JsonbBuilder.create().fromJson(new String(m.getData()),
+                            HashMap.class);
+
+                    String messageId = (String) natPayload.get("messageId");
+
+                    if (!ackDTOs.getMessageIds().contains(messageId)) {
+                        continue;
+                    }
+
+                    if (messageIds.size() < messageDTO.getAmount()) {
+                        m.ack();
+                        this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck for " + messageId);
+                        if (!messageIds.contains(messageId)) {
+                            messageIds.add(messageId);
+                        } else {
+                            this.logger.warn(
+                                    "[NatsAck][" + DID + "][" + requestId + "] Duplicate " + messageId);
+                            isDuplicate = true;
+                            if (isDuplicate) {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                    natPayload.clear();
+                    natPayload = null;
+                }
+                if (messageIds.size() == messageDTO.getAmount()) {
+                    break;
+                }
+                
+                if (isDuplicate) {
+                    break;
+                }
+            }
+            
+            
+
+        } catch (TimeoutException ex) {
+        	this.logger.error("[NatsAck][TimeoutException][" + DID + "][" + requestId + "]" + ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            this.logger.error("[NatsAck][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
+        } finally {
+            if (nc != null) {
+                nc.close();
+            }
+        }
+        this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
+        
+        return Response.ok().entity(messageIds).build();
+    }
+
+    private JetStreamOptions natsJetStreamOption() {
+        return JetStreamOptions.builder().requestTimeout(Duration.ofSeconds(MessageDTO.REQUEST_TIMEOUT)).build();
+    }
+
+    private Options natsConnectionOption() {
+        return new Options.Builder().server(natsJetstreamUrl).maxReconnects(MessageDTO.MAX_RECONNECTS)
+                .connectionTimeout(Duration.ofSeconds(MessageDTO.CONNECTION_TIMEOUT)). // Set timeout
+                build();
     }
 
     @Counted(name = "upload_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
@@ -449,11 +729,11 @@ public class Message {
             @HeaderParam("Authorization") String token) {
 
         Double chunks = Math.ceil(data.getFileSize() / data.getChunkSize());
-        File tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId());
+        File tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId() + ".enc");
 
         if (data.getCurrentChunkIndex() == 0 && tempFile.length() != 0l) {
             FileUtils.deleteQuietly(tempFile);
-            tempFile = new File(FileUtils.getTempDirectory(), data.getFileName());
+            tempFile = new File(FileUtils.getTempDirectory(), data.getClientGatewayMessageId() + ".enc");
         }
 
         try {
@@ -464,22 +744,22 @@ public class Message {
 
         if (data.getCurrentChunkIndex() == (chunks - 1)) {
             try {
+                String checksum = DigestUtils.sha256Hex(FileUtils.openInputStream(tempFile));
                 data.setFile(FileUtils.openInputStream(tempFile));
-                String checksum = DigestUtils.sha256Hex(data.getFile()); 
-                if(checksum.compareTo(data.getFileChecksum()) != 0) {
-                	ReturnMessage errorMessage = new ReturnMessage();
+                if (checksum.compareTo(data.getFileChecksum()) != 0) {
+                    ReturnMessage errorMessage = new ReturnMessage();
                     errorMessage.setStatusCode(400);
                     errorMessage.setDid(data.getFqcn());
                     errorMessage.setErr(new ReturnErrorMessage("MB::NATS_SERVER", "Checksum failed"));
-                    
-                	MessageResponse messageResponse = new MessageResponse();
+
+                    MessageResponse messageResponse = new MessageResponse();
                     messageResponse.setClientGatewayMessageId(data.getClientGatewayMessageId());
                     messageResponse.setRecipients(new Recipients(1, 0, 1));
                     messageResponse.add(Arrays.asList(), Arrays.asList(errorMessage));
-                	return Response.ok().entity(messageResponse).build();
+                    return Response.ok().entity(messageResponse).build();
                 }
             } catch (IOException e) {
-            	return Response.status(Response.Status.BAD_REQUEST).build();
+                return Response.status(Response.Status.BAD_REQUEST).build();
             } finally {
                 FileUtils.deleteQuietly(tempFile);
             }

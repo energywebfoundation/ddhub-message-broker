@@ -7,7 +7,7 @@ did-auth-proxy-helm:
   replicaCount: 1
 
   image:
-    repository: aemoprivatecontainerregistry.azurecr.io/did-auth-proxy
+    repository: aemocontainerregistry.azurecr.io/did-auth-proxy
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "canary"
@@ -59,10 +59,11 @@ did-auth-proxy-helm:
     JWT_REFRESH_TTL: 86400
 
   opsValues:
-    RPC_URL: https://volta-rpc-vkn5r5zx4ke71f9hcu0c.energyweb.org/
     CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
     REDIS_HOST: ddhub-messagebroker-dev-redis-master.ddhub-dev.svc
     REDIS_PORT: 6379
+    IPFS_HOST: ipfs.infura.io
+    IPFS_PORT: 5001
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -98,6 +99,10 @@ did-auth-proxy-helm:
       REDIS_PASSWORD: AgBIHyerixwyz3/OD7cKjLDzGKrDg+i/VEsRMoJvmrNvB3hBtTs6EDU2FfsF5DjZaCeG7u2ll4rqOIyBwEspNS8DB8LsaJ2Cz+CKQ2QBpJhf9EEUyDi2FCqJJWP/GNLBalM7W8u9OI6uOLtseMJnDvMffjK7qDpKvyEWpkbABYAtGUtR4GWEyYz7zCZNSSugg4AB+BeQSmHwNaNtqimAoTSKY1jvnRIpPxtkbbqhKJuisjkFM9eM5UMnF/OMXkOf8YUK4ny31Gr2+YgNzs4kvz8hO/cSLAX/VoZBG6KkkwvnU2SkrzyYLHoXne+jo5rFRDgiK6h3JJsI3jJOZYrJd+ZjbKUPv4kEtGb5Lt6qDXYuIEiyt4DJtr26gjrxGzE/78jRBZFMu0UIKjlLy58lNuA5yW1m/uHjGy+uhzOi+EOnwi5QEU9UBPzlQdLW6mQeFD9Chizrw3aj0g+IIxT5ZWvlrPGKV+TkkNULMPs9jGncfOE2zaYVsWj0u2w1YB0jsDT0kQDb9L7CCGOcU6d4NBBcC5zzv3HIw1wU4HHgoW/SikBLSPxJOv8FN6BSx5Y7IY2GGAgutS10pheuQV9lhl8mxfLOBb+7dhcjjB4eMw4k8WE9aiZwn3RShotT32+A6ZRWm6if6qu/90uVnbAYYp2fTlPlEwcpYYgH/mXmingMtFZZ5EXa+iY2+LnXgWZHeVnCJFgL9wlrUE1RV3lg/DKVHA==
       DID_REGISTRY_ADDRESS: AgCTOiNaoSGo86fQUhwJvxTm/N1VCRD51oBoSbL/w/R/Xwdf5hi3JYVlRf4NwwecK5tat3dhbTDwXKO7EtJp9Y/bMAaDaRHv1BW6Mlmp5tkU5GH6aCDHB35tZ8L12+1bFB1ERvVt7/+uUmaHwiPOE1FX/NlRzFZ8ZtbbrBcOUlLt0sB0xsaAvtv4pohDuqjz8HLKalpLqKTiPAYpWhyWrV+Ay6iVyKKzMU0HkExx1W9pkWQqbL2pus2W8EB407HnC7MU1yKAZil9F9G2H4Njvr9s2oV2GJO/CB8pQECKGtF1BTOYcb9QW+G4Ou+Sv1gIq3/0Dm9MIzSAcy434Fk730nO0hI4Ryyk1NyTksZJ3MHa+UBhtGFGpdteE2CE0f8OTKZv1q1PXirQtNLOl1HdIVGPTSQ7ZaSKGoUbCFEcWkxxgcLzaRJ2daKmpMaJ/3cKNPHkJqzMExB0oa9xbC9bWvnPn0rwVVskpGgWj4+hAwns5WCOK6lMe43xYJwSoaKYtadzAAfzRqFSvfHVwS4har1MW5bYaTk0FwI2+bZEWKC2cYdoY4VD6LR5eIIpsuVQKrI5V6XydrKH3+PBkkog4fiQiRSKkMYAVNKSRoTuHIMcT2If+ZYUcWxLN9MH6fv83vWvZ/IZdCgZ0h39tContG1SoxjgfInpZWT2yYnDXbXgMEAvF6Qb+79Hx5RYzEuqWeVT8L5BipPiQCNioP7gXaRcryJbHmV/Fe3/BRhlcqg6+L4qfTAeE3PMwRo=
       ENS_REGISTRY_ADDRESS: AgCCdoo8U74GvEfAbwLDFe1Q/TU4aoZheafFReODRW62DDfn2E3WqF3Zwwt+B9/N9ZUcEtMzylxu6Sx6/RHYR84gUhwJjDtv4DnHYnvP6yAntg3eWeGT3jSJaYF2HciM4im8OyRbXUdj2y6QdftKWkVdcyzGLOhG0KVYuTe6rB57Kw60MLzrV41hMTu0reGqwg918k8Or3+YVv+N5wVcKfHVaC3At5UCLE5oN26SQ3vat4FqxzVNugJgCHSU1QFMYjTs6r8UI01caSW5MhBgl+9pSaZf30wIqq7uio+2jFK+LGaS9f9H5DgZVmzkN/zYNRcJL4Z1Guy6jXK09/pd+RhZ7FQhQrbViIlgl4cpR+abSpymo89o6vmrPtyTR8K5itfkzs4uBa87fRj3CGnIETec8eKsU/aGuXoTlltxDtG/6SV6lAWZeAasQDKJ09esLnYqIzInlSGaUOaNOidf4uq/PimgcY+DUZn9x5C5zDSAP0huNTkG4hDntut2sD1VsBxUj7Qk3kLWaK+7xytV5lxoXAe417nK08tDLv7SxRXl3dHC7lBs5Z50osjevwlJA2lAlv7PHSzccr0NZCytzbvBcA+/Qs7Kv7a+hBKgEpveYnTqdMXnSF1/9XDWDf+wicuuFlY92jffW8HDQSIBOsGlUKpSY6XmKPysOM4nH2hKPi0fdSGKAA5F8XnvwSApIpczf6lR5QvIx/PNIUxQADEnSMyA1XM/Zw99hTN8KBpIkowvzaA3RpNHGw4=
+      RPC_URL: AgBuXHvh9H8weIjYGaZYfKf6LsH2sZwut/9dHSQVZDCl8JpvUAqukkFGaGy0N7+m1BBhfY1FAkiopEEA/uErsg7rbJyJWLHPee3AxSFp+YV8YKjHgsYkkhxP72Ou/xv2dyPjuqSbvUYnrarFpjDn/NjGcebo9OZXbcORXCT6glbnCKtcZZx0sCKKYwTtGii6Vhes/YxRpMHX7DYCiOqnsvs+YLgZ2ovK7Y2EIPnEEiq/IFHeC9fNT8ApmGyXojFnzmaw7+2ny5JzXeL1nekBoy6H20IGDRKBcxO2jts1CZd0C0Kmmp3Pksx3tfAk+7QAzaHtnahmjlXaNa0ECD+/xC+jr1xJASvLnianchMsKRH14jS0oLwOFWKMmDVWLcOWoX4jkMU9QLhaU1kHL4uarqaMSsi9fsiZr3XmSeFn9OvKJCGylFj7Un05wyH7orh85PjBtvDUYpXS3LkvLgg0ovi/GnH6AP2LZN1oZagpZ+Fs2FRONYScK8i3L/TLMRyPjnAnWpcO3aUL23EpRZBeZ/NBiBdpAO3WLkk+rSpa1VcJk6vXpbQ22oG7KBXJ47D12GM5IQq/qfH5zDL0pS6VeohTGhqgeafeHbF9c6ZdvSIy3jyq5TfJ3A1oEYVwkTg4X+OrDhZp8pqTJGQ4RRRZQ2PJViJOC0ZG0VkHQ51rmXhcRXBt6jUJLYfars8VDGuMoDXyD8Eh8AYYn+/2XE8WVY+7CxdExuX9dN6z2Ct4vMTZ6jfbbYJXG9MuhL52YnN3CDCOcqbWgA==
+      IPFS_PROJECTID: AgBPaD7Pi84iLORYVS1JrKggEjQo7aH05sa9W6eXTvv4CtJFDh0CsI0MJF8w5It6DyCchb8Ms/XplcsC6Ms+0Dg1jGRo3OpWg7b194XIicPBlM3ISPIFrlOb2jVXNZARz8tb8Q+poKkDm6g1ZYrW79g6PSm+xmGQ3IvqnvY13evb6t0Dwp4Zj0YPlo6SNzY0v2asIlZ1JfQqmVX+PuXPGS5iooeistYmP8te/wZWVjO0QNE/0zghMVgXToC3rfMYsYhCE5HTIFmNE01BwotFz6z/FekR4sjE3oP9gUzj/whEriKZQI1noLdHmrjVY8+LM2a/5XK451M9r6Ij81Gm4f+R+PKzW7bKKxMKgcplm2OmwiXonn2IQ1lMb+forwkYr/RwRA/cWwy+MPWYJKidKsX+hxM2mxbRpHr8z/l96pl80TR1GBag1jXon5iyTCvB5Ms/TIyM/jD/LjB8+M2Uuqw30bf4Kt79hYrRtFge0o9U0W9yPIZSs+4XTNsQgJfqSQOZZ322mShDBECZqf3F5bVEOhfa3R/c+RRWjOKA1EONMCjz5WgC/Pxv71fqy30qUV2eV6CPn3CsHdTmwDHeJcPf0kPx+J0Uh52lJyjBN+bU//v8RG7BgE8nrCKroKypQnlRo3GdiBHHgGIRmzvzo+DFHuT1rCloNXCQf9F2kb4Sx8nIKNAMh0qrdl0dqGlwLtsqwz3tXncsbLI1i7SVEmyjifP8D5hhZnjuq2c=
+      IPFS_PROJECTSECRET: AgAATbHRDlMXF5iUKg9tauxxvfE5F5hGk6pyera0v8YFBzdBZ8l1RFq9GwNZY+TR0J5jQpoUdTp25dqAVKY2GSm1JaNF4TrKkoTprWidtQgNVxEQxkDDS1j5+9PodoDg/Fbt4YcZgV/StK4EgOp+R21iTj5REeUL3AtgwIbXZVl4IXum2onSZfeVc7W1CYSnwima3Zvbz8RHjj2NIkR2VvKmspfR5qLE6ozTq2eCN6/rKV+eDjB4ic56xVc5EHB3FfqgQ+8jRY6OpAX4J/ZKQNFf1MvKbZL1JXL0N2krQymYEWnLX73rWRud8rDMIgORbGDMLjf3W1K/wpE4wOZxFY9Tpd9GUGQd3IJ/EP8UdW9SvmPVS+hO/zAxeehXWahv26S23ePbldDtfBqvj9IIeuRnQ38tnq/cywhfHtmrf8O/kmQtHME+dIAD/0vH4ULcdXY9cYNlbdAjE4dcTv4tlRZn6f1gJVmdnnWVmXXF50rZbD6ICp5e/9WqeG3OyE8BCPTcijy74u7M66WUgizuBZ+121iQfdB+ntbzFjwP82qrgT+u1bNrlKFsgoaqtcia0mX92IQwYgm+Qm0ClhCYCVsemzV0ZyuMkWSNIrhiBTeGzNMOvdtZItQfxSztIdq4YqtPtud7jlZV3s0N0bANWuiGV15AmqeiQnRwKC8lj0qqcAvUpyBdW18ASqlUnFQa87H6oxTAQEiQowHh7dtLZee+IU75ootbLcMMvGempyUufw==
+      ENS_RESOLVER_ADDRESS: AgBZpItijSJ4kAuXJDV5rp5z+4kWIWs5Hnsqo/hI03JqjTgRZ40Wy5JdK7c+C8lYorjCr+UwlEQsIPtIcTg7JcvhfWIEFHEWE0atFGF2MTXswzui8XSBUn0DLBrIU3ASRg2OzGBalCh5iNeu3/shQg7sTK41f2eg8xZ1cyU9GGcncsWDqs7ZcSo7cMuxZKZ/8hfKDRQFyY4qWuqOd2xBl7sbuxQqFejBqMwjN3u72BIN+eon7Y7reUyodPRJuYTa1FW4rnRNdo+XRFt+glNHD6uVpp3KHN2sczv+6Ry3N9DvjdOuTEEhHBSRIqYFeoftNv1I1PgoJEkRDtBkLAN493qPz46KqnVkL8uS+9YMw4bXNEDKAgaWJaYNV+NbIw3wlHopwSuReNppfpVXgFfHwCFcKnaWzoBFwXnMCHGKwby3U4PPPVcn3KG8KLDfBJTsKjVST8Dao7MziP2FeDwc+Z9a+cpd2vTfi9c8Emkqei3P47z845WYuhnTOvdmNmjOguxg3F0KJnvzUjPMh2J0czHegvYPXalGa1aRXM35kUC7rxKsrrs5PNs/GGTm6Bqc7BPfehRlDQ3nukm4eQU/RjDjNl5v7ID+6bEu+nREWb0bN9oBtE2X8+l3Rlha6TcXEw++Y5T1iTLlwV8T+FBlqoXlTtZtdBo5cu96jMOm/ahKQyoCWlB/v6fl1Bk8Nq6S6JjqfOckfo2Ac+G5megRnIPQWPr29TUM1frdjrbrUYQoA0PQDb5uGTN7Axs=
 
   ########
   # Redis
@@ -139,8 +144,13 @@ did-auth-proxy-helm:
     ingress:
       enabled: true
       annotations: 
-        kubernetes.io/ingress.class: azure/application-gateway
-        appgw.ingress.kubernetes.io/ssl-redirect: "true"
+        kubernetes.io/ingress.class: nginx
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/proxy-body-size: 50m
+        external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+        cert-manager.io/issuer: prod-issuer
+        cert-manager.io/issuer-kind: OriginIssuer
+        cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
       hostname: ddhub-dev.energyweb.org
       pathType: Prefix
       path: /
@@ -148,4 +158,4 @@ did-auth-proxy-helm:
       extraTls:
         - hosts:
           - ddhub-dev.energyweb.org
-          secretName: dsb-tls-secret
+          secretName: ddhub-dev-tls-secret

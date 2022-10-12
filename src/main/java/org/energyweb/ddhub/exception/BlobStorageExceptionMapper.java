@@ -15,11 +15,11 @@ import com.azure.storage.blob.models.BlobStorageException;
 public class BlobStorageExceptionMapper extends DDHubHeaderMapper implements ExceptionMapper<BlobStorageException> {
 	@Inject
 	Logger logger;
-
+	
 	@Override
 	public Response toResponse(final BlobStorageException exception) {
 		ErrorResponse error = new ErrorResponse("40", exception.getMessage());
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		return Response.status(400).entity(error).build();
 	}
 }

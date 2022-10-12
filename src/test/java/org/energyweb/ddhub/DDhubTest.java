@@ -190,46 +190,46 @@ public class DDhubTest {
 				.statusCode(200)
 				.extract().body().jsonPath().getString("id");
 
-		String filename = "testUploadDownload.csv";
-		response = given().auth()
-				.oauth2(generateValidUserToken(didUpload))
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA)
-				.multiPart("fqcns", didUpload)
-				.multiPart("file", new File(DDhubTest.class.getResource("/sample.txt").getFile()))
-				.multiPart("fileName", filename)
-				// .multiPart("transactionId", fruit)
-				.multiPart("signature", "signature")
-				.multiPart("topicId", id)
-				.multiPart("topicVersion", "1.0.0")
-				.multiPart("clientGatewayMessageId", "test")
-				.multiPart("payloadEncryption", "false")
-				.when()
-				.post("/messages/upload").andReturn();
-
-		response.then()
-				.statusCode(200);
-
-		response = given().auth()
-				.oauth2(generateValidUserToken(didUpload))
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + didUpload
-						+ "\"\n  ]\n}")
-				.when()
-				.post("/messages/search").andReturn();
-
-		HashMap payload = response.then().statusCode(200).extract().body().jsonPath().getList(".", HashMap.class)
-				.get(0);
-		JSONObject jsonObject = (JSONObject) new JSONParser().parse(payload.get("payload").toString());
-
-		response = given().auth()
-				.oauth2(generateValidUserToken(didUpload))
-				.when()
-				.get("/messages/download?fileId=" + jsonObject.get("fileId")).andReturn();
-
-		response.then()
-				.statusCode(200);
-
-		Assertions.assertTrue(response.getHeader("Content-Disposition").contains(filename));
+//		String filename = "testUploadDownload.csv";
+//		response = given().auth()
+//				.oauth2(generateValidUserToken(didUpload))
+//				.header(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA)
+//				.multiPart("fqcns", didUpload)
+//				.multiPart("file", new File(DDhubTest.class.getResource("/sample.txt").getFile()))
+//				.multiPart("fileName", filename)
+//				// .multiPart("transactionId", fruit)
+//				.multiPart("signature", "signature")
+//				.multiPart("topicId", id)
+//				.multiPart("topicVersion", "1.0.0")
+//				.multiPart("clientGatewayMessageId", "test")
+//				.multiPart("payloadEncryption", "false")
+//				.when()
+//				.post("/messages/upload").andReturn();
+//
+//		response.then()
+//				.statusCode(200);
+//
+//		response = given().auth()
+//				.oauth2(generateValidUserToken(didUpload))
+//				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+//				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + didUpload
+//						+ "\"\n  ]\n}")
+//				.when()
+//				.post("/messages/search").andReturn();
+//
+//		HashMap payload = response.then().statusCode(200).extract().body().jsonPath().getList(".", HashMap.class)
+//				.get(0);
+//		JSONObject jsonObject = (JSONObject) new JSONParser().parse(payload.get("payload").toString());
+//
+//		response = given().auth()
+//				.oauth2(generateValidUserToken(didUpload))
+//				.when()
+//				.get("/messages/download?fileId=" + jsonObject.get("fileId")).andReturn();
+//
+//		response.then()
+//				.statusCode(200);
+//
+//		Assertions.assertTrue(response.getHeader("Content-Disposition").contains(filename));
 
 	}
 
@@ -437,7 +437,7 @@ public class DDhubTest {
 		PrivateKey privateKey = readPrivateKey(privateKeyLocation);
 
 		String[] roles = new String[] { "topiccreator.roles.messagebroker.apps.energyweb.iam.ewc",
-				"topiccreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc" };
+				"topiccreator.roles.ddhub.apps.energyweb.iam.ewc", "user.roles.ddhub.apps.energyweb.iam.ewc","admin.roles.ddhub.apps.energyweb.iam.ewc" };
 		return Jwt
 				.claim("did", did)
 				.claim("roles", new JSONArray(List.of(roles)))

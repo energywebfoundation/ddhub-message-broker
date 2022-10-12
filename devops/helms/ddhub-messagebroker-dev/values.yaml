@@ -53,20 +53,6 @@ ddhub-messagebroker:
     type: ClusterIP
     port: 80
 
-  ingress:
-    # ingress is not neccesary when did-auth-proxy-helm is enabled
-    # did-auth component ingress exposes the ddhub-messagebroker
-    enabled: false 
-    annotations: {kubernetes.io/ingress.class: nginx, appgw.ingress.kubernetes.io/ssl-redirect: "true"}
-    hosts:
-      - host: ddhub-dev.energyweb.org
-        paths:
-        - path: "/"
-    tls:
-     - secretName: dsb-tls-secret
-       hosts:
-         - ddhub-dev.energyweb.org
-
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious
     # choice for the user. This also increases chances charts run on environments with little
@@ -91,4 +77,15 @@ ddhub-messagebroker:
 
   tolerations: []
 
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - ddhub-messagebroker
+          topologyKey: kubernetes.io/hostname

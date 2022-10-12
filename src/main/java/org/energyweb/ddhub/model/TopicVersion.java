@@ -18,6 +18,8 @@ public class TopicVersion {
 	private String version;
 	private String createdBy;
 	private String updatedBy;
+	private boolean deleted;
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
+	private LocalDateTime deletedDate;
 }

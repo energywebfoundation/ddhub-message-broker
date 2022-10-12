@@ -93,8 +93,13 @@ public class TopicDTO {
 	@Getter(AccessLevel.NONE)
 	private boolean isOwnerValid;
 	
+	private boolean deleted;
+	@JsonIgnore
+	private String createdBy;
+	
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
+	private LocalDateTime deletedDate;
 	
 	public boolean validOwner() {
 		return isOwnerValid;

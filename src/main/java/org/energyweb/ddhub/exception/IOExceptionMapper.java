@@ -11,8 +11,6 @@ import javax.ws.rs.ext.Provider;
 import org.energyweb.ddhub.helper.ErrorResponse;
 import org.jboss.logging.Logger;
 
-import com.mongodb.MongoException;
-
 @Provider
 public class IOExceptionMapper extends DDHubHeaderMapper implements ExceptionMapper<IOException> {
 
@@ -26,7 +24,7 @@ public class IOExceptionMapper extends DDHubHeaderMapper implements ExceptionMap
 			error.setReturnCode("21");
 			error.setReturnMessage("FQCN not exists");
 		}
-		this.logger.error("[" + userDid() + "]" + JsonbBuilder.create().toJson(error));
+		this.logger.error("[" + userDid() + "][" + requestId() + "]" + JsonbBuilder.create().toJson(error));
 		int httpCode = 400;
 		if (error.getReturnMessage().contains("not exists")) {
 			httpCode = 404;

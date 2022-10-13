@@ -55,6 +55,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.energyweb.ddhub.dto.FileUploadChunkDTOs;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
+import org.energyweb.ddhub.dto.MessageAckDTO;
 import org.energyweb.ddhub.dto.MessageAckDTOs;
 import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MessageDTOs;
@@ -374,9 +375,10 @@ public class Message {
                     builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
 
+            boolean isHadMessages = sub.getConsumerInfo().getNumAckPending() > 0 || sub.getConsumerInfo().getNumPending() > 0;
             boolean isDuplicate = false;
             
-            while (messageDTOs.size() < messageDTO.getAmount()) {
+            while (isHadMessages && messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
             	List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
@@ -489,8 +491,9 @@ public class Message {
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(1));
 
+            boolean isHadMessages = sub.getConsumerInfo().getNumAckPending() > 0 || sub.getConsumerInfo().getNumPending() > 0;
             boolean isDuplicate = false;
-            while (messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
+            while (isHadMessages && messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
                 List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
@@ -518,8 +521,6 @@ public class Message {
                             .isEmpty()) {
                         if(messageDTO.getTopicId().size() > 1) {
                         	m.ack();
-                        }else {
-                        	m.nak();
                         }
                     	continue;
                     }
@@ -593,11 +594,9 @@ public class Message {
             }
         }
 
-        this.logger.info(
-                "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
-
-        this.logger.info(
-                "[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
+        this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
+        this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result messageIds : " + messageIds);
+        
         messageIds.clear();
 
         return Response.ok().entity(messageDTOs).build();
@@ -608,7 +607,7 @@ public class Message {
             "ddhub=messages" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @POST
     @Path("ack")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = MessageDTO.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = MessageAckDTO.class)))
     @Authenticated
     public Response natsAck(@Valid @NotNull MessageAckDTOs ackDTOs)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
@@ -618,6 +617,7 @@ public class Message {
         messageDTO.setAmount(ackDTOs.getMessageIds().size());
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
+        boolean isDuplicate = false;
         try {
             nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
@@ -628,7 +628,6 @@ public class Message {
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
 
             nc.flush(Duration.ofSeconds(1));
-            boolean isDuplicate = false;
             long pendingCounter = sub.getConsumerInfo().getNumAckPending() > messageDTO.getAmount() ? sub.getConsumerInfo().getNumAckPending() : messageDTO.getAmount();
             while (messageIds.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
                 List<io.nats.client.Message> messages = sub.fetch(ackDTOs.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
@@ -698,9 +697,21 @@ public class Message {
                 nc.close();
             }
         }
-        this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
         
-        return Response.ok().entity(messageIds).build();
+        MessageAckDTO ackDTO = new MessageAckDTO();
+        ackDTO.setAcked(new ArrayList<>(messageIds));
+        if(!isDuplicate) {
+        	List<String> notFound = ackDTOs.getMessageIds();
+        	notFound.removeAll(ackDTO.getAcked());
+        	ackDTO.setNotFound(notFound);
+        }
+        
+        this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck result size " + messageIds.size());
+
+        messageIds.clear();
+        messageIds = null;
+        
+        return Response.ok().entity(ackDTO).build();
     }
 
     private JetStreamOptions natsJetStreamOption() {

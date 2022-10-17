@@ -494,7 +494,7 @@ public class Message {
             boolean isHadMessages = sub.getConsumerInfo().getNumAckPending() > 0 || sub.getConsumerInfo().getNumPending() > 0;
             boolean isDuplicate = false;
             while (isHadMessages && messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
-                List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
+                List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(), Duration.ofSeconds(3));
                 if (messages.isEmpty()) {
                     break;
                 }

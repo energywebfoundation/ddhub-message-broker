@@ -521,6 +521,8 @@ public class Message {
                             .isEmpty()) {
                         if(messageDTO.getTopicId().size() > 1) {
                         	m.ack();
+                        }else {
+                            messageNats.add(m);
                         }
                     	continue;
                     }

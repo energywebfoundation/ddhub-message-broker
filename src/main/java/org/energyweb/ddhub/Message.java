@@ -618,6 +618,7 @@ public class Message {
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
         boolean isDuplicate = false;
+        List<io.nats.client.Message> totalMessagesNats = new ArrayList<io.nats.client.Message>();
         try {
             nc = Nats.connect(natsConnectionOption());
             JetStream js = nc.jetStream(natsJetStreamOption());
@@ -636,10 +637,12 @@ public class Message {
                 }
                 
                 messages.sort((a, b) -> (a.metaData().streamSequence() >= b.metaData().streamSequence())? 1:-1);
+                totalMessagesNats.addAll(messages);
                 for (io.nats.client.Message m : messages) {
 
                     if (m.isStatusMessage()) {
                         m.nak();
+                        totalMessagesNats.remove(m);
                         continue;
                     }
 
@@ -650,11 +653,13 @@ public class Message {
 
                     if (!ackDTOs.getMessageIds().contains(messageId)) {
                     	m.nak();
+                    	totalMessagesNats.remove(m);
                         continue;
                     }
 
                     if (messageIds.size() < messageDTO.getAmount()) {
                         m.ack();
+                        totalMessagesNats.remove(m);
                         this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck for " + messageId);
                         if (!messageIds.contains(messageId)) {
                             messageIds.add(messageId);
@@ -694,7 +699,13 @@ public class Message {
             this.logger.error("[NatsAck][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {
             if (nc != null) {
+            	nc.flush(Duration.ofSeconds(0));
+                totalMessagesNats.forEach(m -> {
+                	m.nak();
+                });
                 nc.close();
+                totalMessagesNats.clear();
+                totalMessagesNats = null;
             }
         }
         

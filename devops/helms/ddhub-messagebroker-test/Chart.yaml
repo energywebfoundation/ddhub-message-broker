@@ -29,4 +29,4 @@ dependencies:
   - name: did-auth-proxy-helm
     condition: did-auth-proxy-helm.enabled
     version: 0.1.6
-    repository: https://aemoprivatecontainerregistry.azurecr.io/helm/v1/repo
+    repository: public.ecr.aws/p2b6f2f9/did-auth-proxy-helm

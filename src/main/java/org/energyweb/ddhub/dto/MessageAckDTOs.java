@@ -16,7 +16,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MessageAckDTOs{
 
-	@Valid
+	public static final int MAX_FETCH_AMOUNT = 256;
+
+    @Valid
     @NotNull
 	private List<@NotEmpty String> messageIds;
     
@@ -28,6 +30,6 @@ public class MessageAckDTOs{
 		if(totalAckPending > 0 && totalAckPending > messageIds.size()) {
 			fetchAmount = (int) totalAckPending;
 		}
-		return (fetchAmount > SearchMessageDTO.MAX_FETCH_AMOUNT)?SearchMessageDTO.MAX_FETCH_AMOUNT:fetchAmount;
+		return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
 	}
 }

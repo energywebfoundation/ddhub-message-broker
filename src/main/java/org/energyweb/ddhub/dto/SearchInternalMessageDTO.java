@@ -62,6 +62,6 @@ public class SearchInternalMessageDTO  {
 		if(totalAckPending > 0 && totalAckPending > amount) {
 			fetchAmount = (int) totalAckPending;
 		}
-		return (fetchAmount > SearchMessageDTO.MAX_FETCH_AMOUNT)?SearchMessageDTO.MAX_FETCH_AMOUNT:fetchAmount;
+		return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
 	}
 }

@@ -56,4 +56,12 @@ public class SearchInternalMessageDTO  {
 		}
 		return clientId.concat("internal-ddhub");
 	}
+
+	public int fetchAmount(long totalAckPending) {
+		int fetchAmount = amount;
+		if(totalAckPending > 0 && totalAckPending > amount) {
+			fetchAmount = (int) totalAckPending;
+		}
+		return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
+	}
 }

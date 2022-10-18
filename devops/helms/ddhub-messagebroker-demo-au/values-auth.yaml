@@ -145,8 +145,13 @@ did-auth-proxy-helm:
     ingress:
       enabled: true
       annotations: 
-        kubernetes.io/ingress.class: azure/application-gateway
-        appgw.ingress.kubernetes.io/ssl-redirect: "true"
+        kubernetes.io/ingress.class: nginx
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/proxy-body-size: 50m
+        external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+        cert-manager.io/issuer: prod-issuer
+        cert-manager.io/issuer-kind: OriginIssuer
+        cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
       hostname: ddhub-demo-au.energyweb.org
       pathType: Prefix
       path: /
@@ -154,4 +159,4 @@ did-auth-proxy-helm:
       extraTls:
         - hosts:
           - ddhub-demo-au.energyweb.org
-          secretName: dsb-tls-secret
+          secretName: ddhub-demo-tls-secret

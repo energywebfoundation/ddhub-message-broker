@@ -478,6 +478,7 @@ public class Message {
         messageDTO.setFqcn(DID);
 
         HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
+        List<io.nats.client.Message> acks = new ArrayList<io.nats.client.Message>();
         HashSet<MessageDTO> messageDTOs = new HashSet<MessageDTO>();
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
@@ -489,12 +490,47 @@ public class Message {
             builder.maxAckPending(50000);
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
-            nc.flush(Duration.ofSeconds(1));
+            nc.flush(Duration.ofSeconds(0));
 
             boolean isHadMessages = sub.getConsumerInfo().getNumAckPending() > 0 || sub.getConsumerInfo().getNumPending() > 0;
             boolean isDuplicate = false;
+            List<io.nats.client.Message> totalPendingAck = new ArrayList<io.nats.client.Message>();
+            int emptyMessagesCounter = 0;
+            
+            while (isHadMessages && totalPendingAck.size() < sub.getConsumerInfo().getNumAckPending() && sub != null && sub.isActive()) {
+                List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
+                totalPendingAck.addAll(messages);
+                
+                
+                if (messages.isEmpty()) {
+                    this.logger.warn("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage totalPendingAck : empty return.");
+                    emptyMessagesCounter +=1;
+                    Thread.sleep(Duration.ofMillis(500).toMillis());
+                    messages = sub.fetch(messageDTO.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
+                    totalPendingAck.addAll(messages);
+                    if(emptyMessagesCounter >= 3) {
+                        this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage unmatch totalPendingAck size " + totalPendingAck.size() + "/" + sub.getConsumerInfo().getNumAckPending());
+                        break;
+                    }
+                }
+                
+                if(totalPendingAck.size() == sub.getConsumerInfo().getNumAckPending() ) {
+                    this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage match totalPendingAck size " + totalPendingAck.size() + "/" + sub.getConsumerInfo().getNumAckPending());
+                    break;
+                }
+            }
+            
             while (isHadMessages && messageDTOs.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
-                List<io.nats.client.Message> messages = sub.fetch(messageDTO.fetchAmount(), Duration.ofSeconds(3));
+                List<io.nats.client.Message> messages = new ArrayList<io.nats.client.Message>();
+                if(!totalPendingAck.isEmpty()) {
+                    this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage messages " + messages.size());
+                    messages.addAll(totalPendingAck);
+                    this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage total for process size " + messages.size() + "/" + sub.getConsumerInfo().getNumAckPending());
+                    totalPendingAck.clear();
+                }else {
+                    messages = sub.fetch(messageDTO.fetchAmount(messageDTO.getAmount()), Duration.ofSeconds(3));
+                }
+                
                 if (messages.isEmpty()) {
                     break;
                 }
@@ -502,6 +538,7 @@ public class Message {
                 for (io.nats.client.Message m : messages) {
                     if (m.isStatusMessage()) {
                         m.nak();
+                        acks.remove(m);
                         continue;
                     }
 
@@ -514,6 +551,7 @@ public class Message {
                             TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
                                     .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
                                             .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
+                        messageNats.add(m);
                         continue;
                     }
 
@@ -521,6 +559,7 @@ public class Message {
                             .isEmpty()) {
                         if(messageDTO.getTopicId().size() > 1) {
                         	m.ack();
+                        	acks.remove(m);
                         }else {
                             messageNats.add(m);
                         }
@@ -529,6 +568,7 @@ public class Message {
 
                     if (messageDTO.getSenderId().stream().filter(id -> sender.contains(id)).findFirst().isEmpty()) {
                     	m.ack();
+                    	acks.remove(m);
                         continue;
                     }
 
@@ -549,6 +589,7 @@ public class Message {
                     if (messageDTOs.size() < messageDTO.getAmount()) {
                         if (messageDTO.isAck()) {
                             m.ack();
+                            acks.remove(m);
                         } else {
                             m.inProgress();
                         }
@@ -562,10 +603,16 @@ public class Message {
                                     "[SearchMessage][" + DID + "][" + requestId + "] Duplicate " + message.getId());
                             isDuplicate = true;
                             if (isDuplicate) {
+                                messages.removeAll(messageNats);
+                                messages.removeAll(acks);
+                                messageNats.addAll(messages);
                                 break;
                             }
                         }
                     } else {
+                        messages.removeAll(messageNats);
+                        messages.removeAll(acks);
+                        messageNats.addAll(messages);
                         break;
                     }
                     
@@ -573,11 +620,9 @@ public class Message {
                     natPayload = null;
                 }
                 
-                if (messageDTOs.size() == messageDTO.getAmount()) {
+                if (messageDTOs.size() == messageDTO.getAmount() || isDuplicate) {
+                    this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage result size " + messageDTOs.size());
                     break;
-                }
-                if (isDuplicate) {
-                	break;
                 }
             }
         } catch (TimeoutException ex) {
@@ -587,12 +632,14 @@ public class Message {
         } finally {
             if (nc != null) {
             	nc.flush(Duration.ofSeconds(0));
+            	this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage messageNats size " + messageNats.size());
                 messageNats.forEach(m -> {
                 	m.nak();
                 });
                 nc.close();
                 
                 messageNats.clear();
+                acks.clear();
             }
         }
 
@@ -630,10 +677,11 @@ public class Message {
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
 
-            nc.flush(Duration.ofSeconds(1));
+            nc.flush(Duration.ofSeconds(0));
             long pendingCounter = sub.getConsumerInfo().getNumAckPending() > messageDTO.getAmount() ? sub.getConsumerInfo().getNumAckPending() : messageDTO.getAmount();
             while (messageIds.size() < messageDTO.getAmount() && sub != null && sub.isActive()) {
                 List<io.nats.client.Message> messages = sub.fetch(ackDTOs.fetchAmount(sub.getConsumerInfo().getNumAckPending()), Duration.ofSeconds(3));
+                this.logger.info("[NatsAck][" + DID + "][" + requestId + "] NatsAck totalPendingAck size " + messages.size() + "/" + sub.getConsumerInfo().getNumAckPending());
                 if (messages.isEmpty()) {
                     break;
                 }
@@ -658,6 +706,7 @@ public class Message {
                     	totalMessagesNats.remove(m);
                         continue;
                     }
+
 
                     if (messageIds.size() < messageDTO.getAmount()) {
                         m.ack();

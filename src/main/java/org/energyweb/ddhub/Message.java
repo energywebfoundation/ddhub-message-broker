@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -397,8 +398,7 @@ public class Message {
                     String sender = (String) natPayload.get("sender");
 
                     if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
-                            TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
-                                    .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+                            TimeUnit.SECONDS.toNanos(messageDTO.getFrom().toEpochSecond(ZoneOffset.UTC)) > Long
                                             .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
                         continue;
                     }
@@ -546,12 +546,12 @@ public class Message {
                             HashMap.class);
 
                     String sender = (String) natPayload.get("sender");
-
+                    
                     if (Optional.ofNullable(messageDTO.getFrom()).isPresent() &&
-                            TimeUnit.NANOSECONDS.toNanos(Date.from(Optional.ofNullable(messageDTO.getFrom()).get()
-                                    .atZone(ZoneId.systemDefault()).toInstant()).getTime()) > Long
+                            TimeUnit.SECONDS.toNanos(messageDTO.getFrom().toEpochSecond(ZoneOffset.UTC)) > Long
                                             .valueOf((String) natPayload.get("timestampNanos")).longValue()) {
-                        messageNats.add(m);
+                        m.ack();
+                        acks.remove(m);
                         continue;
                     }
 
@@ -664,6 +664,7 @@ public class Message {
         messageDTO.setFqcn(DID);
         messageDTO.setClientId(ackDTOs.getClientId());
         messageDTO.setAmount(ackDTOs.getMessageIds().size());
+        messageDTO.setFrom(ackDTOs.getFrom());
         HashSet<String> messageIds = new HashSet<String>();
         Connection nc = null;
         boolean isDuplicate = false;

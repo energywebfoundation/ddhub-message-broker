@@ -23,6 +23,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class SearchMessageDTO {
 
+	public static final int MAX_FETCH_AMOUNT = 50;
 	public static final int MIN_FETCH_AMOUNT = 10;
 
 	@JsonIgnore
@@ -68,5 +69,15 @@ public class SearchMessageDTO {
 		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
 		_clientId.removeIf(String::isEmpty);
 		return String.join(":", _clientId);
+	}
+
+	public int fetchAmount() {
+		int fetchAmount = amount;
+		
+		if(fetchAmount < SearchMessageDTO.MIN_FETCH_AMOUNT) {
+		    fetchAmount = SearchMessageDTO.MIN_FETCH_AMOUNT;
+		}
+		
+		return (fetchAmount > SearchMessageDTO.MAX_FETCH_AMOUNT)?SearchMessageDTO.MAX_FETCH_AMOUNT:fetchAmount;
 	}
 }

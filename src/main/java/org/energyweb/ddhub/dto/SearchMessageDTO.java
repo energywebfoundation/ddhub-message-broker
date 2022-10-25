@@ -1,10 +1,15 @@
 package org.energyweb.ddhub.dto;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
@@ -22,9 +27,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class SearchMessageDTO {
-
-	public static final int MAX_FETCH_AMOUNT = 50;
-	public static final int MIN_FETCH_AMOUNT = 10;
 
 	@JsonIgnore
 	private String fqcn;
@@ -68,16 +70,17 @@ public class SearchMessageDTO {
 		List<String> _clientId = new ArrayList<>();
 		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
 		_clientId.removeIf(String::isEmpty);
+		if(from != null) {
+		    _clientId.add(Long.toHexString(from.toEpochSecond(ZoneOffset.UTC)));
+		}
 		return String.join(":", _clientId);
 	}
 
-	public int fetchAmount() {
-		int fetchAmount = amount;
-		
-		if(fetchAmount < SearchMessageDTO.MIN_FETCH_AMOUNT) {
-		    fetchAmount = SearchMessageDTO.MIN_FETCH_AMOUNT;
-		}
-		
-		return (fetchAmount > SearchMessageDTO.MAX_FETCH_AMOUNT)?SearchMessageDTO.MAX_FETCH_AMOUNT:fetchAmount;
-	}
+	public int fetchAmount(long totalAckPending) {
+        int fetchAmount = amount;
+        if(totalAckPending > 0 && totalAckPending > amount) {
+            fetchAmount = (int) totalAckPending;
+        }
+        return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
+    }
 }

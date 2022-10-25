@@ -1,7 +1,9 @@
 package org.energyweb.ddhub.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -24,6 +26,9 @@ public class MessageAckDTOs{
     
     @Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
 	private String clientId = "mb-default";
+    
+    @JsonbDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
+    private LocalDateTime from;
 
     public int fetchAmount(long totalAckPending) {
     	int fetchAmount = messageIds.size();

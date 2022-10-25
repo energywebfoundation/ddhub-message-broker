@@ -1,21 +1,17 @@
 package org.energyweb.ddhub.dto;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -40,6 +36,7 @@ public class SearchMessageDTO {
 	private List<@NotNull @NotNull String> senderId;
 
 	@Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
+	@Size(max=247, message = "The maximum length is 247 characters")
 	private String clientId = "mb-default";
 
 	private int amount = 1;
@@ -70,9 +67,6 @@ public class SearchMessageDTO {
 		List<String> _clientId = new ArrayList<>();
 		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
 		_clientId.removeIf(String::isEmpty);
-		if(from != null) {
-		    _clientId.add(Long.toHexString(from.toEpochSecond(ZoneOffset.UTC)));
-		}
 		return String.join(":", _clientId);
 	}
 

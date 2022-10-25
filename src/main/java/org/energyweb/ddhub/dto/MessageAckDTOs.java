@@ -8,6 +8,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class MessageAckDTOs{
 	private List<@NotEmpty String> messageIds;
     
     @Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
+    @Size(max=247, message = "The maximum length is 247 characters")
 	private String clientId = "mb-default";
     
     @JsonbDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")

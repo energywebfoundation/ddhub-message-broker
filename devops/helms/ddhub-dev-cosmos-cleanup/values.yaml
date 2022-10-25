@@ -5,7 +5,7 @@ cronjobs-helm:
       image:
         repository: aemocontainerregistry.azurecr.io/cosmos-cleanup
         tag: latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
       schedule: "0 0 * * *"
       failedJobsHistoryLimit: 1
       successfulJobsHistoryLimit: 1

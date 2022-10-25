@@ -1,0 +1,16 @@
+cronjobs-helm:
+  jobs:
+      #clean up cosmosDB message collection
+    - name: dev-cosmos-cleanup
+      image:
+        repository: aemocontainerregistry.azurecr.io/cosmos-cleanup
+        tag: latest
+        imagePullPolicy: Always
+      schedule: "0 0 * * *"
+      failedJobsHistoryLimit: 1
+      successfulJobsHistoryLimit: 1
+      concurrencyPolicy: Forbid
+      restartPolicy: Never
+      envFrom:
+        - secretRef:
+            name: ddhub-messagebroker-secret

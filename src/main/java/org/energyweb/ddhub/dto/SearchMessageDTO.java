@@ -11,6 +11,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -22,9 +23,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class SearchMessageDTO {
-
-	public static final int MAX_FETCH_AMOUNT = 50;
-	public static final int MIN_FETCH_AMOUNT = 10;
 
 	@JsonIgnore
 	private String fqcn;
@@ -38,6 +36,7 @@ public class SearchMessageDTO {
 	private List<@NotNull @NotNull String> senderId;
 
 	@Pattern(regexp = "^[a-zA-Z0-9\\-:.>*]+$", message = "Required Alphanumeric string")
+	@Size(max=247, message = "The maximum length is 247 characters")
 	private String clientId = "mb-default";
 
 	private int amount = 1;
@@ -71,13 +70,11 @@ public class SearchMessageDTO {
 		return String.join(":", _clientId);
 	}
 
-	public int fetchAmount() {
-		int fetchAmount = amount;
-		
-		if(fetchAmount < SearchMessageDTO.MIN_FETCH_AMOUNT) {
-		    fetchAmount = SearchMessageDTO.MIN_FETCH_AMOUNT;
-		}
-		
-		return (fetchAmount > SearchMessageDTO.MAX_FETCH_AMOUNT)?SearchMessageDTO.MAX_FETCH_AMOUNT:fetchAmount;
-	}
+	public int fetchAmount(long totalAckPending) {
+        int fetchAmount = amount;
+        if(totalAckPending > 0 && totalAckPending > amount) {
+            fetchAmount = (int) totalAckPending;
+        }
+        return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
+    }
 }

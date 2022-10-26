@@ -20,8 +20,7 @@ ddhub-messagebroker:
     repository: aemocontainerregistry.azurecr.io/ddhub-messagebroker
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    # version 0.1.0 with forming mongo connection string change
-    tag: "f3614bb1-ae5b-467b-b896-564c2aa15716"
+    tag: "1.1.0"
 
   imagePullSecrets: []
   nameOverride: "ddhub-messagebroker-shared"

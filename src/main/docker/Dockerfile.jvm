@@ -31,7 +31,7 @@ ARG worker_uname=worker
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
-ENV JAVA_OPTIONS="-Xms650m -Xms650m -Xss6m -XshowSettings:vm -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9098 -Dcom.sun.management.jmxremote.rmi.port=9098 -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=false"
+ENV JAVA_OPTIONS="-Xms650m -Xms650m -Xss6m -XshowSettings:vm -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9098 -Dcom.sun.management.jmxremote.rmi.port=9098 -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=false"
 
 # Installing system tools
 RUN apk update &&\ 
@@ -53,5 +53,4 @@ EXPOSE 9000 9098
 USER ${worker_uid}
 WORKDIR /deployments
 
-ENTRYPOINT [ "java","-XX:+UseG1GC","-Xms650m","-Xmx650m","-Xss6m","-XshowSettings:vm", "-Dcom.sun.management.jmxremote", "-Dcom.sun.management.jmxremote.port=9098","-Dcom.sun.management.jmxremote.authenticate=false","-Dcom.sun.management.jmxremote.rmi.port=9098","-Djava.rmi.server.hostname=127.0.0.1","-Dcom.sun.management.jmxremote.local.only=false","-Dcom.sun.management.jmxremote.ssl=false" ,"-jar", "/deployments/quarkus-run.jar" ]
-
+ENTRYPOINT [ "java","-XX:+UseG1GC","-Xms650m","-Xmx650m","-Xss6m","-XshowSettings:vm","-Djava.util.logging.manager=org.jboss.logmanager.LogManager", "-Dcom.sun.management.jmxremote", "-Dcom.sun.management.jmxremote.port=9098","-Dcom.sun.management.jmxremote.authenticate=false","-Dcom.sun.management.jmxremote.rmi.port=9098","-Djava.rmi.server.hostname=127.0.0.1","-Dcom.sun.management.jmxremote.local.only=false","-Dcom.sun.management.jmxremote.ssl=false" ,"-jar", "/deployments/quarkus-run.jar" ]

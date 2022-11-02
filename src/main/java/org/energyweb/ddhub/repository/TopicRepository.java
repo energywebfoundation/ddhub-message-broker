@@ -46,11 +46,13 @@ public class TopicRepository implements PanacheMongoRepository<Topic> {
 			BeanUtils.copyProperties(topic, topicDTO);
 			topic.setCreatedBy(topicDTO.did());
 			topic.setCreatedDate(LocalDateTime.now());
+			topic.setDeletedDate(null);
 			persist(topic);
 			BeanUtils.copyProperties(topicVersion, topic);
 			topicVersion.setVersion(topicDTO.getVersion());
 			topicVersion.setSchema(topicDTO.schemaValue());
 			topicVersion.setTopicId(topic.getId());
+			topicVersion.setDeletedDate(null);		
 		} catch (IllegalAccessException | InvocationTargetException e) {
 			throw new MongoException("Unable to save");
 		}

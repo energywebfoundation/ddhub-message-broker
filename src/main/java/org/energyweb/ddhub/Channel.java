@@ -2,8 +2,11 @@ package org.energyweb.ddhub;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
@@ -51,6 +54,8 @@ import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
 import io.nats.client.Nats;
 import io.nats.client.Options;
+import io.nats.client.api.ConsumerConfiguration;
+import io.nats.client.api.ConsumerConfiguration.Builder;
 import io.nats.client.api.StreamConfiguration;
 import io.nats.client.api.StreamInfo;
 import io.quarkus.security.Authenticated;
@@ -155,6 +160,44 @@ public class Channel {
         	
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
+    }
+    
+    @POST
+    @Counted(name = "clientdIdsUpdateWait_get_count", description = "", tags = { "ddhub=channel" }, absolute = true)
+    @Timed(name = "clientdIdsUpdateWait_get_timed", description = "", tags = {
+            "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("clientdIdsUpdateWait")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @Authenticated
+    public Response clientdIdsUpdateWait() throws IOException, InterruptedException {
+        Connection nc = Nats.connect(natsConnectionOption());
+        Map<String,List> result = new HashMap<String,List>();
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        channelRepository.findAll().list().forEach(entity -> {
+            List<String> _result = new ArrayList<String>();
+            ChannelDTO channelDTO = new ChannelDTO();
+            channelDTO.setFqcn(entity.getFqcn());
+            try {
+                jsm.getConsumers(channelDTO.streamName()).forEach(consumer -> {
+                    try {
+                        Builder builder = ConsumerConfiguration.builder(consumer.getConsumerConfiguration());
+                        builder.ackWait((Duration.ofSeconds(1).toMillis()));
+                        jsm.addOrUpdateConsumer(channelDTO.streamName(), builder.build());
+                        _result.add(consumer.getName());
+                    } catch (IOException | JetStreamApiException e) {
+                        this.logger.info(e.getMessage());
+                    }
+                });
+            } catch (IOException | JetStreamApiException e) {
+                this.logger.info(e.getMessage());
+            }
+            result.put(channelDTO.streamName(),_result);
+            
+        });
+        nc.close();
+
+        return Response.ok().entity(result).build();
 
     }
     

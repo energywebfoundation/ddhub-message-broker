@@ -99,7 +99,7 @@ public class TopicDTO {
 	
 	private LocalDateTime createdDate;
 	private LocalDateTime updatedDate;
-	private LocalDateTime deletedDate;
+	private LocalDateTime deletedDate = null;
 	
 	public boolean validOwner() {
 		return isOwnerValid;

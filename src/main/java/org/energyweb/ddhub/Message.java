@@ -488,6 +488,7 @@ public class Message {
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
             builder.maxAckPending(50000);
+            builder.ackWait(Duration.ofSeconds(1));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             nc.flush(Duration.ofSeconds(0));
@@ -583,8 +584,6 @@ public class Message {
                         if (messageDTO.isAck()) {
                             m.ack();
                             acks.remove(m);
-                        } else {
-                            m.inProgress();
                         }
 
                         if (!messageIds.contains(message.getId())) {
@@ -665,7 +664,6 @@ public class Message {
             this.logger.info("[FindAllAckPending][" + DID + "][" + requestId + "] FindAllAckPending messages size " + messages.size() + "/" + totalAckPending);
             totalPendingAck.addAll(messages);
             
-            
             if (messages.isEmpty()) {
                 this.logger.warn("[FindAllAckPending][" + DID + "][" + requestId + "] FindAllAckPending totalPendingAck : empty return.");
                 emptyMessagesCounter +=1;
@@ -709,11 +707,16 @@ public class Message {
 
             Builder builder = ConsumerConfiguration.builder().durable(messageDTO.findDurable());
             builder.maxAckPending(50000);
+            builder.ackWait(Duration.ofSeconds(1));
 
             JetStreamSubscription sub = js.subscribe(messageDTO.subjectAll(), builder.buildPullSubscribeOptions());
             long totalAckPending = sub.getConsumerInfo().getNumAckPending();
+            long totalNumPending = sub.getConsumerInfo().getNumPending();
             List<io.nats.client.Message> totalPendingAck = findAllAckPending(messageDTO, sub, totalAckPending);
-            isTotalAckPendingRetrieve = (totalAckPending > 0)?totalAckPending == totalPendingAck.size():isTotalAckPendingRetrieve;
+            isTotalAckPendingRetrieve = totalAckPending == totalPendingAck.size();
+            if(totalNumPending > 0) {
+                isTotalAckPendingRetrieve = totalNumPending <= sub.getConsumerInfo().getNumPending();
+            }
             
             totalPendingAck.sort((a, b) -> (a.metaData().streamSequence() >= b.metaData().streamSequence())? 1:-1);
             

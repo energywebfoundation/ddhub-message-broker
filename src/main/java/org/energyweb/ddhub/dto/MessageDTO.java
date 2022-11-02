@@ -25,7 +25,7 @@ import lombok.Setter;
 @EqualsAndHashCode(callSuper = false)
 public class MessageDTO extends DDHub {
 	public static final int MAX_RECONNECTS = 3;
-	public static final long REQUEST_TIMEOUT = 2;
+	public static final long REQUEST_TIMEOUT = 1;
 	public static final long CONNECTION_TIMEOUT = 5;
 
 	@Size(max = 200, message = "The maximum length is 200 characters")

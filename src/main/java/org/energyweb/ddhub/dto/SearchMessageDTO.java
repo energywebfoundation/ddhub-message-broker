@@ -27,11 +27,16 @@ public class SearchMessageDTO {
 	@JsonIgnore
 	private String fqcn;
 
-	@NotNull
 	@Valid
 	private List<@NotNull @NotEmpty @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") String> topicId;
 
 	@NotNull
+	@NotEmpty
+    @Valid
+    private List<@NotNull @NotEmpty @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") String> fqcnTopicList;
+
+	@NotNull
+	@NotEmpty
 	@Valid
 	private List<@NotNull @NotNull String> senderId;
 

@@ -474,7 +474,7 @@ public class Message {
     @Authenticated
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
             throws InterruptedException, TimeoutException, IOException, JetStreamApiException {
-        topicRepository.validateTopicIds(messageDTO.getTopicId(), true);
+        topicRepository.validateTopicIds(messageDTO.getFqcnTopicList(), true);
         messageDTO.setFqcn(DID);
 
         HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
@@ -545,14 +545,9 @@ public class Message {
                         continue;
                     }
 
-                    if (messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst()
-                            .isEmpty()) {
-                        if(messageDTO.getTopicId().size() > 1) {
-                        	m.ack();
-                        	acks.remove(m);
-                        }else {
-                            messageNats.add(m);
-                        }
+                    if (messageDTO.getFqcnTopicList().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
+                        m.ack();
+                        acks.remove(m);
                         natPayload.clear();
                         natPayload = null;
                     	continue;
@@ -562,6 +557,14 @@ public class Message {
                     	m.ack();
                     	acks.remove(m);
                     	natPayload.clear();
+                        natPayload = null;
+                        continue;
+                    }
+                    
+                    
+                    if (messageDTO.getTopicId() != null && !messageDTO.getTopicId().isEmpty() && messageDTO.getTopicId().stream().filter(id -> m.getSubject().contains(id)).findFirst().isEmpty()) {
+                        messageNats.add(m);
+                        natPayload.clear();
                         natPayload = null;
                         continue;
                     }

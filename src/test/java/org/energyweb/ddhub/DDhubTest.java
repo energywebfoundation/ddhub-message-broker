@@ -145,7 +145,7 @@ public class DDhubTest {
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + did + "\"\n  ]\n}")
+				.body("{\n  \"topicId\": [\n    \"" + id + "\"\n  ],\"fqcnTopicList\": [\n    \"" + id + "\"\n  ],\n  \"senderId\": [\n    \"" + did + "\"\n  ]\n}")
 				.when()
 				.post("/messages/search").andReturn();
 

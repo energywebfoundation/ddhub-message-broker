@@ -128,7 +128,6 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
-                    .maxConsumers(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE))
                     .duplicateWindow(
                             Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
@@ -143,7 +142,6 @@ public class Channel {
             			.addSubjects(channelKey.subjectNameAll())
             			.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
             			.maxMsgSize(channelDTO.getMaxMsgSize())
-            			.maxConsumers(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE))
             			.duplicateWindow(
             					Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             			.build());
@@ -215,7 +213,11 @@ public class Channel {
         JetStreamManagement jsm = nc.jetStreamManagement();
         Set<String> result = new HashSet<String>();
         jsm.getConsumerNames(channelDTO.streamName()).forEach(id ->{
-        	result.add(id);
+        	if(id.contains(":#:")) {
+        		result.add(id.split(":#:")[0]);
+        	}else {
+        		result.add(id);
+        	}
         });
         nc.close();
 
@@ -237,12 +239,17 @@ public class Channel {
         JetStreamManagement jsm = nc.jetStreamManagement();
         Set<String> result = new HashSet<String>();
         clientDTO.getClientIds().forEach(id ->{
-        	try {
-				if(jsm.deleteConsumer(channelDTO.streamName(),id)) {
-					result.add(id);
+        		try {
+					jsm.getConsumerNames(channelDTO.streamName()).stream().filter(consumer -> consumer.contains(id)).forEach(consumer->{
+						try {
+							if(jsm.deleteConsumer(channelDTO.streamName(),consumer)) {
+								result.add(id);
+							}
+						} catch (IOException | JetStreamApiException e) {
+						}
+					});
+				} catch (IOException | JetStreamApiException e) {
 				}
-			} catch (IOException | JetStreamApiException e) {
-			}
         });
         nc.close();
 
@@ -273,7 +280,6 @@ public class Channel {
     					.addSubjects(channelDTO.subjectNameAll())
     					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
     					.maxMsgSize(channelDTO.getMaxMsgSize())
-    					.maxConsumers(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE))
     					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
     							.toMillis())
     					.build();
@@ -315,7 +321,6 @@ public class Channel {
     					.addSubjects(channelDTO.subjectNameAll())
     					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
     					.maxMsgSize(channelDTO.getMaxMsgSize())
-    					.maxConsumers(natsMaxClientId.orElse(ChannelDTO.DEFAULT_CLIENT_ID_SIZE))
     					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
     							.toMillis())
     					.build();

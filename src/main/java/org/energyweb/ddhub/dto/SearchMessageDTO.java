@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.dto;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,6 +73,9 @@ public class SearchMessageDTO {
 		List<String> _clientId = new ArrayList<>();
 		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
 		_clientId.removeIf(String::isEmpty);
+		if(from != null) {
+		    _clientId.add("#:"+Long.toHexString(from.toEpochSecond(ZoneOffset.UTC)));
+		}
 		return String.join(":", _clientId);
 	}
 

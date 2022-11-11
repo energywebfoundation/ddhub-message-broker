@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -41,7 +42,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.dto.ClientDTO;
+import org.energyweb.ddhub.dto.ExtChannelDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
+import org.energyweb.ddhub.helper.ResponseWithStatus;
+import org.energyweb.ddhub.helper.ReturnAnonymousKeyMessage;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.RoleOwnerRepository;
 import org.jboss.logging.Logger;
@@ -112,17 +116,43 @@ public class Channel {
     @Path("initExtChannel")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
-    public Response initExtChannel() throws IOException, JetStreamApiException, InterruptedException, ParseException {
+    public Response initExtChannel(@Valid ExtChannelDTO extChannelDTO) throws IOException, JetStreamApiException, InterruptedException, ParseException {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(DID);
         channelDTO.setMaxMsgAge(natsMaxAge);
         channelDTO.setMaxMsgSize(natsMaxSize);
+        Connection nc = Nats.connect(natsConnectionOption());
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        
+        List<ReturnAnonymousKeyMessage> status = new ArrayList<ReturnAnonymousKeyMessage>();
+        
         try {
             channelRepository.findByFqcn(DID);
+            Set<String> streamsAnonymous = new HashSet<>();
+            if(extChannelDTO != null) {
+            	extChannelDTO.getAnonymousKeys().stream().filter(e -> streamsAnonymous.add(e.getAnonymousKey())).collect(Collectors.toList()).forEach(key->{
+            		try {
+            			ChannelDTO channelAnonymousKey = new ChannelDTO();
+            			channelAnonymousKey.setFqcn(key.getAnonymousKey());
+            			StreamConfiguration streamConfig = StreamConfiguration.builder()
+            					.name(channelAnonymousKey.streamName())
+            					.description(DID)
+            					.addSubjects(channelAnonymousKey.subjectNameAll())
+            					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+            					.maxMsgSize(channelDTO.getMaxMsgSize())
+            					.duplicateWindow(
+            							Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
+            					.build();
+            			jsm.addStream(streamConfig);
+            			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
+            		} catch (IOException | JetStreamApiException e) {
+            			logger.info("[" + requestId + "]" + e.getMessage());
+            			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
+            		}
+            	});
+            }
         } catch (MongoException ex) {
             logger.info("[" + requestId + "] Channel not exist. creating channel:" + DID);
-            Connection nc = Nats.connect(natsConnectionOption());
-            JetStreamManagement jsm = nc.jetStreamManagement();
             StreamConfiguration streamConfig = StreamConfiguration.builder()
                     .name(channelDTO.streamName())
                     .addSubjects(channelDTO.subjectNameAll())
@@ -149,15 +179,16 @@ public class Channel {
             	logger.info("[" + requestId + "]" + e.getMessage());
             }
             
-            nc.close();
             channelDTO.setOwnerdid(DID);
             channelRepository.save(channelDTO);
+        } finally {
+            if (nc != null) {
+                nc.close();
+            }
         }
         ownerRepository.save(DID, verifiedRoles);
-        
-        	
 
-        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+        return Response.ok().entity((!status.isEmpty())?new ResponseWithStatus("00", "Success", status):new DDHubResponse("00", "Success")).build();
 
     }
     

@@ -20,7 +20,7 @@ ddhub-messagebroker:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     # version 0.1.0 with forming mongo connection string change
-    tag: "1.1.0"
+    tag: "ed0e2f43-7d71-4bf7-aa32-fec4008919e3"
 
   imagePullSecrets: []
   nameOverride: "ddhub-messagebroker-test"

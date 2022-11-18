@@ -20,7 +20,7 @@ ddhub-messagebroker:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     # version 0.1.0 with forming mongo connection string change
-    tag: "ed0e2f43-7d71-4bf7-aa32-fec4008919e3"
+    tag: "1.1.0"
 
   imagePullSecrets: []
   nameOverride: "ddhub-messagebroker-test"
@@ -45,3 +45,10 @@ ddhub-messagebroker:
       # 2 hrs nats message expries
       NATS_MAX_AGE: AgAn7QqOKpmf2uQhZyoOwsrCIDMItLtOscCCEqX7khBlCjMJns2CdiKVVXAjF8RfBN+mr9YCp+wuBOXrBj91hTYcDvvyPYNzMav6iNU2tz/gCxvhjl51yPGf24lOJ/mrAdJagWeh9qKWAqiaOuyf9UJLlkVKY6vGU+yWWKTZnmTAOC2KwGHFAn3zLJJZ3FZixp+mD+E0/00BGTMpSCmI93t3MZYREoE3FgWL0JnUrgo7zh2KeQsH/1/RW/n6DV3wqjetR9Qeq9/lhi4ejuLpzabvqYZTtzPCHt4e3IlHYu6ErehTejYzLBNd2jQ1amAQPfsaTlCpohv4HmV7wjF3K5cRnN+FqWIqShP3JOZuooJU+T6FKmZ5SKC3Kv74aWEvfDGLM254UbuKLC3jlRf65NUe+W050QlzcE/JWcJT3YcIWSllnXbfE5gLS2BduQGP2auAL8yYofJVED+c3ORCBf3AHJg63suOHq8knbQrQ7rkT2/92gb/S0Q4vlleiNIyt7tP55JyowePdfvR/I3wdsRlQuDmobuV46pnIyMZMXJRI3Vq6OxuLKvtL3urj96sm3QBrfea0AS+I8jCqFDGbv5OeuwuqDuPOWsqbd6dEO/6o0CT27pZkcQG2u0vB5cg1MwpFV71Lio8bVFF8oTLsfpHwZEuQ1H47jYctAjGrigzzPOXSmmgpCDsY99/wVoEi+6hdrH4xsj2MA==
 
+  resources:
+    limits:
+      cpu: 800m
+      memory: 1.2Gi
+    requests:
+      cpu: 600m
+      memory: 1Gi

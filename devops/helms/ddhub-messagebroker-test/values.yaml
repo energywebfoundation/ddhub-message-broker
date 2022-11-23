@@ -58,7 +58,6 @@ ddhub-messagebroker:
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilizationPercentage: 60
-    targetMemoryUtilizationPercentage: 80
 
   affinity:
     podAntiAffinity:

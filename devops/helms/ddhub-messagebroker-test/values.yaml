@@ -57,5 +57,16 @@ ddhub-messagebroker:
     enabled: true
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 60
     targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: "app.kubernetes.io/name"
+            operator: In
+            values:
+            - ddhub-messagebroker-test
+        topologyKey: "kubernetes.io/hostname"

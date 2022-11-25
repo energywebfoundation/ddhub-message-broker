@@ -20,6 +20,9 @@ import lombok.Setter;
 public class MessageAckDTOs{
 
 	public static final int MAX_FETCH_AMOUNT = 256;
+	
+	@Size(min = 1, max = 255, message = "The length between 1-255 characters")
+	private String anonymousRecipient;
 
     @Valid
     @NotNull

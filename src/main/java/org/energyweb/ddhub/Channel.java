@@ -133,18 +133,22 @@ public class Channel {
             	extChannelDTO.getAnonymousKeys().stream().filter(e -> streamsAnonymous.add(e.getAnonymousKey())).collect(Collectors.toList()).forEach(key->{
             		try {
             			ChannelDTO channelAnonymousKey = new ChannelDTO();
+            			channelAnonymousKey.setMaxMsgAge(natsMaxAge);
+            			channelAnonymousKey.setMaxMsgSize(natsMaxSize);
             			channelAnonymousKey.setFqcn(key.getAnonymousKey());
             			StreamConfiguration streamConfig = StreamConfiguration.builder()
             					.name(channelAnonymousKey.streamName())
             					.description(DID)
             					.addSubjects(channelAnonymousKey.subjectNameAll())
-            					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
-            					.maxMsgSize(channelDTO.getMaxMsgSize())
+            					.maxAge(Duration.ofMillis(channelAnonymousKey.getMaxMsgAge()))
+            					.maxMsgSize(channelAnonymousKey.getMaxMsgSize())
             					.duplicateWindow(
             							Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             					.build();
             			jsm.addStream(streamConfig);
             			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
+            			channelAnonymousKey.setOwnerdid(DID);
+                        channelRepository.save(channelAnonymousKey);
             		} catch (IOException | JetStreamApiException e) {
             			logger.info("[" + requestId + "]" + e.getMessage());
             			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));

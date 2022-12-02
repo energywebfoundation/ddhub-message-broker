@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import lombok.Getter;
@@ -15,11 +16,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MessageDTOs extends MessageDTO {
     @Valid
-	private List<@Size(max = 200, message = "The maximum length is 200 characters") String> fqcns;
+	private List<@Size(max = 200, message = "The maximum length is 200 characters")  @Pattern(regexp = "^((did|DID|dID|dId|DiD|DId|Did):).+(\\w*)", message = "DIDs format invalid") String> fqcns;
     
     @Valid
     @Size(max = 25, message = "The array size 25 maximum.")
-	private List<@Size(min = 1, max = 255, message = "The length between 1-255 characters") String> anonymousRecipient;
+	private List<@Size(min = 1, max = 255, message = "The length between 1-255 characters") @Pattern(regexp = "^(?!(did|DID|dID|dId|DiD|DId|Did):).+(\\w*)", message = "DIDs format identify") String> anonymousRecipient;
 
 	public boolean anonymousRule() {
 		if(anonymousRecipient == null  && fqcns == null) return true;

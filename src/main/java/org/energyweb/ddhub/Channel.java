@@ -127,7 +127,7 @@ public class Channel {
         List<ReturnAnonymousKeyMessage> status = new ArrayList<ReturnAnonymousKeyMessage>();
         
         try {
-            channelRepository.findByFqcn(DID);
+        	channelRepository.findByFqcn(DID);
             Set<String> streamsAnonymous = new HashSet<>();
             if(extChannelDTO != null) {
             	extChannelDTO.getAnonymousKeys().stream().filter(e -> streamsAnonymous.add(e.getAnonymousKey())).collect(Collectors.toList()).forEach(key->{
@@ -146,9 +146,17 @@ public class Channel {
             							Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             					.build();
             			jsm.addStream(streamConfig);
-            			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
             			channelAnonymousKey.setOwnerdid(DID);
+            			channelAnonymousKey.setFqcn(key.getAnonymousKey());
                         channelRepository.save(channelAnonymousKey);
+                        status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
+            		} catch (MongoException  e) {
+            			logger.warn("[" + requestId + "]" + e.getMessage());
+            			if (e.getMessage().contains("E11000")) {
+            				status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", "Record exists"));
+            			}else {
+            				status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
+            			}
             		} catch (IOException | JetStreamApiException e) {
             			logger.info("[" + requestId + "]" + e.getMessage());
             			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));

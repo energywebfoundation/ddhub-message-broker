@@ -147,7 +147,6 @@ public class Channel {
             					.build();
             			jsm.addStream(streamConfig);
             			channelAnonymousKey.setOwnerdid(DID);
-            			channelAnonymousKey.setFqcn(key.getAnonymousKey());
                         channelRepository.save(channelAnonymousKey);
                         status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
             		} catch (MongoException  e) {

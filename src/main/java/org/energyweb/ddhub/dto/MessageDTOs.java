@@ -51,40 +51,42 @@ public class MessageDTOs extends MessageDTO {
 	}
 
 	public List<ReturnMessage> validateFqcnParam() {
-		final String regex = "^(?!(did|DID|dID|dId|DiD|DId|Did):).+(\\w*)";
 		List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
-		List<String> failedFqcn = new ArrayList<String>();
-		
-		this.getFqcns().forEach(fqcn -> {
-			if(Pattern.compile(regex).matcher(fqcn).matches()) {
-				ReturnMessage errorMessage = new ReturnMessage();
-				errorMessage.setDid(fqcn);
-				errorMessage.setStatusCode(400);
-				errorMessage.setErr(new ReturnErrorMessage("MB::INVALID_FQCN", "fqcn:" + fqcn + " DIDs format invalid"));
-				failed.add(errorMessage);
-				failedFqcn.add(fqcn);
-			}
-		});
-		
-		this.getFqcns().removeAll(failedFqcn);
+		if((fqcns != null && !fqcns.isEmpty())) {
+			final String regex = "^(?!(did|DID|dID|dId|DiD|DId|Did):).+(\\w*)";
+			List<String> failedFqcn = new ArrayList<String>();
+			this.getFqcns().forEach(fqcn -> {
+				if(Pattern.compile(regex).matcher(fqcn).matches()) {
+					ReturnMessage errorMessage = new ReturnMessage();
+					errorMessage.setDid(fqcn);
+					errorMessage.setStatusCode(400);
+					errorMessage.setErr(new ReturnErrorMessage("MB::INVALID_FQCN", "fqcn:" + fqcn + " DIDs format invalid"));
+					failed.add(errorMessage);
+					failedFqcn.add(fqcn);
+				}
+			});
+			this.getFqcns().removeAll(failedFqcn);
+		}
 		return failed;
 	}
 	
 	public List<ReturnMessage> validateAnonymousRecipientParam() {
-		final String regex = "^((did|DID|dID|dId|DiD|DId|Did):).+(\\w*)";
 		List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
-		List<String> failedAnonymous = new ArrayList<String>();
-		this.getAnonymousRecipient().forEach(anonymous -> {
-			if(Pattern.compile(regex).matcher(anonymous).matches()) {
-				ReturnMessage errorMessage = new ReturnMessage();
-				errorMessage.setDid(anonymous);
-				errorMessage.setStatusCode(400);
-				errorMessage.setErr(new ReturnErrorMessage("MB::INVALID_ANONYMOUSKEY", "anonymousKey:" + anonymous + " DIDs format identify"));
-				failed.add(errorMessage);
-				failedAnonymous.add(anonymous);
-			}
-		});
-		this.getAnonymousRecipient().removeAll(failedAnonymous);
+		if((anonymousRecipient != null && !anonymousRecipient.isEmpty())) {
+			final String regex = "^((did|DID|dID|dId|DiD|DId|Did):).+(\\w*)";
+			List<String> failedAnonymous = new ArrayList<String>();
+			this.getAnonymousRecipient().forEach(anonymous -> {
+				if(Pattern.compile(regex).matcher(anonymous).matches()) {
+					ReturnMessage errorMessage = new ReturnMessage();
+					errorMessage.setDid(anonymous);
+					errorMessage.setStatusCode(400);
+					errorMessage.setErr(new ReturnErrorMessage("MB::INVALID_ANONYMOUSKEY", "anonymousKey:" + anonymous + " DIDs format identify"));
+					failed.add(errorMessage);
+					failedAnonymous.add(anonymous);
+				}
+			});
+			this.getAnonymousRecipient().removeAll(failedAnonymous);
+		}
 		return failed;
 	}
 

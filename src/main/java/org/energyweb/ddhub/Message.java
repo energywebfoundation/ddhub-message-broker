@@ -150,6 +150,8 @@ public class Message {
         List<String> fqcns = new ArrayList<String>();
         List<ReturnMessage> success = new ArrayList<ReturnMessage>();
         List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
+        failed.addAll(messageDTOs.validateFqcnParam());
+        failed.addAll(messageDTOs.validateAnonymousRecipientParam());
         messageDTOs.findFqcnList().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
                 failed.add(item);

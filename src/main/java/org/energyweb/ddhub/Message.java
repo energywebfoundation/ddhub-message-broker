@@ -634,11 +634,10 @@ public class Message {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {
             if (nc != null) {
-            	nc.flush(Duration.ofSeconds(0));
             	this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage messageNats size " + messageNats.size());
-                messageNats.forEach(m -> {
-                	m.nak();
-                });
+            	messageNats.forEach(m -> {
+            		m.nak();
+            	});
                 nc.close();
                 
                 messageNats.clear();

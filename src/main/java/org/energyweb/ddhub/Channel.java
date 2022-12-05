@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -86,6 +87,9 @@ public class Channel {
     @ConfigProperty(name = "NATS_MAX_SIZE")
     long natsMaxSize;
 
+    @ConfigProperty(name = "NATS_REPLICAS_SIZE")
+    OptionalInt natsReplicasSize;
+
     @ConfigProperty(name = "NATS_MAX_CLIENT_ID")
     OptionalLong natsMaxClientId;
     
@@ -142,6 +146,7 @@ public class Channel {
             					.addSubjects(channelAnonymousKey.subjectNameAll())
             					.maxAge(Duration.ofMillis(channelAnonymousKey.getMaxMsgAge()))
             					.maxMsgSize(channelAnonymousKey.getMaxMsgSize())
+            					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
             					.duplicateWindow(
             							Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             					.build();
@@ -162,6 +167,7 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
+                    .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
                     .duplicateWindow(
                             Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
@@ -176,6 +182,7 @@ public class Channel {
             			.addSubjects(channelKey.subjectNameAll())
             			.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
             			.maxMsgSize(channelDTO.getMaxMsgSize())
+            			.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
             			.duplicateWindow(
             					Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             			.build());
@@ -314,6 +321,7 @@ public class Channel {
     					.name(channelDTO.streamName())
     					.addSubjects(channelDTO.subjectNameAll())
     					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+    					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
     					.maxMsgSize(channelDTO.getMaxMsgSize())
     					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
     							.toMillis())
@@ -355,6 +363,7 @@ public class Channel {
     					.name(channelDTO.streamName())
     					.addSubjects(channelDTO.subjectNameAll())
     					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+    					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
     					.maxMsgSize(channelDTO.getMaxMsgSize())
     					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
     							.toMillis())

@@ -27,14 +27,12 @@ public class MessageDTOs extends MessageDTO {
 
 	public boolean anonymousRule() {
 		if(anonymousRecipient == null  && fqcns == null) return true;
-		if((anonymousRecipient != null && anonymousRecipient.isEmpty()) || (fqcns != null && fqcns.isEmpty())) return true;
 		if((anonymousRecipient != null && anonymousRecipient.isEmpty()) && (fqcns != null && fqcns.isEmpty())) return true;
 		return false;
 	}
 
 	public String anonymousRuleErrorMsg() {
 		if(anonymousRecipient == null  && fqcns == null) return "Both fqcns and anonymousRecipient cannot empty.";
-		if((anonymousRecipient != null && anonymousRecipient.isEmpty()) || (fqcns != null && fqcns.isEmpty())) return "Both fqcns and anonymousRecipient cannot empty.";
 		if((anonymousRecipient != null && anonymousRecipient.isEmpty()) && (fqcns != null && fqcns.isEmpty())) return "Both fqcns and anonymousRecipient cannot empty.";
 		return null;
 	}

@@ -22,6 +22,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -387,6 +388,35 @@ public class Channel {
     	}
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
+    }
+    
+    @DELETE
+    @Counted(name = "removeChannel_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
+    @Timed(name = "removeChannel_delete_timed", description = "", tags = {
+            "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("stream/{name}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @Authenticated
+    public Response removeChannel(@NotNull @PathParam("name") String streamName) throws IOException, InterruptedException, JetStreamApiException {
+        ChannelDTO channelDTO = new ChannelDTO();
+        
+        if(channelDTO.validateAnonymousKey(streamName) != null){
+        	return Response.status(400).entity(channelDTO.validateAnonymousKey(streamName)).build();
+        }
+
+        channelDTO.setFqcn(streamName.trim());
+        Connection nc = Nats.connect(natsConnectionOption());
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        jsm.deleteStream(channelDTO.streamName());
+        try {
+        	jsm.deleteStream("keys_" + channelDTO.streamName());
+        } catch (IOException | JetStreamApiException e) {
+        	logger.warn("[" + requestId + "]" + e.getMessage());
+        }
+        nc.close();
+
+		return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
     

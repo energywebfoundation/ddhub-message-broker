@@ -409,6 +409,7 @@ public class Channel {
         Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
         jsm.deleteStream(channelDTO.streamName());
+        channelRepository.deleteByFqcn(streamName);
         try {
         	jsm.deleteStream("keys_" + channelDTO.streamName());
         } catch (IOException | JetStreamApiException e) {

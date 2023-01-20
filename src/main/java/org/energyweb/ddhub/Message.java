@@ -902,6 +902,7 @@ public class Message {
                 .header("payloadEncryption", messageDTO.isPayloadEncryption())
                 .header("ownerDid", messageDTO.getSenderDid())
                 .header("signature", messageDTO.getSignature())
+                .header("timestampNanos", messageDTO.getTimestampNanos())
                 .build();
 
     }

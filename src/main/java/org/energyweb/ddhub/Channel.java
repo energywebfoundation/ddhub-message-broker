@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -86,6 +88,9 @@ public class Channel {
     @ConfigProperty(name = "NATS_MAX_SIZE")
     long natsMaxSize;
 
+    @ConfigProperty(name = "NATS_REPLICAS_SIZE")
+    OptionalInt natsReplicasSize;
+
     @ConfigProperty(name = "NATS_MAX_CLIENT_ID")
     OptionalLong natsMaxClientId;
     
@@ -127,24 +132,36 @@ public class Channel {
         List<ReturnAnonymousKeyMessage> status = new ArrayList<ReturnAnonymousKeyMessage>();
         
         try {
-            channelRepository.findByFqcn(DID);
+        	channelRepository.findByFqcn(DID);
             Set<String> streamsAnonymous = new HashSet<>();
             if(extChannelDTO != null) {
             	extChannelDTO.getAnonymousKeys().stream().filter(e -> streamsAnonymous.add(e.getAnonymousKey())).collect(Collectors.toList()).forEach(key->{
             		try {
             			ChannelDTO channelAnonymousKey = new ChannelDTO();
+            			channelAnonymousKey.setMaxMsgAge(natsMaxAge);
+            			channelAnonymousKey.setMaxMsgSize(natsMaxSize);
             			channelAnonymousKey.setFqcn(key.getAnonymousKey());
             			StreamConfiguration streamConfig = StreamConfiguration.builder()
             					.name(channelAnonymousKey.streamName())
             					.description(DID)
             					.addSubjects(channelAnonymousKey.subjectNameAll())
-            					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
-            					.maxMsgSize(channelDTO.getMaxMsgSize())
+            					.maxAge(Duration.ofMillis(channelAnonymousKey.getMaxMsgAge()))
+            					.maxMsgSize(channelAnonymousKey.getMaxMsgSize())
+            					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
             					.duplicateWindow(
             							Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             					.build();
             			jsm.addStream(streamConfig);
-            			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
+            			channelAnonymousKey.setOwnerdid(DID);
+                        channelRepository.save(channelAnonymousKey);
+                        status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
+            		} catch (MongoException  e) {
+            			logger.warn("[" + requestId + "]" + e.getMessage());
+            			if (e.getMessage().contains("E11000")) {
+            				status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", "Record exists"));
+            			}else {
+            				status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
+            			}
             		} catch (IOException | JetStreamApiException e) {
             			logger.info("[" + requestId + "]" + e.getMessage());
             			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
@@ -158,6 +175,7 @@ public class Channel {
                     .addSubjects(channelDTO.subjectNameAll())
                     .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
                     .maxMsgSize(channelDTO.getMaxMsgSize())
+                    .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
                     .duplicateWindow(
                             Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
@@ -172,6 +190,7 @@ public class Channel {
             			.addSubjects(channelKey.subjectNameAll())
             			.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
             			.maxMsgSize(channelDTO.getMaxMsgSize())
+            			.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
             			.duplicateWindow(
             					Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
             			.build());
@@ -310,6 +329,7 @@ public class Channel {
     					.name(channelDTO.streamName())
     					.addSubjects(channelDTO.subjectNameAll())
     					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+    					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
     					.maxMsgSize(channelDTO.getMaxMsgSize())
     					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
     							.toMillis())
@@ -351,6 +371,7 @@ public class Channel {
     					.name(channelDTO.streamName())
     					.addSubjects(channelDTO.subjectNameAll())
     					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+    					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
     					.maxMsgSize(channelDTO.getMaxMsgSize())
     					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
     							.toMillis())
@@ -367,6 +388,36 @@ public class Channel {
     	}
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
+    }
+    
+    @DELETE
+    @Counted(name = "removeChannel_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
+    @Timed(name = "removeChannel_delete_timed", description = "", tags = {
+            "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("stream/{name}")
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @Authenticated
+    public Response removeChannel(@NotNull @PathParam("name") String streamName) throws IOException, InterruptedException, JetStreamApiException {
+        ChannelDTO channelDTO = new ChannelDTO();
+        
+        if(channelDTO.validateAnonymousKey(streamName) != null){
+        	return Response.status(400).entity(channelDTO.validateAnonymousKey(streamName)).build();
+        }
+
+        channelDTO.setFqcn(streamName.trim());
+        Connection nc = Nats.connect(natsConnectionOption());
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        jsm.deleteStream(channelDTO.streamName());
+        channelRepository.deleteByFqcn(streamName);
+        try {
+        	jsm.deleteStream("keys_" + channelDTO.streamName());
+        } catch (IOException | JetStreamApiException e) {
+        	logger.warn("[" + requestId + "]" + e.getMessage());
+        }
+        nc.close();
+
+		return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
     

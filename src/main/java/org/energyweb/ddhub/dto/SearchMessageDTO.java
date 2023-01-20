@@ -33,6 +33,10 @@ public class SearchMessageDTO {
 	@JsonIgnore
 	private String fqcn;
 
+	@Size(min = 1, max = 255, message = "The length between 1-255 characters")
+	@Pattern(regexp = "^(?!(did|DID|dID|dId|DiD|DId|Did):).+(\\w*)", message = "DIDs format identify")
+	private String anonymousRecipient;
+
 	@Valid
 	private List<@NotNull @NotEmpty @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") String> topicId;
 
@@ -131,6 +135,10 @@ public class SearchMessageDTO {
 			jsm.deleteConsumer(streamName, consumer);
 		} catch (IOException | JetStreamApiException e) {
 		}
+	}
+
+	public String anonymousFqcnRule(String DID) {
+		return (anonymousRecipient == null)?DID:anonymousRecipient;
 	}
 	
 }

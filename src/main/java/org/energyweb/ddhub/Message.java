@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -53,7 +52,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
-import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.dto.FileUploadChunkDTOs;
 import org.energyweb.ddhub.dto.FileUploadDTOs;
 import org.energyweb.ddhub.dto.InternalMessageDTO;
@@ -78,17 +76,15 @@ import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
-import io.nats.client.JetStreamManagement;
 import io.nats.client.JetStreamOptions;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import io.nats.client.PublishOptions;
 import io.nats.client.api.ConsumerConfiguration;
-import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.ConsumerConfiguration.Builder;
-import io.opentelemetry.extension.annotations.WithSpan;
 import io.nats.client.api.PublishAck;
+import io.opentelemetry.extension.annotations.WithSpan;
 import io.quarkus.security.Authenticated;
 
 @Path("/messages")
@@ -149,11 +145,14 @@ public class Message {
     @Authenticated
     public Response publish(@Valid @NotNull MessageDTOs messageDTOs)
             throws InterruptedException, TimeoutException, IOException {
+    	if(messageDTOs.anonymousRule()) throw new IllegalArgumentException(messageDTOs.anonymousRuleErrorMsg());
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
         List<String> fqcns = new ArrayList<String>();
         List<ReturnMessage> success = new ArrayList<ReturnMessage>();
         List<ReturnMessage> failed = new ArrayList<ReturnMessage>();
-        messageDTOs.getFqcns().forEach(fqcn -> {
+        failed.addAll(messageDTOs.validateFqcnParam());
+        failed.addAll(messageDTOs.validateAnonymousRecipientParam());
+        messageDTOs.findFqcnList().forEach(fqcn -> {
             Optional.ofNullable(channelRepository.validateChannel(fqcn)).ifPresentOrElse(item -> {
                 failed.add(item);
                 this.logger.error("[PUBLISH][" + DID + "][" + requestId + "]" + JsonbBuilder.create().toJson(item));
@@ -259,7 +258,7 @@ public class Message {
 
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setClientGatewayMessageId(messageDTOs.getClientGatewayMessageId());
-        messageResponse.setRecipients(new Recipients(messageDTOs.getFqcns().size(), success.size(), failed.size()));
+        messageResponse.setRecipients(new Recipients(messageDTOs.findFqcnList().size(), success.size(), failed.size()));
         messageResponse.add(success, failed);
 
         this.logger.info("[PUBLISH][" + DID + "][" + requestId + "] result success messageIds : " + messageIds);
@@ -480,7 +479,7 @@ public class Message {
     public Response search(@Valid @NotNull SearchMessageDTO messageDTO)
             throws InterruptedException, TimeoutException, IOException, JetStreamApiException {
         topicRepository.validateTopicIds(messageDTO.getFqcnTopicList(), true);
-        messageDTO.setFqcn(DID);
+        messageDTO.setFqcn(messageDTO.anonymousFqcnRule(DID));
 
         HashSet<io.nats.client.Message> messageNats = new HashSet<io.nats.client.Message>();
         List<io.nats.client.Message> acks = new ArrayList<io.nats.client.Message>();
@@ -637,11 +636,10 @@ public class Message {
             this.logger.error("[SearchMessage][IllegalArgument][" + DID + "][" + requestId + "]" + ex.getMessage());
         } finally {
             if (nc != null) {
-            	nc.flush(Duration.ofSeconds(0));
             	this.logger.info("[SearchMessage][" + DID + "][" + requestId + "] SearchMessage messageNats size " + messageNats.size());
-                messageNats.forEach(m -> {
-                	m.nak();
-                });
+            	messageNats.forEach(m -> {
+            		m.nak();
+            	});
                 nc.close();
                 
                 messageNats.clear();
@@ -667,7 +665,8 @@ public class Message {
     public Response natsAck(@Valid @NotNull MessageAckDTOs ackDTOs)
             throws IOException, JetStreamApiException, InterruptedException, TimeoutException {
         SearchMessageDTO messageDTO = new SearchMessageDTO();
-        messageDTO.setFqcn(DID);
+        messageDTO.setAnonymousRecipient(ackDTOs.getAnonymousRecipient());
+        messageDTO.setFqcn(messageDTO.anonymousFqcnRule(DID));
         messageDTO.setClientId(ackDTOs.getClientId());
         messageDTO.setAmount(ackDTOs.getMessageIds().size());
         messageDTO.setFrom(ackDTOs.getFrom());

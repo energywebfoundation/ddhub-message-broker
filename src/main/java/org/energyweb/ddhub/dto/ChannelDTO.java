@@ -28,6 +28,7 @@ public class ChannelDTO extends DDHub {
 	public static final int DEFAULT_CLIENT_ID_SIZE = 50;
 	public static final int MAX_RECONNECTS = 3;
 	public static final long TIMEOUT = 5;
+	public static final int DEFAULT_REPLICAS_SIZE = 1;
 
     @NotNull
     @Max(value = 86400000)

@@ -1,9 +1,12 @@
 package org.energyweb.ddhub.dto;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.json.bind.annotation.JsonbDateFormat;
@@ -15,6 +18,9 @@ import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.nats.client.JetStreamApiException;
+import io.nats.client.JetStreamManagement;
+import io.opentelemetry.extension.annotations.WithSpan;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,11 +33,20 @@ public class SearchMessageDTO {
 	@JsonIgnore
 	private String fqcn;
 
-	@NotNull
+	@Size(min = 1, max = 255, message = "The length between 1-255 characters")
+	@Pattern(regexp = "^(?!(did|DID|dID|dId|DiD|DId|Did):).+(\\w*)", message = "DIDs format identify")
+	private String anonymousRecipient;
+
 	@Valid
 	private List<@NotNull @NotEmpty @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") String> topicId;
 
 	@NotNull
+	@NotEmpty
+    @Valid
+    private List<@NotNull @NotEmpty @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string") String> fqcnTopicList;
+
+	@NotNull
+	@NotEmpty
 	@Valid
 	private List<@NotNull @NotNull String> senderId;
 
@@ -67,6 +82,9 @@ public class SearchMessageDTO {
 		List<String> _clientId = new ArrayList<>();
 		_clientId.addAll(Arrays.asList(clientId.split("[.>*]")));
 		_clientId.removeIf(String::isEmpty);
+		if(from != null) {
+		    _clientId.add("#:"+Long.toHexString(from.toEpochSecond(ZoneOffset.UTC)));
+		}
 		return String.join(":", _clientId);
 	}
 
@@ -77,4 +95,50 @@ public class SearchMessageDTO {
         }
         return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
     }
+
+	@WithSpan("clientIdValidate")
+	public void manageSearchDateClientId(JetStreamManagement jsm){
+		try {
+			if(this.getFrom() == null ) {
+				return;
+			}
+			String durable = this.findDurable();
+			HashSet<String> checkDuplicate = new HashSet<>();
+			if(checkConsumerExist(jsm, this.streamName(), durable)) {
+				checkDuplicate.add(durable);
+			}
+			jsm.getConsumerNames(this.streamName()).stream().filter(c->c.startsWith(durable.split(":#:")[0]+ ":#:") ).forEach(id ->{
+				if(checkDuplicate.add(id)) {
+					deleteConsumer(jsm, this.streamName(), id);
+				}
+			});
+		} catch (IOException | JetStreamApiException e) {
+		}
+	}
+	
+	@WithSpan("checkConsumerExist")
+	public boolean checkConsumerExist(JetStreamManagement jsm, String streamName, String consumer)
+	{
+		boolean isExist = false;
+		try {
+			jsm.getConsumerInfo(streamName, consumer);
+			isExist = true;
+		} catch (IOException | JetStreamApiException e) {
+		}
+		
+		return isExist;
+	}
+	
+	@WithSpan("deleteConsumer")
+	public void deleteConsumer(JetStreamManagement jsm, String streamName, String consumer) {
+		try {
+			jsm.deleteConsumer(streamName, consumer);
+		} catch (IOException | JetStreamApiException e) {
+		}
+	}
+
+	public String anonymousFqcnRule(String DID) {
+		return (anonymousRecipient == null)?DID:anonymousRecipient;
+	}
+	
 }

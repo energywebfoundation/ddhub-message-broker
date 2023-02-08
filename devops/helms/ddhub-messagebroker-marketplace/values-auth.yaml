@@ -60,11 +60,22 @@ did-auth-proxy-helm:
     auth:
       existingSecret: did-auth-proxy-marketplace-sealedsecret
       existingSecretPasswordKey: REDIS_PASSWORD
-      
+    master:
+      tolerations:
+        - key: "project"
+          operator: "Equal"
+          value: "marketplace"
+          effect: "NoSchedule"
   ########
   # nginx
   nginx:
     fullnameOverride: "ddhub-messagebroker-nginx-marketplace"
+
+    tolerations:
+      - key: "project"
+        operator: "Equal"
+        value: "marketplace"
+        effect: "NoSchedule"
 
     serverBlock: |-
       server {

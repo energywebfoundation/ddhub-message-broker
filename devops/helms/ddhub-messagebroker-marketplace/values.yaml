@@ -23,6 +23,9 @@ ddhub-messagebroker:
 
   nameOverride: "ddhub-messagebroker-marketplace"
   fullnameOverride: "ddhub-messagebroker-marketplace"
+  
+  nodeSelector:
+    project: "marketplace"
 
   tolerations:
     - key: "project"

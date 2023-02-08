@@ -61,6 +61,8 @@ did-auth-proxy-helm:
       existingSecret: did-auth-proxy-marketplace-sealedsecret
       existingSecretPasswordKey: REDIS_PASSWORD
     master:
+      nodeSelector:
+        project: "marketplace"
       tolerations:
         - key: "project"
           operator: "Equal"
@@ -76,6 +78,9 @@ did-auth-proxy-helm:
         operator: "Equal"
         value: "marketplace"
         effect: "NoSchedule"
+    
+    nodeSelector:
+      project: "marketplace"
 
     serverBlock: |-
       server {

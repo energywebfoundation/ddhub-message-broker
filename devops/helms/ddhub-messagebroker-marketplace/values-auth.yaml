@@ -26,7 +26,7 @@ did-auth-proxy-helm:
   #for now dummy configs
   appValues:
     PORT: 80
-    ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
+    ACCEPTED_ROLES: user.roles.marketplace.apps.energyweb.iam.ewc,topiccreator.roles.marketplace.apps.energyweb.iam.ewc
     JWT_ACCESS_TTL: 3600
     JWT_REFRESH_TTL: 86400
 

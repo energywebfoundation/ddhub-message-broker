@@ -1,0 +1,109 @@
+
+# Default values for did-auth-proxy-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+did-auth-proxy-helm:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: aemocontainerregistry.azurecr.io/did-auth-proxy
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "canary"
+
+  imagePullSecrets: 
+    - name: regcred
+  nameOverride: "did-auth-proxy-marketplace"
+  fullnameOverride: "did-auth-proxy-marketplace"
+
+  tolerations:
+    - key: "project"
+      operator: "Equal"
+      value: "marketplace"
+      effect: "NoSchedule"
+
+  #for now dummy configs
+  appValues:
+    PORT: 80
+    ACCEPTED_ROLES: user.roles.ddhub.apps.energyweb.iam.ewc,topiccreator.roles.ddhub.apps.energyweb.iam.ewc
+    JWT_ACCESS_TTL: 3600
+    JWT_REFRESH_TTL: 86400
+
+  opsValues:
+    CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
+    REDIS_HOST: ddhub-messagebroker-marketplace-redis-master.ddhub-marketplace.svc
+    REDIS_PORT: 6379
+    IPFS_HOST: ipfs.infura.io
+    IPFS_PORT: 5001
+
+  sealedSecret:
+    enabled: true
+    annotations: {}
+    encryptedData: 
+      CACHE_SERVER_LOGIN_PRVKEY: AgCFHhkujn6DDRJVDfuP7mT9JlGtH73cdcu1snvGic7faf0UrrTqYMlDbmX65j+hJGxvUs5/ls5LLk6ctgT8JUQN9giTodSYYB65nOe/hCwHPpoj700L9wpxXWtN7tr980lMzgHvIIWiKYrejSatPhozwG74EiCPgFqeC5xfriJJpeGf3Pm7YzJQEExoP8TIGz5XRjazRmqTCT+OIHRaaCWLiYjUJyhup8ap9BqSf7+OLo8ssJx+Pk6blzHaRtfwOQvJ3NAj4/S/p1bBGbL/Nxl2/48niq4VQ+jIDrNCUFMG8usu2tpgMR13zGYo8Ao49uBLuxGNtKBXJx0JmG264Xtib5mO43TuGhsXYHuALhNQEOKZ3bzlp06NhG1aR/oVwUAZ/LRVE2nKlsO+eDo/HemaZxWhfXOOHnmdLlF4/SV3kJOs+OGyj3LapPjLmVrmCVfCzxcQga2NZ4ldWWz1oVBL3EFg/2YVV86crrrKMdiMnR/eNB5NJFjii30rPzFOVhC05yphwao6nVkvnRk/899Vboh+/T2SimrIxc5JOR/wZP0enNRx5Rcf6hQadMyqIPYI0QDoB0pET1W8LKROe3ASnQ45F3++fUVy1Sa1XPwwULfV6tVuE4BEUlhhdOLJMCWPyVvAbHgR194POURklrleSSKxOEfD4HVfVlM0etsdHyt3pXhkPD1HQeI1iKMdVdkflNPaWocXK8lApnRPqQNMXx2Gl3QDalf7RQkXxVlpquZKtp36nOBUqqIoCsTay0Qoaa+zT4n9H9mgkt6pQ3Rj
+      JWT_SECRET: AgBhd4qMEN9dC9WK4sLYwN06eRu6d7CYvapLirqxhmVVoVFv6Zg/xLky0RZmow9Gr9eQAyqAWpRSiCX0hfFqnxvVVgBlVTkWVIa2cX4mRxosv+4FEt2Ed0cc50LhGgdqvatxg6/ITmftIRVZEDJ9rdEGCRckkE1yeacy08obQKmEuecVCRsXS536YhyDi1TNhFdNI1d9KkCOTnTWvQS2S6aFOTmleRcZikgxsuPbWFQDQOOs3pBIWr6eETbKldfmBNyeGBtenPDyjjPOuFYYbyhQ4ACPfzUaBz5R4FBaN7ieOG54ISpTml2aCvjTShwuYQoNg8oCOjHeKjTHSY+w1/TsmXerT6jFjECaWAn7QyF6+5QCE5w20HqDOY8P6P27Ck7ScsUsj0eOBsyojYpDRQV73A2kGAxqAl1zMliAuDEY5FFU9EQ4tTeyDssAiRmqb6sAIQbEtyVEtsr+n3IG5+SLn0bB5YN1r2EaypKaCCum2+L9ymwEhcMsL5Z6u1GlN7myBFAqL5aFHiL+al6Z6dARVY+Y6cJUDDcrfpU6vt826VLTedGm/Q1sqK4wf7bepWM22dIRBckvSgLRIY0JGYyLlG7p00VFF996RzMqkK7kM72RUyDhPGnMGF0w/z0J6mASZkqA8WNS5wiVSnhJKE1QF7HnufFwFXCCk/zvHvG5AGKHcs6inChB6sd4JXDmb/VgIAbCGYDS76/c4/QI
+      REDIS_PASSWORD: AgBbnkgrRVez4jH3nXAB2UYPJnf20VwAPRIobni+h8lRUa1R75rMjwFD2gWoSV9zUjXjXtnKuX8aKPvXqiJzQqqeedxzpVPSPl8bbG1K4Twq+gw5UGQrg+b+REMLgyV3+77+lhI4Svvy3VC+u8Q9SsCJcwi311d+CEXY2UZQOtfCOn9/7HTdq/teu3Uw7ETBdojdGI8MG7vkgjVQ+HQL8oAN7oAAC5NOVnGKbmv+KwxK3p9x5yLOqZGZ2BNaXy97ZFufQ7J82QaWLDQNnFNszYNBbX4ZmoVIWcVl3IxVjnlJ5l1/cZY+JMFz8rHNGSdDqZZJh/77X96lawvQfx8V7uI0h1r+RoeO0uT/b9+EctkWq3gQn4eMBffGyAMxnKTGYciaEFZgNnqfFpd3/h6ZmKv9w4Xhtc4fED/1Hj9wwzbFuhouK/6aCN6kamoAmvI7F8uP03AkhIQy6u/Vu/SX3gZvIshXictfBLtHdxQ/s0/LhTt6yG/PY/9WaEeosHn3blhiOQxUjF0VpXEeLhDRtOGG/R7gNwRCBY7yCl/yL0ltk0OSeYXZMSwsC1UBpN/SOrl5pVkolAPN0b+Ac2oaXWJARbsoyx17gGXFQ/WNyQl6LcZav+DTD8fjJSblChCb+e0DooF9I5leJZFxBreraNTzBsmgLdQcipy+keoNy8pQzyQTYbffprHvmAi/eT3hD/S71hL+Ofov2skcetyaC04ptKO+lRE/sHOZ9Xw=
+      DID_REGISTRY_ADDRESS: AgCuJk9vLKk/QJXpsSxh4kGiXHv+ltVuWhJDxHVT2iiAX+4iKI3VZLTtO1Tfo1lsjxy1OfvDZJl5J95OTpQXghj6kySuzzYlensiNB5mSN1IdtNB7VERKVP71ZSmavoycQgFrfnP1kYLbnf+PJuVfNebvDWzRuUUfPhnM35UKZrzLY3+f1LS2aS3RZ6kHsoQKT/hmqwoVwencMTaI9EkbVo9jQ3aCv68zhUpPr3gqvZSQ/V7utKKwHqIfDeR0zLvgNdEsl28DuptKLgbWkLZnpbxqKY8A9Tq3PV5D8De0stUYz4NsZc+Udoov/AvlrCuC4IpS2nPxNnrY/LDt54zlWKCqjb1abgYlfA4rj4dTXuovFkiqHJ8WQJHwc2RrolFZqIr/b/ap5tv+c+mq1ClfMwsjgplrd4FhmxwL4qITnN0GYYehSa6gWAwCW0Dyq6soJisJ0XJWurP6eWvgR2LqwJcMDXsNAaKGsjXSLY7VghWftCYYO5eY1LfgXPbR5wWw3F2Dh2KE93E1YADyYU3ZR2hj6qUxgM3xGKS+azcSTR8i7he5Q/CmmHr39wcgJ+L/WLoiuB1U2jJT0txXIGGeMcdEwjw8sCfmZaVnjXe5Lqe8Xdh3J3OeqJrrst8FRQTqMDRQ/liHVrhzaC5zDuFiwljzH/V5UDA2GaU6kg1TXSI6py2vKL3VbSG/R35UwnCTeVgLIf8t9aglPEUUbi/lzxw3ATBV3nOJWXgBK7QB807j3oop05qHCHxmeI=
+      ENS_REGISTRY_ADDRESS: AgCwj/M+YKGSGs5mIRiIyEKzGKLgW4dc4mNJAdUdWW925NTIwMPf4BTUVONWw0rLWhjekLUxsXAwZHlGsR/+Zhf7ICV7rch/LGit9uPjlVnNNadZuGUd9+Zh8MWzEtcLqxpad3mMsNxyLKIs9hGQsH2nYlXzXrBOgwhS08ni2itMrpkNTltsslllYSHM9oOMjdrk2AvlH3VwmJD1SHGxKhNNrHVrmiXdgkT7wv0GU09ZXl/m8eN4ZqOAWz4pNPWGTKVzpA+JFzSFxS8los6dEa6JBLijrp1Y9IxDrDymqmJl0Gq84/v7N3r0fnRGfp5dTo5wZKSXtNqOR1lHI6TX1gm52wnf3Lb1Q93lt8KLWdx4XTEJJ2/fS6ISNjTL5izkBV0SwmjPv4iXBhdhuIIuanclXJ164wH0Y8XM3h3FFN9ojB8hPB5/D0leIqGzx6M3SNcYTros4OddBGMVfpNaF7hemOAdBkjghNTk81RUH3HwVITqhAUMCf2KoJxBZbhJHCfsCMeJlfBl1iE87+1iRmGTTq+1F214HbOoa6A7o079DyxoUlKbXzUHd6ylWyhT4TcWdhKaX2l2lDcCeajeNS/BGhwBiVqXY7Qw9C7KRaF9tm6VYlk0ABXyfWSwXuxkEDVcRAJHTpW1ny4kjX02i0JPiXXm0JzU4cOx1bMIT+JG7NpN4QkOcWayMszvJX0kkivKd24ZS3rBffJpMNYOLaBhF/jctahGa0FNUsi72kMMMoRdZ71lJo/MH+E=
+      IPFS_PROJECTID: AgDFLMCqDXK3SjXAW112kBYO2IYYBITyPLSBqQdjz4v5rslTiVGR0c18OK4At3+xbE55yJb5ifAcRSQuqdDIWClA1mWogJ6SThkV+UhtEjK192tdyB/Dm4+N6tvqRrSos/lOiuZ+fKfR10s5zCWkrHqv+VO/sMqeIN1O5OiOhRV4GGhNsWdH3mIbOBmzMlxV2RVgGXOUYVw+mfC51KQhEAP+eSnmLA7bVfLsdfgvqV0AXeSlD7Uz3Hbu/1fC5Rbp6+awBRap0TJFaLYPFoViNlsOthUxOK2JMZxRyMCCvbAkwt3mUTVQWfGKhSupFhiuEEaYruscNgg3kNUFTAc5SgQyzgbWlVJBfsWvbaPzSyyS0Tli7NckXmaDMBGPusYehRgR9YzeO2BJI/r4GTDjs2h8YPfuWEoK4g3Dd0fdZWr+Kp5xJ8KJNjHhyzhqfaRa27rZ0YCFQN+Ryp7JLrbGScJ2SigfsNWA+ss/DB6/bzkCSHVQmoD3XtquWDPXuMUsbagzw5gdNETPHUa4BfagPogpB7H+NOHEKSQWz4s1JFxtuaVbLMq4cPIQE+YfMJU59JpJjYWlxlAf90PvLbPXTI4s1lDa8feZLMNA3lwDdQGAkA+R0MXzQ8eJeYutMc1xr+PCG8g2CIAG51LvHvb3JmX/Ey9c1780rWwNnndqIXQDQ4eyTO1NIzOWbNoYARwTd4aLErq6/woW3StygBq4m1xde6OJ6uD5pdTYdD0=
+      IPFS_PROJECTSECRET: AgCL9J2pNGDoA6lAv0sXZZ09GgM5jxCzyzY9XE6RhtycsW2877c9xvj3icWYemqZRVZwMiFijFI2jWF10/NLwz4Ev536lVRkJZ1ImsNqe+PXq4XNSFwDFkSQUWUYjM8X2lilb7p5irsvuSnd5kzF2Qe4qfsfkchOCuUFuBPxGXaMDnVgNpkVTBe+B7Ue5XQA5GaExvVCFmnJ1zP8hVS/EEppQwU3GeoCtwOxIHI9EfGjRJnkGClEHZ85NzwhF8aNplGCjTQUHoUTPDyD5v60XvHnIoA50O4qdwfb+3hcUIv4MhK+V4YBMDuzT40z/bbtcscSQl1jvBZLCfzK6xlognIS4V1ag7ultd1hTQcofUHxYL5xaXxKUFYD3yavWMAv6Lx55/733xubpKruJ2Tsi/aKjBRVqWQ8LlqX4men2f0oGZOVC1PLkMpWQygjPaR3ZwFMms9orlnLA3bSoNlUesZUjqEu7FPnXX/LB4Sc5gZAN8S36W+7l76ccwwdvPcdXmnoCYY9BHVS5jFl4UT4SOivff3IJDS590DkAevUX8p44uiGaaL2AsCZs5xKN+D8TsE6nBtYGahfyLh1st7wPb514evbu83QxvEzJ754EtBGX42sTzEltDEErXQN+LlXJzVGIsumTUp2epIQkl3Wd0+jj1UvEDgdSYbXGMZFhU8FZviFg5mVlU7srCQUzUySjt4RXAelENVu5ULw8R6fhIsztqOf5MKbfZT3wmkDjP3FFg==
+      ENS_RESOLVER_ADDRESS: AgB4zg/1ZXDe8S2b0HLLS7njJLrMwjcvyaSmS78zezh8hpNki4y+WnXg843Ao3wsOY8OdUFU1Eb9mXaCanTwx3SHMaW+K8+4yvpztmUyl1a8680cg7PrVYBkZuzfdztwRM/r4KG4DRC/M0A4TwA0astf7HQ5L1VgmLQd2mxvY16oyOyypwNCjW++Ro8+8dCgzGUk2ugztykbWoFZ9tR0XXqjq/4uheH+z2oXbcG2sWLYse13icUR3BI+jTYWuGj3QV+JlvXgph4qSJTNyd5G94W53PRAUSJ1ZRSMBgiN+Dr9dSphfBtY3LkG5+qSrvlxX/fWEMrPIquKmpIvvXFbjOmn90/3qCyKKRqomtHU1xKYDlTQ0i5/+xgZ53rtUXOc/E9NfkKNsA0qg+gppx8AvrN6iHEKl2grpCTuMP3HOmZDv5NheUhtWhDyDZ9JzZkCjF32NUBvv4HmkeEolB7Fyst/0jl7IR/GUtcHLEvOQ0IgB5bCuD6RB946nl6mmgmjC5HFw+n854/hTc2Lzrl9lUYuvbJND8oXDfStZh2spm2JjDOuNlFNXuB7LK6Ah39kos5xtwA5S4siLrFSlKDs3YbU+zY2YdEHSLmy2SsIH6PlU2CW/8zJUu4yxPwt/31se+RoAFADaFykzZGNeZlo8ykdyJBukew4Rg9wRRNJsuPQWZxTtXHdVeBAuSBZm9zy0wEXzAYSncu0dpN/SNhecCPa6Mw31w3Wg/JvBgzS8hkWRJw1J2YbUs8fD/8=
+
+  ########
+  # Redis
+
+  redis:
+    global:
+      storageClass: azurefile
+    architecture: standalone
+    auth:
+      existingSecret: did-auth-proxy-marketplace-sealedsecret
+      existingSecretPasswordKey: REDIS_PASSWORD
+      
+  ########
+  # nginx
+  nginx:
+    fullnameOverride: "ddhub-messagebroker-nginx-marketplace"
+
+    serverBlock: |-
+      server {
+        listen 0.0.0.0:8080;
+        server_name  _;
+        location ~ ^/(swagger-ui|q/openapi|health) {
+            proxy_pass http://ddhub-messagebroker-marketplace.ddhub-marketplace.svc.cluster.local;
+        }
+        location ~ ^/auth {
+            proxy_pass http://did-auth-proxy-marketplace.ddhub-marketplace.svc.cluster.local;
+        }
+        location ~ / {
+            auth_request /token_introspection;
+            proxy_pass http://ddhub-messagebroker-marketplace.ddhub-marketplace.svc.cluster.local;
+        }
+        location = /token_introspection {
+              internal;
+              proxy_method      GET;
+              proxy_set_header  Authorization "$http_authorization";
+              proxy_set_header  Content-Length "";
+              proxy_pass        http://did-auth-proxy-marketplace.ddhub-marketplace.svc.cluster.local/auth/token-introspection;
+        }
+      }
+
+    ingress:
+      enabled: true
+      annotations: 
+        kubernetes.io/ingress.class: nginx
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/proxy-body-size: 20m
+        external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+        cert-manager.io/issuer: prod-issuer
+        cert-manager.io/issuer-kind: OriginIssuer
+        cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
+      hostname: ddhub-marketplace.energyweb.org
+      pathType: Prefix
+      path: /
+      tls: false
+      extraTls:
+        - hosts:
+          - ddhub-marketplace.energyweb.org
+          secretName: ddhub-marketplace-tls-secret

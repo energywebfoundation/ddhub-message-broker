@@ -93,7 +93,7 @@ public class Channel {
 
     @ConfigProperty(name = "NATS_MAX_CLIENT_ID")
     OptionalLong natsMaxClientId;
-    
+
     @ConfigProperty(name = "DUPLICATE_WINDOW")
     OptionalLong duplicateWindow;
 
@@ -110,7 +110,7 @@ public class Channel {
     @Inject
     @Claim(value = "roles")
     String verifiedRoles;
-    
+
     @HeaderParam("X-Request-Id")
     String requestId;
 
@@ -121,52 +121,76 @@ public class Channel {
     @Path("initExtChannel")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
-    public Response initExtChannel(@Valid ExtChannelDTO extChannelDTO) throws IOException, JetStreamApiException, InterruptedException, ParseException {
+    public Response initExtChannel(@Valid ExtChannelDTO extChannelDTO)
+            throws IOException, JetStreamApiException, InterruptedException, ParseException {
         ChannelDTO channelDTO = new ChannelDTO();
         channelDTO.setFqcn(DID);
         channelDTO.setMaxMsgAge(natsMaxAge);
         channelDTO.setMaxMsgSize(natsMaxSize);
         Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
-        
+
         List<ReturnAnonymousKeyMessage> status = new ArrayList<ReturnAnonymousKeyMessage>();
-        
+
         try {
-        	channelRepository.findByFqcn(DID);
+            channelRepository.findByFqcn(DID);
             Set<String> streamsAnonymous = new HashSet<>();
-            if(extChannelDTO != null) {
-            	extChannelDTO.getAnonymousKeys().stream().filter(e -> streamsAnonymous.add(e.getAnonymousKey())).collect(Collectors.toList()).forEach(key->{
-            		try {
-            			ChannelDTO channelAnonymousKey = new ChannelDTO();
-            			channelAnonymousKey.setMaxMsgAge(natsMaxAge);
-            			channelAnonymousKey.setMaxMsgSize(natsMaxSize);
-            			channelAnonymousKey.setFqcn(key.getAnonymousKey());
-            			StreamConfiguration streamConfig = StreamConfiguration.builder()
-            					.name(channelAnonymousKey.streamName())
-            					.description(DID)
-            					.addSubjects(channelAnonymousKey.subjectNameAll())
-            					.maxAge(Duration.ofMillis(channelAnonymousKey.getMaxMsgAge()))
-            					.maxMsgSize(channelAnonymousKey.getMaxMsgSize())
-            					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
-            					.duplicateWindow(
-            							Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
-            					.build();
-            			jsm.addStream(streamConfig);
-            			channelAnonymousKey.setOwnerdid(DID);
-                        channelRepository.save(channelAnonymousKey);
-                        status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
-            		} catch (MongoException  e) {
-            			logger.warn("[" + requestId + "]" + e.getMessage());
-            			if (e.getMessage().contains("E11000")) {
-            				status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", "Record exists"));
-            			}else {
-            				status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
-            			}
-            		} catch (IOException | JetStreamApiException e) {
-            			logger.info("[" + requestId + "]" + e.getMessage());
-            			status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
-            		}
-            	});
+            if (extChannelDTO != null) {
+                extChannelDTO.getAnonymousKeys().stream().filter(e -> streamsAnonymous.add(e.getAnonymousKey()))
+                        .collect(Collectors.toList()).forEach(key -> {
+                            try {
+                                ChannelDTO channelAnonymousKey = new ChannelDTO();
+                                channelAnonymousKey.setMaxMsgAge(natsMaxAge);
+                                channelAnonymousKey.setMaxMsgSize(natsMaxSize);
+                                channelAnonymousKey.setFqcn(key.getAnonymousKey());
+                                StreamConfiguration streamConfig = StreamConfiguration.builder()
+                                        .name(channelAnonymousKey.streamName())
+                                        .description(DID)
+                                        .addSubjects(channelAnonymousKey.subjectNameAll())
+                                        .maxAge(Duration.ofMillis(channelAnonymousKey.getMaxMsgAge()))
+                                        .maxMsgSize(channelAnonymousKey.getMaxMsgSize())
+                                        .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
+                                        .duplicateWindow(
+                                                Duration.ofSeconds(
+                                                        duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
+                                                        .toMillis())
+                                        .build();
+                                jsm.addStream(streamConfig);
+                                channelAnonymousKey.setOwnerdid(DID);
+                                channelRepository.save(channelAnonymousKey);
+                                status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Success", ""));
+                                try {
+                                    ChannelDTO channelAnonymousKeyKey = new ChannelDTO();
+                                    channelAnonymousKeyKey.setFqcn(key.getAnonymousKey() + ".keys");
+                                    jsm.addStream(StreamConfiguration.builder()
+                                            .name(channelAnonymousKeyKey.streamName())
+                                            .addSubjects(channelAnonymousKeyKey.subjectNameAll())
+                                            .maxAge(Duration.ofMillis(channelAnonymousKey.getMaxMsgAge()))
+                                            .maxMsgSize(channelAnonymousKey.getMaxMsgSize())
+                                            .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
+                                            .duplicateWindow(
+                                                    Duration.ofSeconds(
+                                                            duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
+                                                            .toMillis())
+                                            .build());
+                                } catch (IOException | JetStreamApiException e) {
+                                    logger.info("[" + requestId + "]" + e.getMessage());
+                                }
+                            } catch (MongoException e) {
+                                logger.warn("[" + requestId + "]" + e.getMessage());
+                                if (e.getMessage().contains("E11000")) {
+                                    status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail",
+                                            "Record exists"));
+                                } else {
+                                    status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail",
+                                            e.getMessage()));
+                                }
+                            } catch (IOException | JetStreamApiException e) {
+                                logger.info("[" + requestId + "]" + e.getMessage());
+                                status.add(
+                                        new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
+                            }
+                        });
             }
         } catch (MongoException ex) {
             logger.info("[" + requestId + "] Channel not exist. creating channel:" + DID);
@@ -180,24 +204,25 @@ public class Channel {
                             Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
                     .build();
             StreamInfo streamInfo = jsm.addStream(streamConfig);
-            
+
             try {
-            	logger.info("[" + requestId + "] Channel not exist. creating channel keys:" + DID);
-            	ChannelDTO channelKey = new ChannelDTO();
-            	channelKey.setFqcn(DID + ".keys");
-            	jsm.addStream(StreamConfiguration.builder()
-            			.name(channelKey.streamName())
-            			.addSubjects(channelKey.subjectNameAll())
-            			.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
-            			.maxMsgSize(channelDTO.getMaxMsgSize())
-            			.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
-            			.duplicateWindow(
-            					Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW)).toMillis())
-            			.build());
+                logger.info("[" + requestId + "] Channel not exist. creating channel keys:" + DID);
+                ChannelDTO channelKey = new ChannelDTO();
+                channelKey.setFqcn(DID + ".keys");
+                jsm.addStream(StreamConfiguration.builder()
+                        .name(channelKey.streamName())
+                        .addSubjects(channelKey.subjectNameAll())
+                        .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+                        .maxMsgSize(channelDTO.getMaxMsgSize())
+                        .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
+                        .duplicateWindow(
+                                Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
+                                        .toMillis())
+                        .build());
             } catch (IOException | JetStreamApiException e) {
-            	logger.info("[" + requestId + "]" + e.getMessage());
+                logger.info("[" + requestId + "]" + e.getMessage());
             }
-            
+
             channelDTO.setOwnerdid(DID);
             channelRepository.save(channelDTO);
         } finally {
@@ -207,10 +232,11 @@ public class Channel {
         }
         ownerRepository.save(DID, verifiedRoles);
 
-        return Response.ok().entity((!status.isEmpty())?new ResponseWithStatus("00", "Success", status):new DDHubResponse("00", "Success")).build();
+        return Response.ok().entity((!status.isEmpty()) ? new ResponseWithStatus("00", "Success", status)
+                : new DDHubResponse("00", "Success")).build();
 
     }
-    
+
     @POST
     @Counted(name = "clientdIdsUpdateWait_get_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "clientdIdsUpdateWait_get_timed", description = "", tags = {
@@ -220,7 +246,7 @@ public class Channel {
     @Authenticated
     public Response clientdIdsUpdateWait() throws IOException, InterruptedException {
         Connection nc = Nats.connect(natsConnectionOption());
-        Map<String,List> result = new HashMap<String,List>();
+        Map<String, List> result = new HashMap<String, List>();
         JetStreamManagement jsm = nc.jetStreamManagement();
         channelRepository.findAll().list().forEach(entity -> {
             List<String> _result = new ArrayList<String>();
@@ -240,15 +266,15 @@ public class Channel {
             } catch (IOException | JetStreamApiException e) {
                 this.logger.info(e.getMessage());
             }
-            result.put(channelDTO.streamName(),_result);
-            
+            result.put(channelDTO.streamName(), _result);
+
         });
         nc.close();
 
         return Response.ok().entity(result).build();
 
     }
-    
+
     @GET
     @Counted(name = "clientdIds_get_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "clientdIds_get_timed", description = "", tags = {
@@ -262,19 +288,19 @@ public class Channel {
         Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
         Set<String> result = new HashSet<String>();
-        jsm.getConsumerNames(channelDTO.streamName()).forEach(id ->{
-        	if(id.contains(":#:")) {
-        		result.add(id.split(":#:")[0]);
-        	}else {
-        		result.add(id);
-        	}
+        jsm.getConsumerNames(channelDTO.streamName()).forEach(id -> {
+            if (id.contains(":#:")) {
+                result.add(id.split(":#:")[0]);
+            } else {
+                result.add(id);
+            }
         });
         nc.close();
 
         return Response.ok().entity(result).build();
 
     }
-    
+
     @DELETE
     @Counted(name = "clientdIds_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "clientdIds_delete_timed", description = "", tags = {
@@ -288,22 +314,23 @@ public class Channel {
         Connection nc = Nats.connect(natsConnectionOption());
         JetStreamManagement jsm = nc.jetStreamManagement();
         Set<String> result = new HashSet<String>();
-        clientDTO.getClientIds().forEach(id ->{
-        		try {
-					jsm.getConsumerNames(channelDTO.streamName()).stream().filter(consumer -> consumer.contains(id)).forEach(consumer->{
-						try {
-							if(jsm.deleteConsumer(channelDTO.streamName(),consumer)) {
-								result.add(id);
-							}
-						} catch (IOException | JetStreamApiException e) {
-						}
-					});
-				} catch (IOException | JetStreamApiException e) {
-				}
+        clientDTO.getClientIds().forEach(id -> {
+            try {
+                jsm.getConsumerNames(channelDTO.streamName()).stream().filter(consumer -> consumer.contains(id))
+                        .forEach(consumer -> {
+                            try {
+                                if (jsm.deleteConsumer(channelDTO.streamName(), consumer)) {
+                                    result.add(id);
+                                }
+                            } catch (IOException | JetStreamApiException e) {
+                            }
+                        });
+            } catch (IOException | JetStreamApiException e) {
+            }
         });
         nc.close();
 
-		return Response.ok().entity(result).build();
+        return Response.ok().entity(result).build();
 
     }
 
@@ -316,39 +343,39 @@ public class Channel {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response reInitExtChannel() throws IOException, JetStreamApiException, InterruptedException, ParseException {
-    	try {
-    		Connection nc = Nats.connect(natsConnectionOption());
-    		JetStreamManagement jsm = nc.jetStreamManagement();
-    		channelRepository.findAll().list().forEach(entity -> {
-    			ChannelDTO channelDTO = new ChannelDTO();
-    			channelDTO.setFqcn(entity.getFqcn());
-    			channelDTO.setMaxMsgAge(natsMaxAge);
-    			channelDTO.setMaxMsgSize(natsMaxSize);
-    			logger.info("[" + requestId + "] re-creating channel:" + entity.getFqcn());
-    			StreamConfiguration streamConfig = StreamConfiguration.builder()
-    					.name(channelDTO.streamName())
-    					.addSubjects(channelDTO.subjectNameAll())
-    					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
-    					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
-    					.maxMsgSize(channelDTO.getMaxMsgSize())
-    					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
-    							.toMillis())
-    					.build();
-    			try {
-    				StreamInfo streamInfo = jsm.addStream(streamConfig);
-    			} catch (IOException | JetStreamApiException e) {
-    				logger.info("[" + requestId + "]" + e.getMessage());
-    			}
-    		});
-    		nc.close();
-    	} catch (IOException | InterruptedException  e) {
-    		logger.info("[" + requestId + "]" + e.getMessage());
-    	}
+        try {
+            Connection nc = Nats.connect(natsConnectionOption());
+            JetStreamManagement jsm = nc.jetStreamManagement();
+            channelRepository.findAll().list().forEach(entity -> {
+                ChannelDTO channelDTO = new ChannelDTO();
+                channelDTO.setFqcn(entity.getFqcn());
+                channelDTO.setMaxMsgAge(natsMaxAge);
+                channelDTO.setMaxMsgSize(natsMaxSize);
+                logger.info("[" + requestId + "] re-creating channel:" + entity.getFqcn());
+                StreamConfiguration streamConfig = StreamConfiguration.builder()
+                        .name(channelDTO.streamName())
+                        .addSubjects(channelDTO.subjectNameAll())
+                        .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+                        .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
+                        .maxMsgSize(channelDTO.getMaxMsgSize())
+                        .duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
+                                .toMillis())
+                        .build();
+                try {
+                    StreamInfo streamInfo = jsm.addStream(streamConfig);
+                } catch (IOException | JetStreamApiException e) {
+                    logger.info("[" + requestId + "]" + e.getMessage());
+                }
+            });
+            nc.close();
+        } catch (IOException | InterruptedException e) {
+            logger.info("[" + requestId + "]" + e.getMessage());
+        }
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
-    
+
     @POST
     @Counted(name = "reinitExtChannelKeys_post_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "reinitExtChannelKeys_post_timed", description = "", tags = {
@@ -357,40 +384,41 @@ public class Channel {
     @Path("reinitExtChannelKeys")
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
-    public Response reInitExtChannelKeys() throws IOException, JetStreamApiException, InterruptedException, ParseException {
-    	try {
-    		Connection nc = Nats.connect(natsConnectionOption());
-    		JetStreamManagement jsm = nc.jetStreamManagement();
-    		channelRepository.findAll().list().forEach(entity -> {
-    			ChannelDTO channelDTO = new ChannelDTO();
-    			channelDTO.setFqcn(entity.getFqcn() + ".keys");
-    			channelDTO.setMaxMsgAge(natsMaxAge);
-    			channelDTO.setMaxMsgSize(natsMaxSize);
-    			logger.info("[" + requestId + "] re-creating channel keys: " + entity.getFqcn());
-    			StreamConfiguration streamConfig = StreamConfiguration.builder()
-    					.name(channelDTO.streamName())
-    					.addSubjects(channelDTO.subjectNameAll())
-    					.maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
-    					.replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
-    					.maxMsgSize(channelDTO.getMaxMsgSize())
-    					.duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
-    							.toMillis())
-    					.build();
-    			try {
-    				StreamInfo streamInfo = jsm.addStream(streamConfig);
-    			} catch (IOException | JetStreamApiException e) {
-    				logger.info("[" + requestId + "]" + e.getMessage());
-    			}
-    		});
-    		nc.close();
-    	} catch (IOException | InterruptedException  e) {
-    		logger.info("[" + requestId + "]" + e.getMessage());
-    	}
+    public Response reInitExtChannelKeys()
+            throws IOException, JetStreamApiException, InterruptedException, ParseException {
+        try {
+            Connection nc = Nats.connect(natsConnectionOption());
+            JetStreamManagement jsm = nc.jetStreamManagement();
+            channelRepository.findAll().list().forEach(entity -> {
+                ChannelDTO channelDTO = new ChannelDTO();
+                channelDTO.setFqcn(entity.getFqcn() + ".keys");
+                channelDTO.setMaxMsgAge(natsMaxAge);
+                channelDTO.setMaxMsgSize(natsMaxSize);
+                logger.info("[" + requestId + "] re-creating channel keys: " + entity.getFqcn());
+                StreamConfiguration streamConfig = StreamConfiguration.builder()
+                        .name(channelDTO.streamName())
+                        .addSubjects(channelDTO.subjectNameAll())
+                        .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
+                        .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
+                        .maxMsgSize(channelDTO.getMaxMsgSize())
+                        .duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
+                                .toMillis())
+                        .build();
+                try {
+                    StreamInfo streamInfo = jsm.addStream(streamConfig);
+                } catch (IOException | JetStreamApiException e) {
+                    logger.info("[" + requestId + "]" + e.getMessage());
+                }
+            });
+            nc.close();
+        } catch (IOException | InterruptedException e) {
+            logger.info("[" + requestId + "]" + e.getMessage());
+        }
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
-    
+
     @DELETE
     @Counted(name = "removeChannel_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
     @Timed(name = "removeChannel_delete_timed", description = "", tags = {
@@ -398,11 +426,12 @@ public class Channel {
     @Path("stream/{name}")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
     @Authenticated
-    public Response removeChannel(@NotNull @PathParam("name") String streamName) throws IOException, InterruptedException, JetStreamApiException {
+    public Response removeChannel(@NotNull @PathParam("name") String streamName)
+            throws IOException, InterruptedException, JetStreamApiException {
         ChannelDTO channelDTO = new ChannelDTO();
-        
-        if(channelDTO.validateAnonymousKey(streamName) != null){
-        	return Response.status(400).entity(channelDTO.validateAnonymousKey(streamName)).build();
+
+        if (channelDTO.validateAnonymousKey(streamName) != null) {
+            return Response.status(400).entity(channelDTO.validateAnonymousKey(streamName)).build();
         }
 
         channelDTO.setFqcn(streamName.trim());
@@ -411,21 +440,19 @@ public class Channel {
         jsm.deleteStream(channelDTO.streamName());
         channelRepository.deleteByFqcn(streamName);
         try {
-        	jsm.deleteStream("keys_" + channelDTO.streamName());
+            jsm.deleteStream("keys_" + channelDTO.streamName());
         } catch (IOException | JetStreamApiException e) {
-        	logger.warn("[" + requestId + "]" + e.getMessage());
+            logger.warn("[" + requestId + "]" + e.getMessage());
         }
         nc.close();
 
-		return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
-    
-	private Options natsConnectionOption() {
-		return new Options.Builder().
-		        server(natsJetstreamUrl).
-		        maxReconnects(ChannelDTO.MAX_RECONNECTS).
-		        connectionTimeout(Duration.ofSeconds(ChannelDTO.TIMEOUT)). // Set timeout
-		        build();
-	}
+
+    private Options natsConnectionOption() {
+        return new Options.Builder().server(natsJetstreamUrl).maxReconnects(ChannelDTO.MAX_RECONNECTS)
+                .connectionTimeout(Duration.ofSeconds(ChannelDTO.TIMEOUT)). // Set timeout
+                build();
+    }
 }

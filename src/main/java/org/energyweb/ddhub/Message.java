@@ -635,7 +635,7 @@ public class Message {
                     message.setPayload((String) natPayload.get("payload"));
                     message.setPayloadEncryption((boolean) natPayload.get("payloadEncryption"));
                     message.setFqcn(messageDTO.getFqcn());
-                    message.setTopicId(m.getSubject().replaceFirst(DID.concat("."), ""));
+                    message.setTopicId(m.getSubject().replaceFirst(messageDTO.anonymousFqcnRule(DID).concat("."), ""));
                     message.setId((String) natPayload.get("messageId"));
                     message.setSenderDid(sender);
                     message.setTopicVersion((String) natPayload.get("topicVersion"));

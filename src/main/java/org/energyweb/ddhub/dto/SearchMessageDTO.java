@@ -1,6 +1,7 @@
 package org.energyweb.ddhub.dto;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -20,6 +21,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
+import io.nats.client.api.ConsumerConfiguration;
+import io.nats.client.api.ConsumerInfo;
+import io.nats.client.api.ConsumerConfiguration.Builder;
 import io.opentelemetry.extension.annotations.WithSpan;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -96,9 +100,12 @@ public class SearchMessageDTO {
         return (fetchAmount > MessageAckDTOs.MAX_FETCH_AMOUNT)?MessageAckDTOs.MAX_FETCH_AMOUNT:fetchAmount;
     }
 
-	@WithSpan("clientIdValidate")
+	
+
+	@WithSpan("manageSearchDateClientId")
 	public void manageSearchDateClientId(JetStreamManagement jsm){
 		try {
+        	
 			if(this.getFrom() == null ) {
 				return;
 			}
@@ -112,8 +119,25 @@ public class SearchMessageDTO {
 					deleteConsumer(jsm, this.streamName(), id);
 				}
 			});
+			
 		} catch (IOException | JetStreamApiException e) {
 		}
+	}
+
+	@WithSpan("updateClientSingleTopic")
+	public void updateClientSingleTopic(JetStreamManagement jsm, Duration duration) {
+		try {
+			ConsumerInfo info = jsm.getConsumerInfo(this.streamName(), this.findDurable());
+
+			if(info.getConsumerConfiguration().getAckWait().equals(duration)) return;
+			
+			Builder builder = ConsumerConfiguration.builder(info.getConsumerConfiguration());
+			builder.ackWait((duration));
+			
+			jsm.addOrUpdateConsumer(this.streamName(), builder.build());
+		} catch (IOException | JetStreamApiException e) {
+		}
+		
 	}
 	
 	@WithSpan("checkConsumerExist")
@@ -140,5 +164,10 @@ public class SearchMessageDTO {
 	public String anonymousFqcnRule(String DID) {
 		return (anonymousRecipient == null)?DID:anonymousRecipient;
 	}
+
+	public boolean validateSearchByTopicId() {
+		return this.getFqcnTopicList() != null && !this.getFqcnTopicList().isEmpty() && this.getFqcnTopicList().size() > 1 && this.getTopicId() != null && !this.getTopicId().isEmpty() && this.getTopicId().size() == 1;
+	}
+
 	
 }

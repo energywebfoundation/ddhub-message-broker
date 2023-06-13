@@ -26,12 +26,13 @@ did-auth-proxy-helm:
   #for now dummy configs
   appValues:
     PORT: 80
-    ACCEPTED_ROLES: user.roles.marketplace.apps.energyweb.iam.ewc,topiccreator.roles.marketplace.apps.energyweb.iam.ewc
+    ACCEPTED_ROLES: user.roles.greenproofs.apps.ddhub.energyweb.iam.ewc,topiccreator.roles.greenproofs.apps.ddhub.energyweb.iam.ewc,user.roles.global.apps.ddhub.energyweb.iam.ewc,topiccreator.roles.global.apps.ddhub.energyweb.iam.ewc,user.roles.ocn.apps.ddhub.energyweb.iam.ewc,topiccreator.roles.ocn.apps.ddhub.energyweb.iam.ewc
     JWT_ACCESS_TTL: 3600
     JWT_REFRESH_TTL: 86400
 
   opsValues:
-    CACHE_SERVER_URL: https://identitycache-dev.energyweb.org/v1
+    RPC_URL: https://rpc.energyweb.org/
+    CACHE_SERVER_URL: https://identitycache.energyweb.org/v1
     REDIS_HOST: ddhub-messagebroker-marketplace-redis-master.ddhub-marketplace.svc
     REDIS_PORT: 6379
     IPFS_HOST: ipfs.infura.io

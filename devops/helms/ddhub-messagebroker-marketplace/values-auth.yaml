@@ -17,6 +17,8 @@ did-auth-proxy-helm:
   nameOverride: "did-auth-proxy-marketplace"
   fullnameOverride: "did-auth-proxy-marketplace"
 
+  nodeSelector:
+    project: "marketplace"
   tolerations:
     - key: "project"
       operator: "Equal"

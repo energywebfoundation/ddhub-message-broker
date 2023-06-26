@@ -35,6 +35,10 @@ did-auth-proxy-helm:
     ENS_REGISTRY_ADDRESS: 0x0A6d64413c07E10E890220BBE1c49170080C6Ca0
     ENS_RESOLVER_ADDRESS: 0x70ad37DfeB1C05290F4bBd22188FA19Bc154A0ea
     CHAIN_ID: 246
+    SIWE_NONCE_TTL: 300
+    INCLUDE_ALL_ROLES: false
+    SELF_BASE_URL: https://ddhub-marketplace.energyweb.org
+    BLOCKNUM_AUTH_ENABLED: true
 
   opsValues:
     RPC_URL: https://rpc.energyweb.org/
@@ -43,6 +47,7 @@ did-auth-proxy-helm:
     REDIS_PORT: 6379
     IPFS_HOST: ipfs.infura.io
     IPFS_PORT: 5001
+    IPFS_PROTOCOL: https
 
   sealedSecret:
     enabled: true
@@ -96,6 +101,7 @@ did-auth-proxy-helm:
         location ~ ^/auth {
             proxy_pass http://did-auth-proxy-marketplace.ddhub-marketplace.svc.cluster.local;
         }
+        
         location ~ / {
             auth_request /token_introspection;
             proxy_pass http://ddhub-messagebroker-marketplace.ddhub-marketplace.svc.cluster.local;

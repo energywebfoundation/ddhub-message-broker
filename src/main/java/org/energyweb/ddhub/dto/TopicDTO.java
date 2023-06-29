@@ -81,7 +81,7 @@ public class TopicDTO {
 	private String version;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "\\w*.*.iam.ewc", message = "Required format .iam.ewc")
+	@Pattern(regexp = "\\w*.*.*.ewc", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
 	@Getter(AccessLevel.NONE)

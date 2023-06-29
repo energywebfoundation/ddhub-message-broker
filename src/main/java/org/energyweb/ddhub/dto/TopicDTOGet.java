@@ -51,7 +51,7 @@ public class TopicDTOGet {
 	private String schemaType;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "\\w*.*.iam.ewc", message = "Required format .iam.ewc")
+	@Pattern(regexp = "\\w*.*.*.ewc", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
 	private Set<@NotEmpty String> tags;

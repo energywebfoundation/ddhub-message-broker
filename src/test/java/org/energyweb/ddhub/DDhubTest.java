@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.io.File;
 import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -28,15 +27,10 @@ import org.energyweb.ddhub.container.MongoDbResource;
 import org.energyweb.ddhub.container.NatsResource;
 import org.jboss.logging.Logger;
 import org.jose4j.json.internal.json_simple.JSONArray;
-import org.jose4j.json.internal.json_simple.JSONObject;
-import org.jose4j.json.internal.json_simple.parser.JSONParser;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import com.azure.core.implementation.annotation.SkipParentValidation;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -131,6 +125,7 @@ public class DDhubTest {
 		sendmsg.put("topicVersion", "1.0.0");
 		sendmsg.put("signature", "signature");
 		sendmsg.put("payloadEncryption", "false");
+		sendmsg.put("initiatingMessageId", "test1");
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))

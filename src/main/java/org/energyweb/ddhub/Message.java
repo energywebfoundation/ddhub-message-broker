@@ -42,6 +42,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.Claim;
@@ -191,6 +192,8 @@ public class Message {
                 builder.add("signature", messageDTO.getSignature());
                 builder.add("clientGatewayMessageId", messageDTO.getClientGatewayMessageId());
                 builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
+                if(!StringUtils.isBlank(messageDTO.getInitiatingMessageId()) )
+                	builder.add("initiatingMessageId", messageDTO.getInitiatingMessageId());
 
                 builder.add("isFile", messageDTO.getIsFile());
 
@@ -644,6 +647,8 @@ public class Message {
                     message.setClientGatewayMessageId((String) natPayload.get("clientGatewayMessageId"));
                     message.setFromUpload((boolean) natPayload.get("isFile"));
                     message.setTransactionId((String) natPayload.get("transactionId"));
+                    if(Optional.ofNullable(natPayload.get("initiatingMessageId")).isPresent() )
+                    	message.setInitiatingMessageId((String) natPayload.get("initiatingMessageId"));
 
                     if (messageDTOs.size() < messageDTO.getAmount()) {
                         if (messageDTO.isAck()) {

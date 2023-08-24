@@ -194,6 +194,8 @@ public class Message {
                 builder.add("timestampNanos", String.valueOf(TimeUnit.MILLISECONDS.toNanos(new Date().getTime())));
                 if(!StringUtils.isBlank(messageDTO.getInitiatingMessageId()) )
                 	builder.add("initiatingMessageId", messageDTO.getInitiatingMessageId());
+                if(!StringUtils.isBlank(messageDTO.getInitiatingTransactionId()) )
+                	builder.add("initiatingTransactionId", messageDTO.getInitiatingTransactionId());
 
                 builder.add("isFile", messageDTO.getIsFile());
 
@@ -649,6 +651,8 @@ public class Message {
                     message.setTransactionId((String) natPayload.get("transactionId"));
                     if(Optional.ofNullable(natPayload.get("initiatingMessageId")).isPresent() )
                     	message.setInitiatingMessageId((String) natPayload.get("initiatingMessageId"));
+                    if(Optional.ofNullable(natPayload.get("initiatingTransactionId")).isPresent() )
+                    	message.setInitiatingTransactionId((String) natPayload.get("initiatingTransactionId"));
 
                     if (messageDTOs.size() < messageDTO.getAmount()) {
                         if (messageDTO.isAck()) {

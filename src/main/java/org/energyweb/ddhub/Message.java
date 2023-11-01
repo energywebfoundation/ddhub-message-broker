@@ -196,6 +196,8 @@ public class Message {
                 	builder.add("initiatingMessageId", messageDTO.getInitiatingMessageId());
                 if(!StringUtils.isBlank(messageDTO.getInitiatingTransactionId()) )
                 	builder.add("initiatingTransactionId", messageDTO.getInitiatingTransactionId());
+                if(!StringUtils.isBlank(messageDTO.getTopicRestrictions()) )
+                	builder.add("topicRestrictions", messageDTO.getTopicRestrictions());
 
                 builder.add("isFile", messageDTO.getIsFile());
 
@@ -653,6 +655,8 @@ public class Message {
                     	message.setInitiatingMessageId((String) natPayload.get("initiatingMessageId"));
                     if(Optional.ofNullable(natPayload.get("initiatingTransactionId")).isPresent() )
                     	message.setInitiatingTransactionId((String) natPayload.get("initiatingTransactionId"));
+                    if(Optional.ofNullable(natPayload.get("topicRestrictions")).isPresent() )
+                    	message.setTopicRestrictions((String) natPayload.get("topicRestrictions"));
 
                     if (messageDTOs.size() < messageDTO.getAmount()) {
                         if (messageDTO.isAck()) {

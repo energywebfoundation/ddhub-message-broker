@@ -126,6 +126,7 @@ public class DDhubTest {
 		sendmsg.put("signature", "signature");
 		sendmsg.put("payloadEncryption", "false");
 		sendmsg.put("initiatingMessageId", "test1");
+		sendmsg.put("topicRestrictions", "topictest1");
 
 		response = given().auth()
 				.oauth2(generateValidUserToken(did))

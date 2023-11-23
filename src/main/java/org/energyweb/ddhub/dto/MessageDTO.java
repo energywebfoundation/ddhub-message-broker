@@ -30,6 +30,15 @@ public class MessageDTO extends DDHub {
 
 	@Size(max = 200, message = "The maximum length is 200 characters")
     private String transactionId;
+
+    @Size(max = 200, message = "The maximum length is 200 characters")
+    private String initiatingMessageId;
+    
+    @Size(max = 200, message = "The maximum length is 200 characters")
+    private String initiatingTransactionId;
+    
+    @Size(max = 500, message = "The maximum length is 500 characters")
+    private String topicRestrictions;
     
     @NotNull
     @NotEmpty

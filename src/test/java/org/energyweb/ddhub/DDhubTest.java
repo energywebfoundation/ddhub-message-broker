@@ -120,7 +120,7 @@ public class DDhubTest {
 		sendmsg.put("fqcns", Arrays.asList(did, "diderror"));
 		sendmsg.put("transactionId", "testid");
 		sendmsg.put("clientGatewayMessageId", "testid");
-		sendmsg.put("payload", "payload");
+		sendmsg.put("payload", "{}");
 		sendmsg.put("topicId", id);
 		sendmsg.put("topicVersion", "1.0.0");
 		sendmsg.put("signature", "signature");

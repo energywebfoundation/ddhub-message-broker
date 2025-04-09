@@ -45,6 +45,7 @@ public class TopicDTOGet {
 	private String id;
 	@NotNull
 	@NotEmpty
+	@Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
 	private String name;
 	@NotNull
 	@ValueOfEnum(enumClass = SchemaType.class)
@@ -54,7 +55,7 @@ public class TopicDTOGet {
 	@Pattern(regexp = "\\w*.*.*.ewc", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
-	private Set<@NotEmpty String> tags;
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private String did;

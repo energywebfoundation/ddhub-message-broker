@@ -37,6 +37,7 @@ public class FileUploadDTO extends DDHub {
     @NotNull
     @FormParam("signature")
     @PartType(MediaType.TEXT_PLAIN)
+    @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
     private String signature;
     
     @Size(max = 200, message = "The maximum length is 200 characters")

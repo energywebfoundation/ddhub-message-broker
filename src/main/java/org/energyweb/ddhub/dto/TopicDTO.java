@@ -20,11 +20,9 @@ import javax.xml.validation.SchemaFactory;
 
 import org.energyweb.ddhub.helper.constraint.ValueOfEnum;
 import org.jose4j.json.internal.json_simple.parser.JSONParser;
-import org.jose4j.json.internal.json_simple.parser.ParseException;
 import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -68,6 +66,7 @@ public class TopicDTO {
 	private String id;
 	@NotNull
 	@NotEmpty
+	@Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
 	private String name;
 	@NotNull
 	@ValueOfEnum(enumClass = SchemaType.class)
@@ -85,7 +84,7 @@ public class TopicDTO {
 	private String owner;
 	@Valid
 	@Getter(AccessLevel.NONE)
-	private Set<@NotEmpty String> tags = new HashSet<String>();
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags = new HashSet<String>();
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private String did;

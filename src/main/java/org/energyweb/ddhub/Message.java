@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
@@ -63,8 +62,10 @@ import org.energyweb.ddhub.dto.MessageDTO;
 import org.energyweb.ddhub.dto.MessageDTOs;
 import org.energyweb.ddhub.dto.SearchInternalMessageDTO;
 import org.energyweb.ddhub.dto.SearchMessageDTO;
+import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.helper.ErrorResponse;
 import org.energyweb.ddhub.helper.MessageResponse;
+import org.energyweb.ddhub.helper.PayloadValidator;
 import org.energyweb.ddhub.helper.Recipients;
 import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
@@ -85,7 +86,6 @@ import io.nats.client.Options;
 import io.nats.client.PublishOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.ConsumerConfiguration.Builder;
-import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.PublishAck;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.quarkus.security.Authenticated;
@@ -148,6 +148,9 @@ public class Message {
     @Authenticated
     public Response publish(@Valid @NotNull MessageDTOs messageDTOs)
             throws InterruptedException, TimeoutException, IOException {
+    	TopicDTO topic = topicRepository.findTopicBy(messageDTOs.getTopicId());
+        PayloadValidator.validate(topic.getSchemaType(),messageDTOs.getPayload());
+        
         if (messageDTOs.anonymousRule())
             throw new IllegalArgumentException(messageDTOs.anonymousRuleErrorMsg());
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));

@@ -43,6 +43,7 @@ public class MessageDTO extends DDHub {
     @NotNull
     @NotEmpty
     @Size(max = 200, message = "The maximum length is 200 characters")
+    @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
     private String clientGatewayMessageId;
     
     @NotNull
@@ -65,6 +66,7 @@ public class MessageDTO extends DDHub {
     
     @NotNull
     @NotEmpty
+    @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
     private String signature;
 
     @JsonIgnore

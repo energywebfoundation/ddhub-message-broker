@@ -20,6 +20,7 @@ public class TopicDTOCreate {
 
 	@NotNull
 	@NotEmpty
+	@Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
 	private String name;
 	@NotNull
 	private SchemaType schemaType;
@@ -31,10 +32,10 @@ public class TopicDTOCreate {
 	private String version;
 	@NotNull
 	@NotEmpty
-    private String owner;
+	private String owner;
 	@Valid
-	private Set<@NotEmpty String> tags;
-	
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
+
 	@JsonIgnore
 	private String createdBy;
 }

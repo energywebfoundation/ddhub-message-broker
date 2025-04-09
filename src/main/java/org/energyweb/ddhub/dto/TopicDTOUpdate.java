@@ -4,6 +4,7 @@ import java.util.Set;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -15,5 +16,5 @@ import lombok.Setter;
 @JsonIgnoreProperties({"schema","schemaType","owner","did","isOwnerValid","ownerValid"})
 public class TopicDTOUpdate{
 	@Valid
-	private Set<@NotEmpty String> tags;
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
 }

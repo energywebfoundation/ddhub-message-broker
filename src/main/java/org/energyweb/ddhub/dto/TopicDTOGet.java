@@ -52,7 +52,7 @@ public class TopicDTOGet {
 	private String schemaType;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "\\w*.*.*.ewc", message = "Required format .*.ewc")
+	@Pattern(regexp = "^.+\\.ewc$", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
 	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;

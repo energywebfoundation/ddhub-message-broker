@@ -27,7 +27,7 @@ public class FileUploadDTO extends DDHub {
     @NotNull
     @FormParam("fileName")
     @PartType(MediaType.TEXT_PLAIN)
-    @Pattern(regexp = "\\w*.*.csv|\\w*.*.tsv|\\w*.*.CSV|\\w*.*.TSV", message = "Accepted file type .csv and .tsv ")
+    @Pattern(regexp = "^.*\\.(csv|tsv)$", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Accepted file type .csv and .tsv ")
     private String fileName;
     
     @FormParam("transactionId")
@@ -51,7 +51,7 @@ public class FileUploadDTO extends DDHub {
     @NotEmpty
     @FormParam("topicVersion")
 	@PartType(MediaType.TEXT_PLAIN)
-    @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions")
+    @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$", message = "Required Semantic Versions")
 	private String topicVersion;
     
     private String ownerdid;

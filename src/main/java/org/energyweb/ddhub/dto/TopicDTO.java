@@ -76,11 +76,11 @@ public class TopicDTO {
 	@Getter(AccessLevel.NONE)
 	private String schema;
 	@NotNull
-	@Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions")
+	@Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$", message = "Required Semantic Versions")
 	private String version;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "\\w*.*.*.ewc", message = "Required format .*.ewc")
+	@Pattern(regexp = "^.+\\.ewc$", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
 	@Getter(AccessLevel.NONE)

@@ -16,8 +16,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ClientDTO {
 
-	@Valid
+    @Valid
     @NotNull
     @NotEmpty
-    private Set<@NotNull @NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> clientIds;
+    private Set<@NotNull @NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> clientIds;
 }

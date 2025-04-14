@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PayloadValidator {
 
-  private static final Set<Character> FORBIDDEN_CHARS = Set.of('&', '<', '>', '"', '\'', '/', '-', '.');
+  private static final Set<Character> FORBIDDEN_CHARS = Set.of('&', '<', '>', '"', '\'', '/', '-', '.', '\\', '\n', '\r');
   private static final List<String> SUPPORTED_FORMATS = List.of("JSD7", "XSD6", "XML", "CSV", "TSV");
 
   public static void validate(String format, String payload) {

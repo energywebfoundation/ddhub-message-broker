@@ -29,7 +29,7 @@ public class FileUploadDTO extends DDHub {
     @PartType(MediaType.TEXT_PLAIN)
     @Pattern(regexp = "^.*\\.(csv|tsv)$", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Accepted file type .csv and .tsv ")
     private String fileName;
-    
+
     @FormParam("transactionId")
     @PartType(MediaType.TEXT_PLAIN)
     private String transactionId;
@@ -37,23 +37,23 @@ public class FileUploadDTO extends DDHub {
     @NotNull
     @FormParam("signature")
     @PartType(MediaType.TEXT_PLAIN)
-    @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
+    @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
     private String signature;
-    
+
     @Size(max = 200, message = "The maximum length is 200 characters")
     @NotNull
-	@FormParam("topicId")
-	@PartType(MediaType.TEXT_PLAIN)
+    @FormParam("topicId")
+    @PartType(MediaType.TEXT_PLAIN)
     @Pattern(regexp = "^[0-9a-fA-F]+$", message = "Required Hexdecimal string")
-	private String topicId;
-    
+    private String topicId;
+
     @NotNull
     @NotEmpty
     @FormParam("topicVersion")
-	@PartType(MediaType.TEXT_PLAIN)
+    @PartType(MediaType.TEXT_PLAIN)
     @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$", message = "Required Semantic Versions")
-	private String topicVersion;
-    
+    private String topicVersion;
+
     private String ownerdid;
-    
+
 }

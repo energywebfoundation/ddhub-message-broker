@@ -23,7 +23,7 @@ public class FileUploadDTOs extends FileUploadDTO {
 	@NotEmpty
 	@FormParam("clientGatewayMessageId")
 	@Size(max = 200, message = "The maximum length is 200 characters")
-	@Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
+	@Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
 	private String clientGatewayMessageId;
 
 	@NotNull

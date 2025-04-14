@@ -149,7 +149,9 @@ public class Message {
     public Response publish(@Valid @NotNull MessageDTOs messageDTOs)
             throws InterruptedException, TimeoutException, IOException {
     	TopicDTO topic = topicRepository.findTopicBy(messageDTOs.getTopicId());
-        PayloadValidator.validate(topic.getSchemaType(),messageDTOs.getPayload());
+    	if(!messageDTOs.isPayloadEncryption()) {
+    		PayloadValidator.validate(topic.getSchemaType(),messageDTOs.getPayload());
+    	}
         
         if (messageDTOs.anonymousRule())
             throw new IllegalArgumentException(messageDTOs.anonymousRuleErrorMsg());

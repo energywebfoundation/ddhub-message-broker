@@ -11,10 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter 
+@Getter
 @Setter
-@JsonIgnoreProperties({"schema","schemaType","owner","did","isOwnerValid","ownerValid"})
-public class TopicDTOUpdate{
+@JsonIgnoreProperties({ "schema", "schemaType", "owner", "did", "isOwnerValid", "ownerValid" })
+public class TopicDTOUpdate {
 	@Valid
-	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\-.]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
 }

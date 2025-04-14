@@ -43,7 +43,7 @@ public class MessageDTO extends DDHub {
     @NotNull
     @NotEmpty
     @Size(max = 200, message = "The maximum length is 200 characters")
-    @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
+    @Pattern(regexp = "^[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-4[0-9a-fA-F]{3}\\-[89abAB][0-9a-fA-F]{3}\\-[0-9a-fA-F]{12}$", message = "Invalid UUID v4 format")
     private String clientGatewayMessageId;
 
     @NotNull

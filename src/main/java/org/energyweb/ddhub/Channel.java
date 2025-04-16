@@ -16,6 +16,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -426,7 +427,7 @@ public class Channel {
     @Path("stream/{name}")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
     @Authenticated
-    public Response removeChannel(@NotNull @PathParam("name") String streamName)
+    public Response removeChannel(@NotNull @PathParam("name") @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String streamName)
             throws IOException, InterruptedException, JetStreamApiException {
         ChannelDTO channelDTO = new ChannelDTO();
 

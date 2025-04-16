@@ -384,7 +384,7 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = TopicDTO.class)))
     @Authenticated
     public Response topicVersionByNumber(@NotNull @PathParam("id") String id,
-            @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
         topicRepository.validateTopicIds(Arrays.asList(id));
         return Response.ok().entity(topicVersionRepository.findByIdAndVersion(id, versionNumber)).build();
     }
@@ -398,7 +398,7 @@ public class SchemaTopic {
     @Authenticated
     public Response updateTopicVersionByNumber(@NotNull @Valid TopicDTOSchema _topic,
             @NotNull @PathParam("id") String id,
-            @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String versionNumber) {
         topicRepository.validateTopicIds(Arrays.asList(id));
         // topicVersionRepository.findByIdAndVersion(id,versionNumber);
         TopicDTO topic = topicRepository.findTopicBy(id);
@@ -469,7 +469,7 @@ public class SchemaTopic {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response deleteSchemaVersion(@NotNull @PathParam("id") String id,
-            @Pattern(regexp = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String version) {
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$", message = "Required Semantic Versions") @NotNull @PathParam("versionNumber") String version) {
         topicRepository.validateTopicIds(Arrays.asList(id));
         TopicDTO topic = topicVersionRepository.findByIdAndVersion(id, version);
         topic.validateOwner(roles);

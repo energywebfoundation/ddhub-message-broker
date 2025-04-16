@@ -15,7 +15,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter 
+@Getter
 @Setter
 public class TopicDTOGet {
 
@@ -25,9 +25,9 @@ public class TopicDTOGet {
 		XML("XML"),
 		CSV("CSV"),
 		TSV("TSV");
-		
+
 		private String name;
-		
+
 		SchemaType(String name) {
 			this.name = name;
 		}
@@ -39,27 +39,28 @@ public class TopicDTOGet {
 		public void setName(String name) {
 			this.name = name;
 		}
-		
+
 	}
 
 	private String id;
 	@NotNull
 	@NotEmpty
+	@Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
 	private String name;
 	@NotNull
 	@ValueOfEnum(enumClass = SchemaType.class)
 	private String schemaType;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "\\w*.*.*.ewc", message = "Required format .*.ewc")
+	@Pattern(regexp = "^.+\\.ewc$", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
-	private Set<@NotEmpty String> tags;
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private String did;
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private boolean isOwnerValid;
-	
+
 }

@@ -119,8 +119,8 @@ public class DDhubTest {
 		HashMap sendmsg = new HashMap<>();
 		sendmsg.put("fqcns", Arrays.asList(did, "diderror"));
 		sendmsg.put("transactionId", "testid");
-		sendmsg.put("clientGatewayMessageId", "testid");
-		sendmsg.put("payload", "payload");
+		sendmsg.put("clientGatewayMessageId", "14645780-099d-41a6-a8e1-64caa59ad290");
+		sendmsg.put("payload", "{}");
 		sendmsg.put("topicId", id);
 		sendmsg.put("topicVersion", "1.0.0");
 		sendmsg.put("signature", "signature");

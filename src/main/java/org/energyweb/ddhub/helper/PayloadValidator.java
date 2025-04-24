@@ -11,7 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PayloadValidator {
 
-  private static final Set<Character> FORBIDDEN_CHARS = Set.of('&', '<', '>', '"', '\'', '/', '-', '.', '\\', '\n', '\r');
+  // Will be removing dash (-) and dot (.) based on slack conversation:
+  // https://energywebfoundation.slack.com/archives/C030RK4D5TJ/p1745466421296229
+  private static final Set<Character> FORBIDDEN_CHARS = Set.of('&', '<', '>', '"', '\'', '/', '\\', '\n', '\r');
   private static final List<String> SUPPORTED_FORMATS = List.of("JSD7", "XSD6", "XML", "CSV", "TSV");
 
   public static void validate(String format, String payload) {
@@ -54,12 +56,12 @@ public class PayloadValidator {
   private static void validateNoSpecialChars(String value, String path) {
     for (char c : value.toCharArray()) {
       if (FORBIDDEN_CHARS.contains(c)) {
+        // Will be removing dash (-) and dot (.) based on slack conversation:
+        // https://energywebfoundation.slack.com/archives/C030RK4D5TJ/p1745466421296229
         throw new IllegalArgumentException(
-            "Payload contains unsafe character '" + c + "' at " + path +
-            " — characters & < > \" ' / - . are not allowed");
+            "Payload contains unsafe character '" + c + "' at " + path + " — characters & < > \" ' / are not allowed");
       }
     }
   }
 
 }
-

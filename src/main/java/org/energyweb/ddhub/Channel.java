@@ -427,7 +427,8 @@ public class Channel {
     @Path("stream/{name}")
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
     @Authenticated
-    public Response removeChannel(@NotNull @PathParam("name") @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String streamName)
+    public Response removeChannel(
+            @NotNull @PathParam("name") @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String streamName)
             throws IOException, InterruptedException, JetStreamApiException {
         ChannelDTO channelDTO = new ChannelDTO();
 

@@ -19,5 +19,5 @@ public class ClientDTO {
     @Valid
     @NotNull
     @NotEmpty
-    private Set<@NotNull @NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> clientIds;
+    private Set<@NotNull @NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> clientIds;
 }

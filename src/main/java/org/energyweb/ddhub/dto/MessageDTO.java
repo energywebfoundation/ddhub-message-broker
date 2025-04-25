@@ -66,7 +66,7 @@ public class MessageDTO extends DDHub {
 
     @NotNull
     @NotEmpty
-    @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
+    @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
     private String signature;
 
     @JsonIgnore

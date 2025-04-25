@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.energyweb.ddhub.exception.InvalidPayloadException;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.jboss.resteasy.spi.UnhandledException;
 import org.json.JSONObject;
@@ -31,7 +32,7 @@ public class PayloadValidator {
     		break;
     	}
     } catch (Exception e) {
-      if (e instanceof IllegalArgumentException || e instanceof JsonParseException)
+      if (e instanceof IllegalArgumentException || e instanceof JsonParseException || e instanceof ValidationException)
         throw new InvalidPayloadException(e.getMessage());
       throw new UnhandledException("Payload validation failed: " + e.getMessage(), e);
     }

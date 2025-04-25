@@ -101,7 +101,8 @@ public class DDhubTest {
 		createTopic.put("name", "createTopic01");
 		createTopic.put("schemaType", "JSD7");
 		createTopic.put("schema",
-				"{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"initiatingMessageId\": {\n          \"type\": \"string\"\n        },\n        \"initiatingTransactionId\": {\n          \"type\": [\n                      \"string\",\n                      \"null\"\n                  ]\n        },\n        \"systemProcessedDttm\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"initiatingMessageId\",\n        \"initiatingTransactionId\",\n        \"systemProcessedDttm\"\n      ]\n    },\n    \"dispatchAcknowledgements\": {\n      \"type\": \"array\",\n      \"items\": [\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"dispatchId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementId\": {\n              \"type\": \"string\"\n            },\n            \"acknowledgementDateTime\": {\n              \"type\": \"string\"\n            },\n            \"facilityId\": {\n              \"type\": \"string\"\n            },\n            \"nmis\": {\n              \"type\": \"array\",\n              \"items\": [\n                {\n                  \"type\": \"string\"\n                }\n              ]\n            }\n          },\n          \"required\": [\n            \"dispatchId\",\n            \"acknowledgementId\",\n            \"acknowledgementDateTime\",\n            \"facilityId\",\n            \"nmis\"\n          ]\n        }\n      ]\n    }\n  },\n  \"required\": [\n    \"data\",\n    \"dispatchAcknowledgements\"\n  ]\n}");
+				"{\"type\":\"object\",\"properties\":{\"date\":{\"format\":\"date\",\"type\":\"string\"},\"uri-reference\":{\"format\":\"uri-reference\",\"type\":\"string\"},\"date-time\":{\"format\":\"date-time\",\"type\":\"string\"},\"json-pointer\":{\"format\":\"json-pointer\",\"type\":\"string\"},\"byte\":{\"format\":\"byte\",\"type\":\"string\"},\"double\":{\"format\":\"double\",\"type\":\"string\"},\"float\":{\"format\":\"float\",\"type\":\"string\"},\"uri\":{\"format\":\"uri\",\"type\":\"string\"},\"uuid\":{\"format\":\"uuid\",\"type\":\"string\"},\"local-date-time\":{\"format\":\"local-date-time\",\"type\":\"string\"},\"duration\":{\"format\":\"duration\",\"type\":\"string\"},\"uri-template\":{\"format\":\"uri-template\",\"type\":\"string\"},\"hostname\":{\"format\":\"hostname\",\"type\":\"string\"},\"password\":{\"format\":\"password\",\"type\":\"string\"},\"ipv4\":{\"format\":\"ipv4\",\"type\":\"string\"},\"int32\":{\"format\":\"int32\",\"type\":\"string\"},\"ipv6\":{\"format\":\"ipv6\",\"type\":\"string\"},\"int64\":{\"format\":\"int64\",\"type\":\"string\"},\"binary\":{\"format\":\"binary\",\"type\":\"string\"},\"time\":{\"format\":\"time\",\"type\":\"string\"},\"email\":{\"format\":\"email\",\"type\":\"string\"}}}"
+				);
 		createTopic.put("version", "1.0.0");
 		createTopic.put("owner", "ddhub.apps.energyweb.iam.ewc");
 		Response response = given().auth()
@@ -120,7 +121,7 @@ public class DDhubTest {
 		sendmsg.put("fqcns", Arrays.asList(did, "diderror"));
 		sendmsg.put("transactionId", "testid");
 		sendmsg.put("clientGatewayMessageId", "14645780-099d-41a6-a8e1-64caa59ad290");
-		sendmsg.put("payload", "{}");
+		sendmsg.put("payload", "{\"date\":\"2025-04-30\"}");
 		sendmsg.put("topicId", id);
 		sendmsg.put("topicVersion", "1.0.0");
 		sendmsg.put("signature", "signature");

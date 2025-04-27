@@ -16,5 +16,5 @@ import lombok.Setter;
 @JsonIgnoreProperties({ "schema", "schemaType", "owner", "did", "isOwnerValid", "ownerValid" })
 public class TopicDTOUpdate {
 	@Valid
-	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags;
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.") String> tags;
 }

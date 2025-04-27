@@ -66,7 +66,7 @@ public class TopicDTO {
 	private String id;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed")
+	@Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.")
 	private String name;
 	@NotNull
 	@ValueOfEnum(enumClass = SchemaType.class)
@@ -84,7 +84,7 @@ public class TopicDTO {
 	private String owner;
 	@Valid
 	@Getter(AccessLevel.NONE)
-	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String> tags = new HashSet<String>();
+	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.") String> tags = new HashSet<String>();
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private String did;

@@ -89,7 +89,7 @@ public class PayloadValidator {
         // Will be removing dash (-) and dot (.) based on slack conversation:
         // https://energywebfoundation.slack.com/archives/C030RK4D5TJ/p1745466421296229
         throw new IllegalArgumentException(
-            "Payload contains unsafe character '" + c + "' at " + path + " — characters & < > \" ' / are not allowed");
+            "Payload Invalid characters detected. '" + c + "' at " + path);
       }
     }
   }

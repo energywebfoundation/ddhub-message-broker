@@ -428,7 +428,7 @@ public class Channel {
     @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
     @Authenticated
     public Response removeChannel(
-            @NotNull @PathParam("name") @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Contains unsafe characters & < > \" ' / - . are not allowed") String streamName)
+            @NotNull @PathParam("name") @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.") String streamName)
             throws IOException, InterruptedException, JetStreamApiException {
         ChannelDTO channelDTO = new ChannelDTO();
 

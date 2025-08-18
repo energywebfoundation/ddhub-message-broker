@@ -45,7 +45,7 @@ public class TopicDTOGet {
 	private String id;
 	@NotNull
 	@NotEmpty
-	@Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.")
+	@Pattern(regexp = "^(?:&(#\\d+;|#x[0-9A-Fa-f]+;|lt;|gt;|quot;|amp;)|[^&<>\"'/\\\\\\-\\.\\u0008\\u000C\\u000A\\u000D\\u0009])*$",message = "Invalid characters detected.")
 	private String name;
 	@NotNull
 	@ValueOfEnum(enumClass = SchemaType.class)
@@ -55,7 +55,7 @@ public class TopicDTOGet {
 	@Pattern(regexp = "^.+\\.ewc$", message = "Required format .*.ewc")
 	private String owner;
 	@Valid
-	private Set<@NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.") String> tags;
+	private Set<@NotEmpty @Pattern(regexp = "^(?:&(#\\d+;|#x[0-9A-Fa-f]+;|lt;|gt;|quot;|amp;)|[^&<>\"'/\\\\\\-\\.\\u0008\\u000C\\u000A\\u000D\\u0009])*$",message = "Invalid characters detected.") String> tags;
 	@JsonIgnore
 	@Getter(AccessLevel.NONE)
 	private String did;

@@ -19,5 +19,5 @@ public class ClientDTO {
     @Valid
     @NotNull
     @NotEmpty
-    private Set<@NotNull @NotEmpty @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.") String> clientIds;
+    private Set<@NotNull @NotEmpty @Pattern(regexp = "^(?:&(#\\d+;|#x[0-9A-Fa-f]+;|lt;|gt;|quot;|amp;)|[^&<>\"'/\\\\\\-\\.\\u0008\\u000C\\u000A\\u000D\\u0009])*$",message = "Invalid characters detected.") String> clientIds;
 }

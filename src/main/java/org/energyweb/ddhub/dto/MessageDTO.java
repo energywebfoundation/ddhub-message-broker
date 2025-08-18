@@ -66,7 +66,7 @@ public class MessageDTO extends DDHub {
 
     @NotNull
     @NotEmpty
-    @Pattern(regexp = "^[^&<>\"'/\\\\\\-\\.\\r\\n\\t]*$", message = "Invalid characters detected.")
+    @Pattern(regexp = "^(?:&(#\\d+;|#x[0-9A-Fa-f]+;|lt;|gt;|quot;|amp;)|[^&<>\"'/\\\\\\-\\.\\u0008\\u000C\\u000A\\u000D\\u0009])*$",message = "Invalid characters detected.")
     private String signature;
 
     @JsonIgnore

@@ -69,6 +69,7 @@ import org.energyweb.ddhub.helper.PayloadValidator;
 import org.energyweb.ddhub.helper.Recipients;
 import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
+import org.energyweb.ddhub.helper.TrustwaveEncoder;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
@@ -151,6 +152,7 @@ public class Message {
     	TopicDTO topic = topicVersionRepository.findByIdAndVersion(messageDTOs.getTopicId(),
                 messageDTOs.getTopicVersion());
         if (!messageDTOs.isPayloadEncryption()) {
+        	messageDTOs.setPayload(TrustwaveEncoder.encodeValuesBySchemaString(messageDTOs.getPayload(),topic.schemaValue()));
             PayloadValidator.validate(topic.getSchemaType(), topic.schemaValue(), messageDTOs.getPayload());
         }
         
@@ -921,6 +923,7 @@ public class Message {
     public Response uploadFile(@Valid @MultipartForm FileUploadDTOs data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         data.setOwnerdid(DID);
+        data.setFileName(TrustwaveEncoder.encodeValuesOnly(data.getFileName()));
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(DID));
         data.setFileName(fileId);
         return Response.ok()

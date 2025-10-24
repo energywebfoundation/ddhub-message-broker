@@ -56,6 +56,7 @@ import org.energyweb.ddhub.dto.TopicDTOUpdate;
 import org.energyweb.ddhub.dto.TopicMonitorDTO;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.helper.ErrorResponse;
+import org.energyweb.ddhub.helper.TrustwaveEncoder;
 import org.energyweb.ddhub.model.TopicMonitor;
 import org.energyweb.ddhub.repository.TopicMonitorRepository;
 import org.energyweb.ddhub.repository.TopicRepository;

@@ -132,6 +132,8 @@ public class SchemaTopic {
         }
 
         topic.setDid(DID);
+        topic.setName(TrustwaveEncoder.encodeValuesOnly(topic.getName()));
+        topic.setTags(TrustwaveEncoder.encodeValuesOnlyArray(topic.getTags()));
         topicRepository.save(topic);
         topicMonitorRepository.createBy(topic.getOwner());
         return Response.ok().entity(topic).build();

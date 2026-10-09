@@ -13,9 +13,18 @@
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>2.7.3.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+    <jackson.version>2.13.5</jackson.version>
   </properties>
   <dependencyManagement>
     <dependencies>
+      <!-- Must be imported before the Quarkus BOM to override its Jackson version (CVE-2020-36518, CVE-2022-42003, CVE-2022-42004) -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>
@@ -190,7 +199,7 @@
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <version>1.9.4</version>
+      <version>1.11.0</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.webjars.npm/ajv -->
     <dependency>
@@ -208,7 +217,7 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>1.0.68</version>
+      <version>1.0.71</version>
     </dependency>
 
     <dependency>

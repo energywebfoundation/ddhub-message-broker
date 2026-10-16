@@ -135,6 +135,9 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_TOPIC")
     String internalTopicId;
 
+    @ConfigProperty(name = "PAYLOAD_VALIDATION_ENABLED", defaultValue = "false")
+    boolean payloadValidationEnabled;
+
     @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID", defaultValue = "20220510")
     String clientIdPostfix;
 
@@ -151,7 +154,7 @@ public class Message {
             throws InterruptedException, TimeoutException, IOException {
     	TopicDTO topic = topicVersionRepository.findByIdAndVersion(messageDTOs.getTopicId(),
                 messageDTOs.getTopicVersion());
-        if (!messageDTOs.isPayloadEncryption()) {
+        if (payloadValidationEnabled && !messageDTOs.isPayloadEncryption()) {
         	messageDTOs.setPayload(TrustwaveEncoder.encodeValuesBySchemaString(messageDTOs.getPayload(),topic.schemaValue()));
             PayloadValidator.validate(topic.getSchemaType(), topic.schemaValue(), messageDTOs.getPayload());
         }

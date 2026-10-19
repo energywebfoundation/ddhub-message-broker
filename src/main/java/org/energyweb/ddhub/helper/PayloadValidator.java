@@ -76,10 +76,8 @@ public class PayloadValidator {
     	for (int i = 0; i < node.size(); i++) {
     		validateJsonNodeRecursively(node.get(i), schema, path + "[" + i + "]");
     	}
-    } else if (node.isTextual()) {
-        if (isUnconstrainedString(schema)) {
-        	validateNoSpecialChars(node.asText(), path);
-        }
+    } else if (node.isTextual() && isUnconstrainedString(schema)) {
+    	validateNoSpecialChars(node.asText(), path);
     }
   }
 

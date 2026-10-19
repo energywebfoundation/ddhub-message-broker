@@ -20,7 +20,8 @@ public class PayloadValidator {
 	
   private static final Set<Character> FORBIDDEN_CHARS = Set.of('&', '<', '>', '"', '\'', '/', '-', '.', '\\','\b', '\f', '\n', '\r', '\t');
   private static final List<String> SUPPORTED_FORMATS = List.of("JSD7", "XSD6", "XML", "CSV", "TSV");
-  private static final Set<String> ALLOWED_NAMED_ENTITIES = Set.of("lt", "gt", "quot", "amp");
+  // Any well-formed named entity (e.g. &eacute; &copy; &nbsp;) as produced by HTML encoders; names are alphanumeric so they cannot carry markup
+  private static final Pattern NAMED_ENTITY_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9]{1,31}");
   private static final Pattern NUM_DEC_PATTERN = Pattern.compile("#\\d+");
   private static final Pattern NUM_HEX_PATTERN = Pattern.compile("#[xX][0-9A-Fa-f]+");
 
@@ -103,7 +104,7 @@ public class PayloadValidator {
 				  // Check if valid numeric or allowed named entity
 				  if (NUM_DEC_PATTERN.matcher(entity).matches() ||
 						  NUM_HEX_PATTERN.matcher(entity).matches() ||
-						  ALLOWED_NAMED_ENTITIES.contains(entity.toLowerCase())) {
+						  NAMED_ENTITY_PATTERN.matcher(entity).matches()) {
 					  i = semicolonIndex; // Skip the entity
 					  continue;
 				  }

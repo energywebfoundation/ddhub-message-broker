@@ -154,11 +154,8 @@ public class Message {
             throws InterruptedException, TimeoutException, IOException {
     	TopicDTO topic = topicVersionRepository.findByIdAndVersion(messageDTOs.getTopicId(),
                 messageDTOs.getTopicVersion());
-        if (payloadValidationEnabled && !messageDTOs.isPayloadEncryption()) {
-        	messageDTOs.setPayload(TrustwaveEncoder.encodeValuesBySchemaString(messageDTOs.getPayload(),topic.schemaValue()));
-            PayloadValidator.validate(topic.getSchemaType(), topic.schemaValue(), messageDTOs.getPayload());
-        }
-        
+        processPayload(messageDTOs, topic);
+
         if (messageDTOs.anonymousRule())
             throw new IllegalArgumentException(messageDTOs.anonymousRuleErrorMsg());
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
@@ -285,6 +282,13 @@ public class Message {
 
         return Response.ok().entity(messageResponse).build();
 
+    }
+
+    void processPayload(MessageDTOs messageDTOs, TopicDTO topic) {
+        // Validate only: the payload is signed by the sender, so it must reach recipients byte-for-byte
+        if (payloadValidationEnabled && !messageDTOs.isPayloadEncryption()) {
+            PayloadValidator.validate(topic.getSchemaType(), topic.schemaValue(), messageDTOs.getPayload());
+        }
     }
 
     @Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)

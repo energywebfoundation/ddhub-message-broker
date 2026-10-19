@@ -9,7 +9,7 @@ import org.energyweb.ddhub.dto.TopicDTO;
 import org.energyweb.ddhub.exception.InvalidPayloadException;
 import org.junit.jupiter.api.Test;
 
-public class PayloadValidationFlagTest {
+class PayloadValidationFlagTest {
 
 	private static final String UUID = "14645780-099d-41a6-a8e1-64caa59ad290";
 	// What ddhub-client-gateway sends: plain string fields are already Trustwave-encoded
@@ -44,89 +44,92 @@ public class PayloadValidationFlagTest {
 	// PAYLOAD_VALIDATION_ENABLED=false
 
 	@Test
-	public void testDisabledUuidIsUnchanged() {
+	void testDisabledUuidIsUnchanged() {
 		assertEquals(idPayload(UUID), processPayload(false, idPayload(UUID)));
 	}
 
 	@Test
-	public void testDisabledUppercaseUuidIsUnchanged() {
+	void testDisabledUppercaseUuidIsUnchanged() {
 		String upper = UUID.toUpperCase();
 		assertEquals(idPayload(upper), processPayload(false, idPayload(upper)));
 	}
 
 	@Test
-	public void testDisabledEncodedUuidIsUnchanged() {
+	void testDisabledEncodedUuidIsUnchanged() {
 		assertEquals(idPayload(ENCODED_UUID), processPayload(false, idPayload(ENCODED_UUID)));
 	}
 
 	@Test
-	public void testDisabledInvalidJsonIsAccepted() {
+	void testDisabledInvalidJsonIsAccepted() {
 		assertEquals("not json", processPayload(false, "not json"));
 	}
 
 	// PAYLOAD_VALIDATION_ENABLED=true
 
 	@Test
-	public void testEnabledEncodedUuidIsAcceptedUnchanged() {
+	void testEnabledEncodedUuidIsAcceptedUnchanged() {
 		assertEquals(idPayload(ENCODED_UUID), processPayload(true, idPayload(ENCODED_UUID)));
 	}
 
 	@Test
-	public void testEnabledEncodedUppercaseUuidIsAcceptedUnchanged() {
+	void testEnabledEncodedUppercaseUuidIsAcceptedUnchanged() {
 		String upper = "14645780&#x2D;099D&#x2D;41A6&#x2D;A8E1&#x2D;64CAA59AD290";
 		assertEquals(idPayload(upper), processPayload(true, idPayload(upper)));
 	}
 
 	@Test
-	public void testEnabledUuidWithUuidFormatIsAcceptedUnchanged() {
+	void testEnabledUuidWithUuidFormatIsAcceptedUnchanged() {
 		assertEquals(idPayload(UUID), processPayload(true, UUID_FORMAT_SCHEMA, idPayload(UUID), false));
 	}
 
 	@Test
-	public void testEnabledRawUuidInPlainStringIsRejected() {
-		assertThrows(InvalidPayloadException.class, () -> processPayload(true, idPayload(UUID)));
+	void testEnabledRawUuidInPlainStringIsRejected() {
+		String payload = idPayload(UUID);
+		assertThrows(InvalidPayloadException.class, () -> processPayload(true, payload));
 	}
 
 	@Test
-	public void testEnabledEncodedNamedEntitiesAreAcceptedUnchanged() {
+	void testEnabledEncodedNamedEntitiesAreAcceptedUnchanged() {
 		String payload = idPayload("Jos&eacute; caf&eacute; &copy; &euro; non&#x2D;breaking&nbsp;space");
 		assertEquals(payload, processPayload(true, payload));
 	}
 
 	@Test
-	public void testEnabledEncodedMarkupIsAcceptedUnchanged() {
+	void testEnabledEncodedMarkupIsAcceptedUnchanged() {
 		String payload = idPayload("&lt;script&gt;alert(1)&lt;&#x2F;script&gt;");
 		assertEquals(payload, processPayload(true, payload));
 	}
 
 	@Test
-	public void testEnabledRawMarkupIsRejected() {
-		assertThrows(InvalidPayloadException.class, () -> processPayload(true, idPayload("<script>alert(1)</script>")));
+	void testEnabledRawMarkupIsRejected() {
+		String payload = idPayload("<script>alert(1)</script>");
+		assertThrows(InvalidPayloadException.class, () -> processPayload(true, payload));
 	}
 
 	@Test
-	public void testEnabledMalformedEntityIsRejected() {
-		assertThrows(InvalidPayloadException.class, () -> processPayload(true, idPayload("a &<b>; c")));
+	void testEnabledMalformedEntityIsRejected() {
+		String payload = idPayload("a &<b>; c");
+		assertThrows(InvalidPayloadException.class, () -> processPayload(true, payload));
 	}
 
 	@Test
-	public void testEnabledCompactJsonIsNotReformatted() {
+	void testEnabledCompactJsonIsNotReformatted() {
 		String payload = "{\"id\":\"abc\"}";
 		assertEquals(payload, processPayload(true, payload));
 	}
 
 	@Test
-	public void testEnabledSchemaViolationIsRejected() {
+	void testEnabledSchemaViolationIsRejected() {
 		assertThrows(InvalidPayloadException.class, () -> processPayload(true, "{\"id\":123}"));
 	}
 
 	@Test
-	public void testEnabledInvalidJsonIsRejected() {
+	void testEnabledInvalidJsonIsRejected() {
 		assertThrows(InvalidPayloadException.class, () -> processPayload(true, "not json"));
 	}
 
 	@Test
-	public void testEnabledEncryptedPayloadIsUnchanged() {
+	void testEnabledEncryptedPayloadIsUnchanged() {
 		assertDoesNotThrow(() -> processPayload(true, PLAIN_SCHEMA, "not json", true));
 		assertEquals(idPayload(UUID), processPayload(true, PLAIN_SCHEMA, idPayload(UUID), true));
 	}

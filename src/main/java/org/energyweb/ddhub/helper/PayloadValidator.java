@@ -77,15 +77,19 @@ public class PayloadValidator {
     		validateJsonNodeRecursively(node.get(i), schema, path + "[" + i + "]");
     	}
     } else if (node.isTextual()) {
-    	boolean isPlainUnconstrainedString = 
-    			schema.path("type").asText().equals("string") &&
-    		      !schema.has("format") &&
-    		      !schema.has("pattern") &&
-    		      !schema.has("enum");
-        if (isPlainUnconstrainedString) {
+        if (isUnconstrainedString(schema)) {
         	validateNoSpecialChars(node.asText(), path);
         }
     }
+  }
+
+  // A free-text string field: no pattern, enum, format or const restricting its content
+  private static boolean isUnconstrainedString(JsonNode schema) {
+    return "string".equals(schema.path("type").asText())
+        && !schema.has("pattern")
+        && !schema.has("enum")
+        && !schema.has("format")
+        && !schema.has("const");
   }
 
   private static void validateNoSpecialChars(String value, String path) {

@@ -69,6 +69,7 @@ import org.energyweb.ddhub.helper.PayloadValidator;
 import org.energyweb.ddhub.helper.Recipients;
 import org.energyweb.ddhub.helper.ReturnErrorMessage;
 import org.energyweb.ddhub.helper.ReturnMessage;
+import org.energyweb.ddhub.helper.TrustwaveEncoder;
 import org.energyweb.ddhub.repository.ChannelRepository;
 import org.energyweb.ddhub.repository.FileUploadRepository;
 import org.energyweb.ddhub.repository.TopicRepository;
@@ -134,6 +135,9 @@ public class Message {
     @ConfigProperty(name = "INTERNAL_TOPIC")
     String internalTopicId;
 
+    @ConfigProperty(name = "PAYLOAD_VALIDATION_ENABLED", defaultValue = "false")
+    boolean payloadValidationEnabled;
+
     @ConfigProperty(name = "INTERNAL_POSTFIX_CLIENT_ID", defaultValue = "20220510")
     String clientIdPostfix;
 
@@ -150,10 +154,8 @@ public class Message {
             throws InterruptedException, TimeoutException, IOException {
     	TopicDTO topic = topicVersionRepository.findByIdAndVersion(messageDTOs.getTopicId(),
                 messageDTOs.getTopicVersion());
-        if (!messageDTOs.isPayloadEncryption()) {
-            PayloadValidator.validate(topic.getSchemaType(), topic.schemaValue(), messageDTOs.getPayload());
-        }
-        
+        processPayload(messageDTOs, topic);
+
         if (messageDTOs.anonymousRule())
             throw new IllegalArgumentException(messageDTOs.anonymousRuleErrorMsg());
         topicRepository.validateTopicIds(Arrays.asList(messageDTOs.getTopicId()));
@@ -280,6 +282,13 @@ public class Message {
 
         return Response.ok().entity(messageResponse).build();
 
+    }
+
+    void processPayload(MessageDTOs messageDTOs, TopicDTO topic) {
+        // Validate only: the payload is signed by the sender, so it must reach recipients byte-for-byte
+        if (payloadValidationEnabled && !messageDTOs.isPayloadEncryption()) {
+            PayloadValidator.validate(topic.getSchemaType(), topic.schemaValue(), messageDTOs.getPayload());
+        }
     }
 
     @Counted(name = "internal_post_count", description = "", tags = { "ddhub=messages" }, absolute = true)
@@ -921,6 +930,7 @@ public class Message {
     public Response uploadFile(@Valid @MultipartForm FileUploadDTOs data, @HeaderParam("Authorization") String token) {
         topicRepository.validateTopicIds(Arrays.asList(data.getTopicId()));
         data.setOwnerdid(DID);
+        data.setFileName(TrustwaveEncoder.encodeValuesOnly(data.getFileName()));
         String fileId = fileUploadRepository.save(data, channelRepository.findByFqcn(DID));
         data.setFileName(fileId);
         return Response.ok()

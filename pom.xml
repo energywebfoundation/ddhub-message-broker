@@ -11,19 +11,48 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>2.7.3.Final</quarkus.platform.version>
+    <!-- Drives both quarkus-bom and quarkus-camel-bom so they stay on the same platform release -->
+    <quarkus.platform.version>2.16.12.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-    <jackson.version>2.13.5</jackson.version>
+    <jackson.version>2.22.4</jackson.version>
+    <!-- Since Jackson 2.20, jackson-annotations is versioned without a patch number -->
+    <jackson-annotations.version>2.22</jackson-annotations.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
+    <docker-java.version>3.4.2</docker-java.version>
   </properties>
   <dependencyManagement>
     <dependencies>
-      <!-- Must be imported before the Quarkus BOM to override its Jackson version (CVE-2020-36518, CVE-2022-42003, CVE-2022-42004) -->
+      <!-- Must be imported before the Quarkus BOM to override its Jackson version and patch jackson-core/databind CVEs -->
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <!-- Must be imported before the Quarkus BOM: the Testcontainers it pins uses a Docker API version that Docker Engine 29+ rejects -->
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- The Quarkus BOM also pins an older docker-java; match the version Testcontainers was built against -->
+      <dependency>
+        <groupId>com.github.docker-java</groupId>
+        <artifactId>docker-java-api</artifactId>
+        <version>${docker-java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.docker-java</groupId>
+        <artifactId>docker-java-transport</artifactId>
+        <version>${docker-java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.docker-java</groupId>
+        <artifactId>docker-java-transport-zerodep</artifactId>
+        <version>${docker-java.version}</version>
       </dependency>
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
@@ -222,7 +251,7 @@
 
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
+      <artifactId>quarkus-opentelemetry</artifactId>
     </dependency>
 
     <dependency>
@@ -248,17 +277,17 @@
 	<dependency>
 	    <groupId>com.fasterxml.jackson.core</groupId>
 	    <artifactId>jackson-core</artifactId>
-	    <version>2.17.2</version>
+	    <version>${jackson.version}</version>
 	  </dependency>
 	  <dependency>
 	    <groupId>com.fasterxml.jackson.core</groupId>
 	    <artifactId>jackson-annotations</artifactId>
-	    <version>2.17.2</version>
+	    <version>${jackson-annotations.version}</version>
 	  </dependency>
 	  <dependency>
 	    <groupId>com.fasterxml.jackson.core</groupId>
 	    <artifactId>jackson-databind</artifactId>
-	    <version>2.17.2</version>
+	    <version>${jackson.version}</version>
 	  </dependency>
 	  <dependency>
 	    <groupId>org.apache.commons</groupId>
@@ -268,7 +297,7 @@
 	  <dependency>
 	    <groupId>org.apache.commons</groupId>
 	    <artifactId>commons-lang3</artifactId>
-	    <version>3.14.0</version>
+	    <version>3.20.0</version>
 	  </dependency>
 
   </dependencies>

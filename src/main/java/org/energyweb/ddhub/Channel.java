@@ -2,6 +2,8 @@ package org.energyweb.ddhub;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +48,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tags;
 import org.energyweb.ddhub.dto.ChannelDTO;
 import org.energyweb.ddhub.dto.ClientDTO;
 import org.energyweb.ddhub.dto.ExtChannelDTO;
+import org.energyweb.ddhub.dto.OffsetConfig;
 import org.energyweb.ddhub.helper.DDHubResponse;
 import org.energyweb.ddhub.helper.ResponseWithStatus;
 import org.energyweb.ddhub.helper.ReturnAnonymousKeyMessage;
@@ -175,26 +178,25 @@ public class Channel {
                                                             .toMillis())
                                             .build());
                                 } catch (IOException | JetStreamApiException e) {
-                                    logger.info("[" + requestId + "]" + e.getMessage());
+                                    logger.info("[" + DID + "][" + requestId + "]" + e.getMessage());
                                 }
                             } catch (MongoException e) {
-                                logger.warn("[" + requestId + "]" + e.getMessage());
+                                logger.warn("[" + DID + "][" + requestId + "]" + e.getMessage());
                                 if (e.getMessage().contains("E11000")) {
-                                    status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail",
-                                            "Record exists"));
+                                    status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail","Record exists"));
                                 } else {
                                     status.add(new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail",
                                             e.getMessage()));
                                 }
                             } catch (IOException | JetStreamApiException e) {
-                                logger.info("[" + requestId + "]" + e.getMessage());
+                                logger.info("[" + DID + "][" + requestId + "]" + e.getMessage());
                                 status.add(
                                         new ReturnAnonymousKeyMessage(key.getAnonymousKey(), "Fail", e.getMessage()));
                             }
                         });
             }
         } catch (MongoException ex) {
-            logger.info("[" + requestId + "] Channel not exist. creating channel:" + DID);
+            logger.info("[" + DID + "][" + requestId + "] Channel not exist. creating channel:" + DID);
             StreamConfiguration streamConfig = StreamConfiguration.builder()
                     .name(channelDTO.streamName())
                     .addSubjects(channelDTO.subjectNameAll())
@@ -207,7 +209,7 @@ public class Channel {
             StreamInfo streamInfo = jsm.addStream(streamConfig);
 
             try {
-                logger.info("[" + requestId + "] Channel not exist. creating channel keys:" + DID);
+                logger.info("[" + DID + "][" + requestId + "] Channel not exist. creating channel keys:" + DID);
                 ChannelDTO channelKey = new ChannelDTO();
                 channelKey.setFqcn(DID + ".keys");
                 jsm.addStream(StreamConfiguration.builder()
@@ -221,7 +223,7 @@ public class Channel {
                                         .toMillis())
                         .build());
             } catch (IOException | JetStreamApiException e) {
-                logger.info("[" + requestId + "]" + e.getMessage());
+                logger.info("[" + DID + "][" + requestId + "]" + e.getMessage());
             }
 
             channelDTO.setOwnerdid(DID);
@@ -344,15 +346,25 @@ public class Channel {
     @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response reInitExtChannel() throws IOException, JetStreamApiException, InterruptedException, ParseException {
+        reInitExtChannelInternal(null);
+        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
+
+    }
+
+    private void reInitExtChannelInternal(String postfix) {
         try {
             Connection nc = Nats.connect(natsConnectionOption());
             JetStreamManagement jsm = nc.jetStreamManagement();
             channelRepository.findAll().list().forEach(entity -> {
                 ChannelDTO channelDTO = new ChannelDTO();
-                channelDTO.setFqcn(entity.getFqcn());
+                if(postfix == null){
+                    channelDTO.setFqcn(entity.getFqcn());
+                }else{
+                    channelDTO.setFqcn(entity.getFqcn() + postfix);
+                }
                 channelDTO.setMaxMsgAge(natsMaxAge);
                 channelDTO.setMaxMsgSize(natsMaxSize);
-                logger.info("[" + requestId + "] re-creating channel:" + entity.getFqcn());
+                logger.info("[" + DID + "][" + requestId + "] re-creating channel:" + entity.getFqcn());
                 StreamConfiguration streamConfig = StreamConfiguration.builder()
                         .name(channelDTO.streamName())
                         .addSubjects(channelDTO.subjectNameAll())
@@ -365,16 +377,13 @@ public class Channel {
                 try {
                     StreamInfo streamInfo = jsm.addStream(streamConfig);
                 } catch (IOException | JetStreamApiException e) {
-                    logger.info("[" + requestId + "]" + e.getMessage());
+                    logger.info("[" + DID + "][" + requestId + "]" + e.getMessage());
                 }
             });
             nc.close();
         } catch (IOException | InterruptedException e) {
-            logger.info("[" + requestId + "]" + e.getMessage());
+            logger.info("[" + DID + "][" + requestId + "]" + e.getMessage());
         }
-
-        return Response.ok().entity(new DDHubResponse("00", "Success")).build();
-
     }
 
     @POST
@@ -387,35 +396,7 @@ public class Channel {
     @Authenticated
     public Response reInitExtChannelKeys()
             throws IOException, JetStreamApiException, InterruptedException, ParseException {
-        try {
-            Connection nc = Nats.connect(natsConnectionOption());
-            JetStreamManagement jsm = nc.jetStreamManagement();
-            channelRepository.findAll().list().forEach(entity -> {
-                ChannelDTO channelDTO = new ChannelDTO();
-                channelDTO.setFqcn(entity.getFqcn() + ".keys");
-                channelDTO.setMaxMsgAge(natsMaxAge);
-                channelDTO.setMaxMsgSize(natsMaxSize);
-                logger.info("[" + requestId + "] re-creating channel keys: " + entity.getFqcn());
-                StreamConfiguration streamConfig = StreamConfiguration.builder()
-                        .name(channelDTO.streamName())
-                        .addSubjects(channelDTO.subjectNameAll())
-                        .maxAge(Duration.ofMillis(channelDTO.getMaxMsgAge()))
-                        .replicas(natsReplicasSize.orElse(ChannelDTO.DEFAULT_REPLICAS_SIZE))
-                        .maxMsgSize(channelDTO.getMaxMsgSize())
-                        .duplicateWindow(Duration.ofSeconds(duplicateWindow.orElse(ChannelDTO.DEFAULT_DUPLICATE_WINDOW))
-                                .toMillis())
-                        .build();
-                try {
-                    StreamInfo streamInfo = jsm.addStream(streamConfig);
-                } catch (IOException | JetStreamApiException e) {
-                    logger.info("[" + requestId + "]" + e.getMessage());
-                }
-            });
-            nc.close();
-        } catch (IOException | InterruptedException e) {
-            logger.info("[" + requestId + "]" + e.getMessage());
-        }
-
+        reInitExtChannelInternal(".keys");
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
     }
@@ -425,7 +406,7 @@ public class Channel {
     @Timed(name = "removeChannel_delete_timed", description = "", tags = {
             "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
     @Path("stream/{name}")
-    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @APIResponse(description = "", content = @Content(schema = @Schema(implementation = DDHubResponse.class)))
     @Authenticated
     public Response removeChannel(
             @NotNull @PathParam("name") @Pattern(regexp = "^(?:&(#\\d+;|#x[0-9A-Fa-f]+;|lt;|gt;|quot;|amp;)|[^&<>\"'/\\\\\\-\\.\\u0008\\u000C\\u000A\\u000D\\u0009])*$",message = "Invalid characters detected.") String streamName)
@@ -444,12 +425,39 @@ public class Channel {
         try {
             jsm.deleteStream("keys_" + channelDTO.streamName());
         } catch (IOException | JetStreamApiException e) {
-            logger.warn("[" + requestId + "]" + e.getMessage());
+            logger.warn("[" + DID + "][" + requestId + "]" + e.getMessage());
         }
         nc.close();
 
         return Response.ok().entity(new DDHubResponse("00", "Success")).build();
 
+    }
+
+    @DELETE
+    @Counted(name = "removeChannel_admin_delete_count", description = "", tags = { "ddhub=channel" }, absolute = true)
+    @Timed(name = "removeChannel_admin_delete_timed", description = "", tags = {
+            "ddhub=channel" }, unit = MetricUnits.MILLISECONDS, absolute = true)
+    @Path("streams")
+    @Tags(value = @Tag(name = "Internal", description = "All the methods"))
+    @APIResponse(description = "", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = String.class)))
+    @Authenticated
+    public Response removeChannelAdmin(@NotNull @Valid OffsetConfig offset )
+    throws IOException, InterruptedException, JetStreamApiException {
+        Connection nc = Nats.connect(natsConnectionOption());
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        List<StreamInfo> streams = jsm.getStreams().stream().filter(s->!s.getConfiguration().getName().toUpperCase().contains("DID")).collect(Collectors.toList());
+        List<String> result = new ArrayList<String>();
+        LocalDateTime verifyDateTime = LocalDateTime.now();
+        for (StreamInfo streamInfo : streams) {
+            if(streamInfo.getConfiguration().getName().contains("keys_")) continue;
+            if(streamInfo.getCreateTime().toEpochSecond() < verifyDateTime.minusDays(offset.getOffsetInDays()).toEpochSecond(ZoneOffset.UTC)){
+                logger.info("[" + DID + "][" + requestId + "](Created epoch: " + streamInfo.getCreateTime().toEpochSecond() + ",Current epoch: " + verifyDateTime.toEpochSecond(ZoneOffset.UTC) + ") Delete association key : " + streamInfo.getConfiguration().getName());
+                this.removeChannel(streamInfo.getConfiguration().getName());
+                result.add(streamInfo.getConfiguration().getName());
+            }
+        }
+        nc.close();
+        return Response.ok().entity(result).build();
     }
 
     private Options natsConnectionOption() {
